@@ -1,0 +1,253 @@
+## {background-color="#1c3f6e"}
+
+<br/>
+<br/>
+
+::: {style="color:white; font-size:1.6em; margin-top:2em"}
+"O futuro traz novas perguntas.<br>Os dados ampliam nossas formas de responder."
+:::
+
+::: {style="color:#c9d7ec; margin-top:1.5em"}
+...mas **quem mede a régua?**
+:::
+
+## Como ler estes slides
+
+<br/>
+
+Este é o minicurso **inteiro** em slides: conceitos, **código R** e **saídas**.
+
+::: {.columns}
+::: {.column width="55%"}
+- Cada etapa segue o mesmo ritmo: **o que vamos executar → o código → a saída → o que ela significa**
+- Todo código com saída foi **executado ao compilar os slides**, a partir dos dados congelados do material
+- Chamadas às **APIs** e ao **LLM** não são refeitas ao compilar: o código aparece, e a saída vem dos arquivos gravados quando elas rodaram
+:::
+::: {.column width="45%"}
+```{r}
+#| eval: false
+# código: fundo cinza, borda azul-escura
+x <- 1 + 1
+```
+
+```
+#> saída: fundo branco, borda azul-clara
+```
+
+::: {.registrada}
+```
+#> saída de uma execução anterior
+```
+:::
+:::
+:::
+
+::: {.pequeno}
+Há uma versão equivalente em **Python** (`completo_python.html`) e uma versão só com conceitos (`parte1_conceitos.html`).
+:::
+
+## Duas perguntas para hoje
+
+<br/>
+
+::: {.columns}
+::: {.column width="50%"}
+### Substantiva
+Quando o Congresso legisla sobre **IA**, ele quer **punir**, **regular** ou **promover**?
+
+E isso varia entre campos políticos?
+:::
+::: {.column width="50%"}
+### Metodológica
+Se usarmos um **LLM** para responder, **como sabemos se a resposta está certa**?
+
+E como **reproduzir** a resposta daqui a dois anos?
+:::
+:::
+
+. . .
+
+> Na I edição do DataPOL vocês viram como **usar** IA para analisar textos. Hoje vamos **medir** com ela e medir o erro dela.
+
+## Por que agora?
+
+<br/>
+
+- **Eleições de 2026**: primeiras eleições gerais sob a Res. TSE nº 23.755/2026 (rotulagem obrigatória, deepfakes proibidos, IA não pode recomendar voto)
+- **Marco Legal da IA (PL 2338/2023)**: aprovado no Senado em dez/2024, **aguardando parecer** na Câmara
+- **`r nrow(corpus_)` projetos de lei** sobre IA no Congresso, `r sum(corpus_$ano == 2026)` só em 2026
+- LLMs viraram infraestrutura de pesquisa, mas são **instáveis, sensíveis ao prompt e enviesados**
+
+## A "fase atual" da estatística
+
+<br/>
+
+::: {.columns}
+::: {.column width="55%"}
+- **Breiman (2001)**: duas culturas, *modelar* × *prever*
+
+::: {.pequeno}
+*Modelar* = explicar como os dados são gerados e medir a incerteza (a estatística clássica). *Prever* = acertar a resposta, mesmo sem entender o mecanismo (o aprendizado de máquina).
+:::
+
+- **2018–2026**: a síntese, com ML **a serviço da inferência**
+
+::: {.pequeno}
+As previsões do ML viram matéria-prima para estimar efeitos e proporções **com intervalo de confiança válido** (quatro exemplos no próximo slide).
+:::
+:::
+::: {.column width="45%"}
+::: {.callout-note title="O fio comum"}
+Previsões de modelos podem tornar a inferência **mais precisa**, desde que o erro delas seja **medido e corrigido**, e não ignorado.
+:::
+
+::: {.pequeno}
+**Traduzindo para hoje:** o LLM rotula todas as ementas (barato, mas com erro) → a amostra-ouro mede esse erro → o PPI corrige a estimativa e alarga o IC na medida certa. Usar os rótulos do LLM como se fossem a verdade é **ignorar** o erro.
+:::
+:::
+:::
+
+## A síntese em quatro exemplos
+
+::: {style="font-size:1.02em"}
+| Método | O que faz, em uma frase |
+|---|---|
+| *Double ML*<br>(Chernozhukov et al., 2018) | Usa ML para "limpar" a influência de muitas variáveis de controle e estima um **efeito causal** com IC válido |
+| Predição conformal<br>(Vovk et al., 2005) | Transforma a previsão de qualquer modelo num **intervalo** (ou num conjunto de rótulos possíveis) que contém a resposta certa com a frequência prometida, p. ex. 95% |
+| ***Prediction-Powered Inference***<br>(Angelopoulos et al., *Science*, 2023) | Junta **muitas previsões** e **poucos rótulos verdadeiros**: mede o viés das previsões nos rotulados e o desconta. **É o que usamos no bloco 6** |
+| *Design-based Supervised Learning*<br>(Egami et al., 2023) | A mesma correção para **regressões** com rótulos de LLM, usando uma amostra codificada por especialistas e sorteada com probabilidades conhecidas |
+:::
+
+::: {.pequeno}
+Não é preciso dominar os quatro: hoje usamos só o **PPI** (e sua versão PPI++). Os outros mostram que a ideia é geral.
+:::
+
+## O que significa medir um instrumento
+
+<br/>
+
+| Propriedade | Pergunta | Como vamos medir hoje | Bloco |
+|---|---|---|---|
+| **Validade** | Mede o que diz medir? | kappa, F1 e acurácia contra a amostra-ouro, com IC bootstrap | 5 |
+| **Onde erra** | Que erros comete? | matriz de confusão | 5 |
+| **Viés diferencial** | Erra igual para todos? | acurácia e viés por campo político | 5 |
+| **Confiabilidade** | Mede sempre igual? | alfa de Krippendorff entre sementes e entre prompts | 5 |
+| **Consequência** | O erro muda a conclusão? | ingênuo × PPI × PPI++, simulação de cobertura | 6 |
+| **Reprodutibilidade** | Outra pessoa chega ao mesmo número? | cache, hashes, `targets`, repetição | 7 |
+
+## O caminho de hoje
+
+<br/>
+
+```{mermaid}
+%%| fig-width: 11
+%%| echo: false
+%%{init: {"theme": "base", "themeVariables": {"lineColor": "#8f8d88", "primaryColor": "#eef4fc", "primaryBorderColor": "#7ba4de", "primaryTextColor": "#0b0b0b", "fontFamily": "Source Sans Pro, Helvetica Neue, Arial, sans-serif"}}}%%
+flowchart LR
+  A[APIs<br>Câmara + Senado] --> B[Corpus<br>ementas]
+  B --> C[Livro de códigos<br>+ amostra-ouro]
+  C --> D[Baselines<br>dicionário · TF-IDF]
+  B --> E[LLM local<br>3 prompts · cache]
+  C --> F[Validação<br>kappa · viés · reteste]
+  D --> F
+  E --> F
+  F --> G[Inferência<br>PPI]
+  G --> H[Pipeline<br>targets]
+  classDef foco fill:#1c3f6e,stroke:#1c3f6e,color:#ffffff
+  class E foco
+```
+
+## Organização do material
+
+::: {.columns}
+::: {.column width="58%"}
+```text
+minicurso_IA_medicao/
+├── R/            funções + scripts dos blocos 1 a 6
+├── python/       a mesma trilha em notebooks (Colab)
+├── _targets.R    pipeline reprodutível
+├── prompts/      v1, v2, v3 + CHANGELOG
+├── modelos/      Modelfile do S5-nano
+├── dados/
+│   ├── bruto/        respostas das APIs (congeladas)
+│   ├── processado/   corpus.csv
+│   ├── anotacoes/    referência, amostra-ouro
+│   ├── cache_llm/    TODAS as respostas do LLM
+│   └── repeticao/    repetição a t = 0
+├── resultados/   tabelas e figuras
+├── slides/  livro/  docs/
+└── CODEBOOK.md  CHECKLIST.md  ROTEIRO.md
+```
+:::
+::: {.column width="42%"}
+- Tudo roda **sem internet e sem GPU**, a partir de `dados/`
+- O código dos slides é o **mesmo** de `R/`
+- Abra o projeto na raiz: os caminhos são relativos a ela
+:::
+:::
+
+## Preparando o ambiente
+
+::: {.columns}
+::: {.column width="55%"}
+**R** (uma vez):
+
+```{r}
+#| eval: false
+source("R/00_pacotes.R")
+```
+
+```{r}
+#| echo: false
+#| class-output: menor
+cat(readLines("R/00_pacotes.R")[2:4], sep = "\n")
+```
+
+**Para congelar as versões:** `renv::init()` e `renv::snapshot()`
+:::
+::: {.column width="45%"}
+**Python** (alternativa):
+
+```bash
+pip install -r requirements.txt
+```
+
+ou abra `python/01_coleta.ipynb` no **Google Colab** (a primeira célula baixa o material).
+
+**LLM** (opcional, só para anotar de novo):
+
+```bash
+ollama pull hf.co/maritaca-ai/S5-nano-GGUF:Q4_K_M
+ollama create s5-nano-instruct \
+  -f modelos/Modelfile.s5-nano-instruct
+```
+:::
+:::
+
+## Carregando as funções do minicurso
+
+```{r}
+source("R/funcoes_coleta.R")    # APIs da Câmara e do Senado
+source("R/funcoes_medicao.R")   # kappa, alfa, F1, bootstrap, PPI, PPI++
+source("R/tema_graficos.R")     # tema e paleta das figuras
+source("R/04_anotacao_llm.R")   # chamada ao Ollama, extração do rótulo, cache
+
+CATEGORIAS
+INSTRUMENTO
+funcoes <- setdiff(as.character(lsf.str()), c("nf", "pc", "trecho"))   # nf/pc/trecho: auxiliares dos slides
+funcoes |> sort() |> paste(collapse = "  ") |> strwrap(95) |> cat(sep = "\n")
+```
+
+## Os dados que vamos usar
+
+```{r}
+arqs <- list.files("dados", recursive = TRUE, full.names = TRUE)
+tibble(pasta = dirname(arqs), kb = file.size(arqs) / 1024) |>
+  filter(!grepl("historico_gemma|comparacao_modelos", pasta)) |>
+  group_by(pasta) |>
+  summarise(arquivos = n(), tamanho_kb = round(sum(kb)))
+```
+
+::: {.pequeno}
+Esses arquivos **são** a pesquisa: quem tiver esta pasta refaz todas as análises, sem APIs nem LLM.
+:::

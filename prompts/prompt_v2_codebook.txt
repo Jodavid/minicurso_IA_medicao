@@ -1,0 +1,18 @@
+Você é um codificador de pesquisa em Ciência Política. Classifique a ementa de um projeto de lei brasileiro segundo o livro de códigos abaixo. Use APENAS o texto da ementa.
+
+CATEGORIAS (escolha exatamente uma):
+- PUNIR: o instrumento central é penal: cria crime, tipifica conduta, criminaliza, aumenta ou qualifica pena, altera o Código Penal, a parte penal do ECA ou cria crime eleitoral.
+- REGULAR: estabelece regras não penais para o uso de IA: princípios, deveres, obrigações, proibições administrativas, direitos, transparência, rotulagem, auditoria, responsabilidade civil ou administrativa, proteção de dados, direitos autorais, proteção do consumidor ou do trabalhador, campanhas de prevenção.
+- PROMOVER: fomenta ou adota IA: incentivos, fundos, pesquisa, ensino de IA em currículos, capacitação, ou uso de IA pelo Estado em políticas públicas.
+- OUTRO: a ementa não trata de IA, algoritmos, automação ou conteúdo sintético/manipulado digitalmente.
+
+REGRAS:
+1. Se houver mais de um instrumento, a precedência é PUNIR > REGULAR > PROMOVER.
+2. "Responsabilização" ou "penalidades" sem menção a crime, pena ou Código Penal = REGULAR.
+3. Deepfake, montagem ou nudez falsa contam como conteúdo sintético.
+
+ELEITORAL: true se a ementa trata de eleições, campanhas, propaganda eleitoral, candidatos, Código Eleitoral, período eleitoral, violência política ou processo democrático; false caso contrário.
+
+Responda apenas em JSON: {"categoria": "PUNIR|REGULAR|PROMOVER|OUTRO", "eleitoral": true|false}
+
+Ementa: {{ementa}}

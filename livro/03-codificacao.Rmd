@@ -1,0 +1,302 @@
+# Codificar é medir {#codificacao}
+
+Um LLM só pode ser avaliado contra uma **referência**. E uma referência só existe se o conceito tiver uma **definição operacional** escrita, que pessoas diferentes consigam aplicar da mesma forma. Esse documento é o **livro de códigos** [@krippendorff2018; @grimmer2022].
+
+## O livro de códigos
+
+A unidade de análise é a **ementa** de cada proposição. O codificador usa apenas a ementa, sem pesquisar o inteiro teor nem o autor, para não "adivinhar" a categoria a partir do partido.
+
+```{r tab-codebook}
+tibble::tribble(
+  ~Código, ~`Instrumento central`, ~Exemplo,
+  "**PUNIR**", "Penal: cria crime, tipifica conduta, aumenta pena, altera o Código Penal ou a parte penal do ECA", "\"Tipifica o crime de deepfake sexual\"",
+  "**REGULAR**", "Regras não penais: princípios, deveres, rotulagem, transparência, direitos, responsabilidade civil ou administrativa", "\"Obriga identificar conteúdo gerado por IA\"",
+  "**PROMOVER**", "Fomento ou adoção: incentivos, fundos, pesquisa, ensino de IA, uso de IA pelo Estado", "\"Inclui IA no currículo do ensino médio\"",
+  "**OUTRO**", "A ementa não trata de IA, algoritmos, automação ou conteúdo sintético (falsos positivos da busca)", "\"Institui a Lei Geral das Atividades Nucleares\""
+) |> knitr::kable(caption = "Categorias do livro de códigos (variável `categoria`).") |>
+  larguras(c(16, 54, 30))
+```
+
+### Regras de decisão
+
+1. **Precedência:** se a ementa combina instrumentos, aplique **PUNIR > REGULAR > PROMOVER**.
+2. **"Responsabilização" ou "penalidades" sem menção a crime, pena ou Código Penal** → REGULAR.
+3. **Marcos gerais** ("princípios, direitos e deveres para o uso de IA") → REGULAR.
+4. **Proteção de trabalhadores** diante da automação → REGULAR.
+5. **Obrigar o Estado ou empresas a usar IA** (câmeras com IA, triagem no SUS) → PROMOVER.
+6. **Manipulação digital de imagem** (deepfake, montagem, nudez falsa) conta como conteúdo sintético, mesmo sem as palavras "inteligência artificial".
+7. Na dúvida entre OUTRO e outra categoria: *a ementa, sozinha, deixa claro que o objeto é IA, algoritmo, automação ou conteúdo sintético?* Se não, é OUTRO.
+
+Há ainda uma segunda variável, **`eleitoral`** (0/1): vale 1 se a ementa trata de eleições, campanhas, propaganda eleitoral, candidatos, Código Eleitoral, violência política ou processo democrático. Ela é independente da categoria.
+
+O livro de códigos completo, com exemplos comentados, está em `CODEBOOK.md` no material.
+
+## A codificação de referência: quem fez e como {#referencia}
+
+Para que qualquer instrumento possa ser avaliado, todas as `r nrow(ref)` ementas do corpus receberam um rótulo de **referência** (`dados/anotacoes/referencia_completa.csv`). É importante ser explícito sobre a origem desses rótulos:
+
+- **Quem codificou.** A codificação inicial foi feita por **outra IA**, o **Claude Opus 5.5** (Anthropic), que atuou como coautor deste material (Apêndice \@ref(declaracao-ia)). Ela **não** foi feita pelo S5-nano, o instrumento avaliado nos próximos capítulos.
+- **Como.** Aplicando o livro de códigos acima, ementa por ementa, com base **apenas na ementa** (sem inteiro teor e sem o autor). Os casos ambíguos encontrados nesse processo ficaram anotados no `CODEBOOK.md` como candidatos à discussão (por exemplo, doc0121, doc0185 e doc0233).
+- **Quando.** As 298 ementas da coleta de 08/10/2026 e, em 06/11/2026, as 6 ementas novas da recoleta (doc0299 a doc0304).
+- **Status.** Preliminar: **nenhum humano revisou** esses rótulos ainda. As colunas `codificador` (hoje, `"preliminar"`) e `revisado` (hoje, `FALSE`) existem para registrar a revisão.
+
+::: {.caixa .aviso}
+[O que isso muda na leitura dos resultados]{.titulo-caixa}
+Enquanto a referência não for revisada por humanos, o kappa do Capítulo \@ref(validacao) mede a concordância **entre duas IAs** (S5-nano × Claude Opus 5.5), e não a validade do S5-nano contra codificadores humanos. Se as duas IAs erram nos mesmos casos (por exemplo, reagindo da mesma forma às mesmas palavras-gatilho), a concordância fica **inflada**. Da mesma forma, o PPI do Capítulo \@ref(inferencia) corrige o LLM **na direção da referência**: se a referência erra, a correção herda o erro. Por isso os números deste livro **ensinam o método**, mas não são achados substantivos sobre o Congresso. A revisão ideal usa **dois codificadores humanos independentes**, com o alfa de Krippendorff entre eles (Seção \@ref(mao-codificacao)). Enquanto `revisado` for `FALSE`, os scripts emitem um aviso lembrando disso.
+:::
+
+## Quantas ementas de cada classe {#classes}
+
+```{r tab-classes}
+cats  <- c("PUNIR", "REGULAR", "PROMOVER", "OUTRO")
+d_ref <- left_join(corpus, ref, by = "doc_id")
+conta <- function(x) as.integer(table(factor(x, cats)))
+tibble::tibble(
+  Categoria = c(paste0("**", cats, "**"), "**Total**"),
+  `Câmara` = c(conta(d_ref$categoria[d_ref$casa == "Câmara"]), sum(d_ref$casa == "Câmara")),
+  Senado = c(conta(d_ref$categoria[d_ref$casa == "Senado"]), sum(d_ref$casa == "Senado")),
+  Corpus = c(conta(d_ref$categoria), nrow(d_ref)),
+  `% do corpus` = c(pc(conta(d_ref$categoria) / nrow(d_ref), 1), "100%"),
+  `Amostra-ouro` = c(conta(ouro$categoria), nrow(ouro)),
+  `% da amostra-ouro` = c(pc(conta(ouro$categoria) / nrow(ouro), 1), "100%")
+) |> knitr::kable(align = "lrrrrrr",
+                  caption = "Ementas por categoria na codificação de referência (preliminar): por casa, no corpus completo e na amostra-ouro.")
+```
+
+Três leituras rápidas:
+
+- **REGULAR é metade do corpus** (`r pc(mean(ref$categoria == "REGULAR"), 1)`). Chutar sempre REGULAR já acerta `r pc(mean(ouro$categoria == "REGULAR"), 1)` na amostra-ouro: é o piso de qualquer instrumento (Capítulo \@ref(baselines)).
+- **PUNIR** reúne `r sum(ref$categoria == "PUNIR")` ementas (`r pc(mean(ref$categoria == "PUNIR"), 1)`), a proporção que o Capítulo \@ref(inferencia) tenta estimar. No Senado, o peso de PUNIR é maior: `r sum(d_ref$categoria == "PUNIR" & d_ref$casa == "Senado")` de `r sum(d_ref$casa == "Senado")` projetos.
+- A variável **eleitoral** é rara: `r sum(ref$eleitoral)` ementas no corpus (`r pc(mean(ref$eleitoral), 1)`), das quais `r sum(ouro$eleitoral)` estão na amostra-ouro. Por isso as métricas para ela são imprecisas (Capítulo \@ref(validacao)).
+
+A Figura \@ref(fig:fig-projetos) mostra as mesmas categorias ao longo do tempo; em números:
+
+```{r tab-classes-ano}
+d_ref |>
+  count(Ano = ano, categoria = factor(categoria, cats)) |>
+  tidyr::pivot_wider(names_from = categoria, values_from = n, values_fill = 0) |>
+  mutate(Total = PUNIR + REGULAR + PROMOVER + OUTRO) |>
+  knitr::kable(caption = "Ementas por ano de apresentação e categoria (referência preliminar).")
+```
+
+### O que foi classificado como OUTRO
+
+```{r}
+outros <- filter(d_ref, categoria == "OUTRO")
+```
+
+`r nrow(outros)` ementas (`r pc(nrow(outros) / nrow(corpus), 1)` do corpus) vieram na busca por palavra-chave, mas a ementa, sozinha, **não trata de IA, algoritmos, automação ou conteúdo sintético** (regra 7). `r sum(outros$ano == 2026)` delas são de 2026. Elas se dividem em três tipos:
+
+```{r tab-outros}
+tibble::tribble(
+  ~Tipo, ~`Exemplos do corpus`,
+  "**Temas digitais vizinhos**, sem IA na ementa", "doc0228 (Lei Maria da Penha Digital) · doc0064 (varas para crimes cibernéticos) · doc0092 (LGPD e dados de crianças) · doc0243 (soberania digital da Amazônia) · doc0275 (computação em nuvem soberana)",
+  "**Leis penais** que não citam IA nem conteúdo sintético", "doc0048 (aumento de pena dos arts. 216-B e 218-C do Código Penal) · doc0268 (estelionato) · doc0245 (usura) · doc0144 (ameaça e perseguição pelo Pix)",
+  "**Falsos positivos puros**", "doc0160 (Lei Geral das Atividades Nucleares) · doc0030 (transplante de órgãos) · doc0221 (Código de Trânsito) · doc0010 (processo administrativo)"
+) |> knitr::kable(caption = "Os três tipos de ementa classificados como OUTRO na referência, com exemplos.") |>
+  larguras(c(30, 70))
+```
+
+**Por que vieram na busca?** As APIs não procuram o termo só na ementa: o indexador usa também outros campos (como a indexação do projeto), e o texto completo de alguns desses projetos pode, de fato, tratar de IA ou de deepfakes. A decisão de codificar **apenas a ementa** é deliberada: deixa a tarefa igual para humanos e para o LLM e evita "adivinhar" pelo autor. O custo é classificar como OUTRO projetos cujo inteiro teor talvez trate de IA (doc0048 é o caso típico).
+
+**O denominador também é uma decisão.** Neste livro, a proporção PUNIR é calculada sobre **todas** as `r nrow(ref)` ementas (`r pc(mean(ref$categoria == "PUNIR"), 1)`). Excluindo os OUTRO, ela seria calculada sobre `r sum(ref$categoria != "OUTRO")` ementas e subiria para `r pc(sum(ref$categoria == "PUNIR") / sum(ref$categoria != "OUTRO"), 1)`. As duas escolhas são defensáveis, mas precisam ser declaradas.
+
+## A amostra-ouro
+
+A **amostra-ouro** é o conjunto de documentos codificados por humanos contra o qual qualquer instrumento automático é avaliado. Duas escolhas importam:
+
+- **Ela é aleatória.** Não escolhemos as ementas "mais fáceis" nem as "mais interessantes". Só uma amostra aleatória permite que o erro estimado nela valha para o corpus inteiro, e é essa propriedade que a inferência do Capítulo \@ref(inferencia) usa.
+- **Seu tamanho é uma decisão de custo × precisão.** Aqui usamos $n = `r nrow(ouro)`$ ementas (cerca de 40% do corpus), sorteadas com semente fixa (2026). A simulação do Capítulo \@ref(inferencia) mostra o que acontece com amostras de 30 e 60.
+
+```{r, echo=TRUE, eval=FALSE}
+set.seed(2026)
+ouro_ids <- sample(corpus$doc_id, 120)
+```
+
+Na amostra-ouro, a distribuição das categorias de referência é: `r ouro |> count(categoria) |> mutate(t = paste0(categoria, " ", n)) |> pull(t) |> paste(collapse = " · ")`.
+
+## Quanto nós concordamos? O teto humano
+
+Antes de ir para o LLM, o livro de códigos deve ser testado por pelo menos **dois codificadores humanos independentes**. Em sala, fazemos uma versão rápida disso: a turma vota, de mão levantada, a categoria de duas ementas difíceis (doc0185, que altera o Código Penal, e doc0233, que fala em "responsabilização" sem crime) e vê se concorda. Quem quiser medir de verdade encontra 20 ementas da amostra-ouro em `material_apoio/exercicio_codificacao.csv`: cada pessoa codifica sozinha, salva em `material_apoio/respostas/<nome>.csv`, e o alfa de Krippendorff entre os codificadores é calculado como na Seção \@ref(mao-codificacao).
+
+::: {.caixa}
+[Por que isso importa]{.titulo-caixa}
+Se humanos treinados não concordam entre si, o LLM **não tem um alvo**. A concordância humano × humano é o **teto realista** de qualquer instrumento automático. Um kappa de 0,65 entre LLM e referência é ruim se humanos concordam a 0,90, mas é excelente se eles concordam a 0,60. Neste material, como a referência veio de outra IA (Seção \@ref(referencia)), esse teto ainda é **desconhecido**.
+:::
+
+## Mão na massa: amostra-ouro e concordância {#mao-codificacao}
+
+::: {.caixa .executar}
+[Como executar]{.titulo-caixa}
+
+- **Em R**: `Rscript R/02_amostra_ouro.R` sorteia a amostra-ouro e as 20 ementas do exercício e **grava** `dados/anotacoes/amostra_ouro.csv` e `material_apoio/exercicio_codificacao.csv`. Os blocos abaixo refazem o sorteio sem gravar nada.
+- **Em Python**: não há notebook próprio para este bloco. A trilha Python **lê** a amostra-ouro sorteada pelo R (veja o porquê abaixo); o alfa entre codificadores é calculado no notebook `python/04_validacao.ipynb`.
+- **Exercício (opcional, para fazer depois)**: preencha `material_apoio/exercicio_codificacao.csv` e salve como `material_apoio/respostas/<seu_nome>.csv`.
+:::
+
+### O sorteio é reprodutível
+
+::: {.abas}
+::: {.aba data-nome="R"}
+```{r, echo=TRUE}
+library(readr); library(dplyr)
+corpus <- read_csv("dados/processado/corpus.csv", show_col_types = FALSE)
+ouro   <- read_csv("dados/anotacoes/amostra_ouro.csv", show_col_types = FALSE)
+
+set.seed(2026)
+ouro_ids <- sample(corpus$doc_id, 120)
+head(sort(ouro_ids))
+setequal(ouro_ids, ouro$doc_id)   # o sorteio refeito bate com o arquivo?
+```
+:::
+::: {.aba data-nome="Python"}
+```{python, echo=TRUE}
+import numpy as np
+import pandas as pd
+corpus = pd.read_csv("dados/processado/corpus.csv")
+ouro = pd.read_csv("dados/anotacoes/amostra_ouro.csv")
+
+# Mesma semente, outro gerador: o sorteio NÃO coincide com o do R
+ids_py = corpus["doc_id"].sample(120, random_state=2026)
+print(len(set(ids_py) & set(ouro["doc_id"])), "de 120 em comum com a amostra do R")
+# Por isso a trilha Python lê a amostra-ouro do arquivo, em vez de sorteá-la
+print(ouro.shape)
+```
+:::
+:::
+
+**O que está sendo executado.** `set.seed(2026)` fixa o gerador de números aleatórios do R, e `sample()` escolhe 120 `doc_id` sem reposição. Com a mesma semente, o sorteio sai igual em qualquer computador com R, e `setequal()` confirma que o arquivo `amostra_ouro.csv` é exatamente o resultado desse sorteio. Em Python, `random_state=2026` também torna o sorteio reprodutível, mas o gerador é outro: a mesma semente produz **outra amostra**. Uma semente só garante reprodutibilidade dentro da mesma implementação; entre linguagens, o que se compartilha é o **arquivo**.
+
+### Quantos de cada classe, no corpus todo
+
+::: {.abas}
+::: {.aba data-nome="R"}
+```{r, echo=TRUE}
+ref <- read_csv("dados/anotacoes/referencia_completa.csv", show_col_types = FALSE)
+corpus |>
+  inner_join(ref, by = "doc_id") |>
+  count(categoria, casa) |>
+  tidyr::pivot_wider(names_from = casa, values_from = n) |>
+  mutate(Total = Câmara + Senado, prop = round(Total / sum(Total), 3)) |>
+  arrange(desc(Total))
+count(ref, codificador, revisado)   # quem codificou e se já houve revisão humana
+```
+:::
+::: {.aba data-nome="Python"}
+```{python, echo=TRUE}
+ref = pd.read_csv("dados/anotacoes/referencia_completa.csv")
+d = corpus.merge(ref, on="doc_id")
+tab = pd.crosstab(d["categoria"], d["casa"])
+tab["Total"] = tab.sum(axis=1)
+tab["prop"] = (tab["Total"] / tab["Total"].sum()).round(3)
+print(tab.sort_values("Total", ascending=False), "\n")
+ref[["codificador", "revisado"]].value_counts()   # quem codificou e se já houve revisão humana
+```
+:::
+:::
+
+**O que está sendo executado.** A referência é unida ao corpus pelo `doc_id`, e a tabela cruza a categoria com a casa de origem. A última linha confirma o status da referência: todas as ementas têm `codificador = "preliminar"` e `revisado = FALSE`, isto é, foram codificadas por outra IA (Seção \@ref(referencia)) e ainda não passaram por revisão humana.
+
+### O que há na amostra-ouro
+
+::: {.abas}
+::: {.aba data-nome="R"}
+```{r, echo=TRUE}
+count(ouro, categoria, sort = TRUE) |> mutate(prop = round(n / sum(n), 3))
+count(ouro, eleitoral)
+count(ouro, codificador, revisado)
+```
+:::
+::: {.aba data-nome="Python"}
+```{python, echo=TRUE}
+print(ouro["categoria"].value_counts().to_frame("n").assign(
+    prop=lambda d: (d["n"] / d["n"].sum()).round(3)), "\n")
+print(ouro["eleitoral"].value_counts(), "\n")
+ouro[["codificador", "revisado"]].value_counts()
+```
+:::
+:::
+
+Um exemplo de ementa de cada categoria, como o codificador as vê:
+
+::: {.abas}
+::: {.aba data-nome="R"}
+```{r, echo=TRUE}
+ouro |>
+  left_join(select(corpus, doc_id, ementa), by = "doc_id") |>
+  group_by(categoria) |>
+  slice_head(n = 1) |>
+  with(cat(sprintf("%s [%s] %s", doc_id, categoria, substr(ementa, 1, 110)), sep = "\n"))
+```
+:::
+::: {.aba data-nome="Python"}
+```{python, echo=TRUE}
+ex = (ouro.merge(corpus[["doc_id", "ementa"]], on="doc_id")
+      .groupby("categoria").head(1)
+      .sort_values("categoria"))
+for r in ex.itertuples():
+    print(f"{r.doc_id} [{r.categoria}] {r.ementa[:110]}")
+```
+:::
+:::
+
+### Concordância entre codificadores
+
+Com dois ou mais codificadores (por exemplo, quem fizer o exercício opcional), o alfa de Krippendorff entre eles é calculado com a mesma função usada para o LLM (Capítulo \@ref(validacao)). Para ver como ela funciona, eis um exemplo com três codificadores fictícios e seis ementas, um deles com uma resposta em branco:
+
+::: {.abas}
+::: {.aba data-nome="R"}
+```{r, echo=TRUE, message=FALSE}
+source("R/funcoes_medicao.R")
+respostas <- data.frame(
+  ana   = c("PUNIR", "REGULAR", "REGULAR", "PROMOVER", "OUTRO", "REGULAR"),
+  bruno = c("PUNIR", "REGULAR", "PUNIR",   "PROMOVER", "OUTRO", "PROMOVER"),
+  carla = c("PUNIR", "REGULAR", "REGULAR", "PROMOVER", NA,      "REGULAR")
+)
+alfa_krippendorff(respostas)
+kappa_cohen(respostas$ana, respostas$bruno)   # só um par de codificadores
+```
+:::
+::: {.aba data-nome="Python"}
+```{python, echo=TRUE}
+from medicao import alfa_krippendorff, kappa_cohen
+respostas = pd.DataFrame({
+    "ana":   ["PUNIR", "REGULAR", "REGULAR", "PROMOVER", "OUTRO", "REGULAR"],
+    "bruno": ["PUNIR", "REGULAR", "PUNIR",   "PROMOVER", "OUTRO", "PROMOVER"],
+    "carla": ["PUNIR", "REGULAR", "REGULAR", "PROMOVER", None,    "REGULAR"],
+})
+print(round(alfa_krippendorff(respostas), 4))
+print(round(kappa_cohen(respostas["ana"], respostas["bruno"]), 4))   # só um par
+```
+:::
+:::
+
+Com respostas reais, o código é o mesmo, lendo os arquivos de `material_apoio/respostas/`:
+
+::: {.abas}
+::: {.aba data-nome="R"}
+```{r, echo=TRUE, eval=FALSE}
+arqs <- list.files("material_apoio/respostas", "\\.csv$", full.names = TRUE)
+resp <- purrr::map(arqs, \(a) read_csv(a, show_col_types = FALSE) |>
+                     mutate(codificador = tools::file_path_sans_ext(basename(a)))) |>
+  purrr::list_rbind() |>
+  mutate(categoria = stringr::str_to_upper(stringr::str_trim(categoria)))
+m <- resp |>
+  select(doc_id, codificador, categoria) |>
+  tidyr::pivot_wider(names_from = codificador, values_from = categoria)
+alfa_krippendorff(select(m, -doc_id))
+```
+:::
+::: {.aba data-nome="Python"}
+```{python, echo=TRUE, eval=FALSE}
+from pathlib import Path
+resp = pd.concat([pd.read_csv(a).assign(codificador=a.stem)
+                  for a in Path("material_apoio/respostas").glob("*.csv")])
+resp["categoria"] = resp["categoria"].str.strip().str.upper()
+m = resp.pivot(index="doc_id", columns="codificador", values="categoria")
+alfa_krippendorff(m)
+```
+:::
+:::
+
+**O que está sendo executado.** A matriz de respostas tem uma linha por ementa e uma coluna por codificador. O alfa compara, ementa a ementa, todos os pares de respostas disponíveis (por isso aceita a resposta em branco de Carla) e desconta a concordância que se esperaria ao acaso, dada a frequência de cada categoria. O kappa de Cohen faz o mesmo para **um par** de codificadores. Neste exemplo fictício, as discordâncias estão concentradas em duas ementas, e é nelas que a discussão deve se concentrar: são os casos que o livro de códigos ainda não resolve.

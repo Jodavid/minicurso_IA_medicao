@@ -1,0 +1,328 @@
+# Inferência com rótulos imperfeitos {#inferencia}
+
+Chegamos à pergunta substantiva: **que proporção dos projetos sobre IA quer PUNIR?** Chamemos essa proporção de $\theta$. Temos dois tipos de informação:
+
+- a **amostra-ouro**, com $n = `r nrow(ouro)`$ ementas codificadas por humanos ($Y_j$) e pelo LLM ($f(X_j)$);
+- as demais $N = `r nrow(corpus) - nrow(ouro)`$ ementas, codificadas **só** pelo LLM ($f(X_i)$).
+
+## Duas soluções ruins
+
+**Só humanos.** Usar apenas a amostra-ouro:
+
+$$\hat\theta_H = \frac{1}{n}\sum_{j=1}^{n} Y_j.$$
+
+É **sem viés** (a amostra é aleatória), mas **imprecisa**: desperdiça a informação das outras `r nrow(corpus) - nrow(ouro)` ementas.
+
+**Ingênuo.** Tratar o LLM como verdade no corpus inteiro:
+
+$$\hat\theta_{LLM} = \frac{1}{N+n}\sum_{i=1}^{N+n} f(X_i).$$
+
+É **preciso** (usa todas as ementas), mas **enviesado** pelo erro do LLM. E o pior: seu intervalo de confiança é estreito, o que transmite uma segurança que ele não tem.
+
+## *Prediction-Powered Inference*
+
+A ideia de @angelopoulos2023ppi é usar a amostra-ouro para **medir o viés do LLM** e subtraí-lo da estimativa feita com o LLM:
+
+$$
+\hat\theta_{PP} = \underbrace{\frac{1}{N}\sum_{i=1}^{N} f(X_i)}_{\text{LLM nos não rotulados}} \; - \; \underbrace{\frac{1}{n}\sum_{j=1}^{n}\big(f(X_j) - Y_j\big)}_{\text{viés do LLM medido na amostra-ouro}},
+$$
+
+com variância estimada por
+
+$$
+\widehat{\text{Var}}(\hat\theta_{PP}) = \frac{\hat\sigma^2_{f}}{N} + \frac{\hat\sigma^2_{f-Y}}{n}.
+$$
+
+O segundo termo, chamado de **retificador**, é o que torna o estimador honesto. A propriedade central é que o PPI **não faz nenhuma hipótese sobre a qualidade do LLM**: um LLM ruim gera um retificador com variância alta e, portanto, um **IC largo**, nunca um **IC errado**. Em R, são cinco linhas:
+
+```{r, echo=TRUE, eval=FALSE, code=trecho("R/funcoes_medicao.R", "est_ppi")}
+```
+
+## PPI++
+
+O **PPI++** [@angelopoulos2023ppiplus] pondera o LLM por um peso $\lambda \in [0, 1]$ escolhido a partir dos dados para minimizar a variância:
+
+$$
+\hat\theta_{PP}^{\lambda} = \bar Y_n + \lambda\big(\bar f_N - \bar f_n\big), \qquad
+\hat\lambda = \frac{\widehat{\text{Cov}}(Y, f)}{(1 + n/N)\,\widehat{\text{Var}}(f)}.
+$$
+
+Se o LLM for inútil, $\hat\lambda \to 0$ e o estimador volta a ser o "só humanos"; se for muito bom, $\hat\lambda \to 1$ e ele se aproxima do PPI.
+
+```{r, echo=TRUE, eval=FALSE, code=trecho("R/funcoes_medicao.R", "est_ppi_plus")}
+```
+
+Abordagens relacionadas, como o *Design-based Supervised Learning* de @egami2023, seguem a mesma lógica: usar a amostra rotulada por humanos para corrigir o erro do rótulo automático na regressão de interesse.
+
+## Que proporção dos projetos quer PUNIR?
+
+```{r fig-estimadores, fig.cap="Estimativas da proporção de projetos PUNIR com IC 95%. A linha vertical marca o valor na referência completa."}
+fig("05_estimadores_punir")
+```
+
+```{r tab-estimadores}
+est |>
+  transmute(Estimador = estimador, Estimativa = pc(estimativa, 1),
+            `IC 95%` = paste0("[", pc(li, 1), "; ", pc(ls, 1), "]"),
+            Largura = pc(ls - li, 1), `λ` = ifelse(is.na(lambda), "", nf(lambda))) |>
+  knitr::kable(align = "lcccc", caption = "Proporção de projetos PUNIR segundo cada estimador.")
+```
+
+```{r cobre}
+cobre <- est |> mutate(ok = li <= verdade & verdade <= ls)
+erra  <- cobre$estimador[!cobre$ok & cobre$estimador != "Ingênuo (LLM = verdade)"]
+```
+
+Como este é um corpus didático com referência para todas as `r nrow(corpus)` ementas, conhecemos o "valor verdadeiro" (`r pc(verdade, 1)`) e podemos conferir quem acerta. O estimador ingênuo **superestima** a proporção punitiva (`r pc(e("Ingênuo (LLM = verdade)"), 1)`) e seu IC **`r if (cobre$ok[cobre$estimador == "Ingênuo (LLM = verdade)"]) "contém" else "não contém"`** o valor verdadeiro. `r if (length(erra) == 0) "Os demais contêm." else paste0("Dos estimadores honestos, ", if (length(erra) == 1) "o IC do " else "os ICs de ", paste(erra, collapse = " e "), " também não ", if (length(erra) == 1) "contém" else "contêm", " o valor verdadeiro neste sorteio da amostra-ouro (", paste0(pc(est$estimativa[est$estimador %in% erra], 1), collapse = "; "), "). Isso é esperado de vez em quando: um IC de 95% erra em cerca de 1 de cada 20 amostras. A diferença é que o erro do ingênuo é **sistemático**, e o dos outros, **acaso** — é o que a simulação a seguir mostra.")`
+
+## Simulação: com que frequência o IC acerta?
+
+Um único resultado pode ser sorte. Para avaliar os estimadores, repetimos o sorteio da amostra-ouro **1.000 vezes** para cada tamanho ($n$ = 30, 60 e 120) e verificamos com que frequência o IC de 95% contém o valor verdadeiro. Um bom IC de 95% deve acertar em cerca de 95% das vezes.
+
+```{r fig-cobertura, fig.cap="Cobertura dos ICs de 95% em 1.000 sorteios da amostra-ouro."}
+fig("07_cobertura_simulacao")
+```
+
+```{r fig-largura, fig.cap="Largura média dos ICs de 95%: o preço da honestidade."}
+fig("08_largura_simulacao")
+```
+
+```{r tab-sim}
+sim |>
+  transmute(Estimador = estimador, `n (ouro)` = n_ouro, Cobertura = pc(cobertura, 1),
+            `Largura média` = pc(largura_media, 1), `Viés (p.p.)` = nf(100 * vies, 1)) |>
+  arrange(`n (ouro)`) |>
+  knitr::kable(align = "lcccc", caption = "Simulação: cobertura, largura e viés dos estimadores.")
+```
+
+O resultado é eloquente: o IC ingênuo cobriu o valor verdadeiro em **`r pc(cob("Ingênuo (LLM = verdade)", 120))`** das simulações, para qualquer tamanho de amostra-ouro. Ele é o mais estreito justamente porque **ignora** o erro do LLM. O PPI++ chega a `r pc(cob("PPI++", 120), 1)` de cobertura com $n = 120$, com um IC `r pc(1 - sim$largura_media[sim$estimador == "PPI++" & sim$n_ouro == 120] / sim$largura_media[sim$estimador == "Só humanos (amostra-ouro)" & sim$n_ouro == 120])` mais estreito, em média, que o "só humanos". Com $n = 30$, todos os estimadores honestos ficam abaixo de 95%: amostras-ouro muito pequenas comprometem a aproximação normal.
+
+## E entre campos políticos?
+
+```{r fig-campo, fig.cap="Proporção de projetos PUNIR por campo político do autor, segundo três estimadores."}
+fig("06_punir_por_campo")
+```
+
+Por campo, a amostra-ouro tem entre `r min(est_campo$n_ouro)` e `r max(est_campo$n_ouro)` ementas, e os intervalos ficam largos. Os estimadores discordam entre si quanto à ordem dos campos, e todos os intervalos se sobrepõem amplamente. **Não há evidência**, com estes dados, de que um campo político legisle de forma mais punitiva que outro. Relatar o tamanho da amostra-ouro em cada grupo é obrigatório.
+
+## O que os números dizem
+
+- **O prompt importa mais que o acaso:** trocar a semente muda `r pc(conf$prop_ementas_que_mudam[1])` dos rótulos; trocar o prompt muda `r pc(conf$prop_ementas_que_mudam[2])`.
+- **O ingênuo engana:** superestima a proporção punitiva e seu IC **nunca** cobriu a verdade na simulação.
+- **O PPI++ corrige o viés** e entrega um IC mais estreito que o "só humanos", aproveitando o LLM sem esconder seu erro.
+- **Resposta substantiva (ilustrativa, enquanto a referência for preliminar):** pelo PPI++, cerca de **`r pc(e("PPI++"))`** dos projetos sobre IA no Congresso querem **punir** (IC 95% de `r pc(e("PPI++", "li"))` a `r pc(e("PPI++", "ls"))`), algo entre 1 em cada `r round(1 / e("PPI++", "li"))` e 1 em cada `r round(1 / e("PPI++", "ls"))`; na referência, cerca de metade **regula** (`r pc(mean(ref$categoria == "REGULAR"))`).
+
+## Mão na massa: os quatro estimadores, passo a passo {#mao-inferencia}
+
+::: {.caixa .executar}
+[Como executar]{.titulo-caixa}
+
+- **Em R**: `Rscript R/06_inferencia.R` (menos de 1 minuto). Lê o melhor prompt em `resultados/tabelas/validade_instrumentos.csv` (por isso depende de `R/05_validacao.R`), grava as tabelas `estimativas_punir*.csv` e `simulacao_cobertura.csv` e as figuras 00 e 05 a 08.
+- **Em Python**: notebook `python/05_inferencia.ipynb` (grava em `resultados/python/`).
+- Os blocos abaixo refazem as contas sem gravar nada.
+:::
+
+### Montar $Y$ e $f$
+
+Tudo começa com uma tabela de uma linha por ementa, com o rótulo do LLM transformado em 0/1 ($f$ = "o LLM disse PUNIR?") e, só na amostra-ouro, o rótulo humano em 0/1 ($Y$).
+
+::: {.abas}
+::: {.aba data-nome="R"}
+```{r, echo=TRUE, message=FALSE}
+source("R/funcoes_medicao.R")
+corpus <- carrega_corpus()
+ouro   <- carrega_ouro()
+ref    <- read_csv("dados/anotacoes/referencia_completa.csv", show_col_types = FALSE)
+llm    <- carrega_llm()
+
+dados <- corpus |>
+  select(doc_id, campo) |>
+  left_join(llm |> filter(prompt_id == "v2", temperatura == 0, semente == 42) |>
+              select(doc_id, categoria_llm), by = "doc_id") |>
+  left_join(select(ref, doc_id, categoria_ref = categoria), by = "doc_id") |>
+  mutate(na_ouro = doc_id %in% ouro$doc_id,
+         f = as.integer(categoria_llm %in% "PUNIR"),
+         y = if_else(na_ouro, as.integer(categoria_ref == "PUNIR"), NA_integer_))
+head(dados, 4)
+
+lab <- filter(dados, na_ouro)    # n: amostra-ouro (tem Y e f)
+unl <- filter(dados, !na_ouro)   # N: só f
+c(n = nrow(lab), N = nrow(unl))
+```
+:::
+::: {.aba data-nome="Python"}
+```{python, echo=TRUE}
+from medicao import (est_humano, est_ingenuo, est_ppi, est_ppi_plus, compara_estimadores)
+ref = pd.read_csv("dados/anotacoes/referencia_completa.csv")
+v2 = llm[(llm["prompt_id"] == "v2") & (llm["temperatura"] == 0) & (llm["semente"] == 42)]
+dados = (corpus[["doc_id", "campo"]]
+         .merge(v2[["doc_id", "categoria_llm"]], on="doc_id", how="left")
+         .merge(ref[["doc_id", "categoria"]]
+                .rename(columns={"categoria": "categoria_ref"}), on="doc_id", how="left"))
+dados["na_ouro"] = dados["doc_id"].isin(ouro["doc_id"])
+dados["f"] = (dados["categoria_llm"] == "PUNIR").astype(int)
+punir_ref = (dados["categoria_ref"] == "PUNIR").astype(int)
+dados["y"] = np.where(dados["na_ouro"], punir_ref, np.nan)
+print(dados.head(4))
+
+lab, unl = dados[dados["na_ouro"]], dados[~dados["na_ouro"]]
+print({"n": len(lab), "N": len(unl)})
+```
+:::
+:::
+
+**O que está sendo executado.** Usamos o prompt v2 com temperatura 0, o melhor instrumento do capítulo anterior (o script escolhe automaticamente pela tabela de validade). Uma falha de formato do LLM contaria como "não PUNIR" (`%in%` devolve `FALSE` para `NA`); neste material não há falhas. Fora da amostra-ouro, `y` fica vazio de propósito: num estudo real, **não conhecemos** o rótulo humano dessas ementas. A coluna `categoria_ref` só existe aqui porque este é um corpus didático com referência completa.
+
+### Cada estimador, à mão
+
+::: {.abas}
+::: {.aba data-nome="R"}
+```{r, echo=TRUE}
+y_n <- lab$y; f_n <- lab$f; f_N <- unl$f
+
+# (a) Só humanos
+mean(y_n)
+
+# (b) Ingênuo: o LLM no corpus inteiro
+mean(c(f_n, f_N))
+
+# (c) PPI: LLM nos não rotulados, menos o viés medido na amostra-ouro
+vies_llm <- mean(f_n - y_n)            # o retificador
+c(media_llm_N = mean(f_N), vies = vies_llm, ppi = mean(f_N) - vies_llm)
+
+# (d) PPI++: o peso lambda que minimiza a variância
+lambda <- cov(y_n, f_n) / ((1 + length(y_n) / length(f_N)) * var(c(f_n, f_N)))
+c(lambda = lambda, ppi_plus = mean(y_n) + lambda * (mean(f_N) - mean(f_n)))
+```
+:::
+::: {.aba data-nome="Python"}
+```{python, echo=TRUE}
+y_n, f_n, f_N = lab["y"].to_numpy(), lab["f"].to_numpy(), unl["f"].to_numpy()
+
+print("(a) só humanos:", round(y_n.mean(), 4))
+print("(b) ingênuo:   ", round(np.concatenate([f_n, f_N]).mean(), 4))
+
+vies_llm = (f_n - y_n).mean()          # o retificador
+print("(c) PPI:       ", round(f_N.mean(), 4), "-", round(vies_llm, 4), "=",
+      round(f_N.mean() - vies_llm, 4))
+
+lam = np.cov(y_n, f_n, ddof=1)[0, 1] / ((1 + len(y_n) / len(f_N)) *
+                                        np.concatenate([f_n, f_N]).var(ddof=1))
+print("(d) PPI++:      lambda =", round(lam, 4), " estimativa =",
+      round(y_n.mean() + lam * (f_N.mean() - f_n.mean()), 4))
+```
+:::
+:::
+
+**O que está sendo executado.** O "só humanos" é a proporção de PUNIR na amostra-ouro. O ingênuo é a proporção de PUNIR segundo o LLM em todas as ementas. O PPI parte da média do LLM nas ementas não rotuladas e subtrai o **retificador**: a média de $f - Y$ na amostra-ouro, isto é, quanto o LLM superestima (se positivo) a proporção de PUNIR. O PPI++ começa do "só humanos" e soma a informação do LLM ponderada por $\lambda$; aqui, $\hat\lambda$ = `r nf(lambda)`: o LLM traz informação, mas o estimador ainda dá peso considerável à amostra-ouro. Com $\lambda = 1$, a fórmula do PPI++ vira exatamente a do PPI; com $\lambda = 0$, a do "só humanos".
+
+### Com intervalos de confiança
+
+As funções do material fazem as mesmas contas e acrescentam o erro-padrão e o IC 95% normal:
+
+::: {.abas}
+::: {.aba data-nome="R"}
+```{r, echo=TRUE}
+estimativas <- compara_estimadores(y_n, f_n, f_N)
+theta <- mean(ref$categoria == "PUNIR")     # valor na referência completa (didático)
+estimativas |>
+  mutate(largura = ls - li, cobre = li <= theta & theta <= ls) |>
+  mutate(across(where(is.double), \(x) round(x, 4)))
+```
+:::
+::: {.aba data-nome="Python"}
+```{python, echo=TRUE}
+estimativas = compara_estimadores(y_n, f_n, f_N)
+theta = (ref["categoria"] == "PUNIR").mean()  # valor na referência completa (didático)
+estimativas.assign(largura=lambda d: d["ls"] - d["li"],
+                   cobre=lambda d: (d["li"] <= theta) & (theta <= d["ls"])).round(4)
+```
+:::
+:::
+
+### A simulação de cobertura
+
+Este bloco repete o sorteio da amostra-ouro 1.000 vezes para cada tamanho (30, 60 e 120) e conta com que frequência cada IC contém o valor da referência. Leva alguns segundos.
+
+::: {.abas}
+::: {.aba data-nome="R"}
+```{r mao-sim-r, echo=TRUE, cache=TRUE}
+simula <- function(n_ouro, B = 1000, semente = 1) {
+  set.seed(semente)
+  purrr::map(seq_len(B), \(b) {
+    idx <- sample(nrow(dados), n_ouro)               # uma nova amostra-ouro
+    y_n <- as.integer(dados$categoria_ref[idx] == "PUNIR")
+    compara_estimadores(y_n, dados$f[idx], dados$f[-idx])
+  }) |>
+    purrr::list_rbind() |>
+    group_by(estimador) |>
+    summarise(cobertura = mean(li <= theta & theta <= ls),
+              largura_media = mean(ls - li), .groups = "drop") |>
+    mutate(n_ouro = n_ouro)
+}
+simulacao <- purrr::map(c(30, 60, 120), simula) |> purrr::list_rbind()
+simulacao |>
+  mutate(across(where(is.double), \(x) round(x, 3))) |>
+  arrange(n_ouro) |>
+  print(n = 12)
+```
+:::
+::: {.aba data-nome="Python"}
+```{python mao-sim-py, echo=TRUE}
+def simula(n_ouro, B=1000, semente=1):
+    rng = np.random.default_rng(semente)
+    ref_bin = (dados["categoria_ref"] == "PUNIR").astype(int).to_numpy()
+    f = dados["f"].to_numpy()
+    res = []
+    for _ in range(B):
+        idx = rng.choice(len(dados), n_ouro, replace=False)   # uma nova amostra-ouro
+        resto = np.setdiff1d(np.arange(len(dados)), idx)
+        res.append(compara_estimadores(ref_bin[idx], f[idx], f[resto]))
+    r = pd.concat(res)
+    r["cobre"] = (r["li"] <= theta) & (theta <= r["ls"])
+    r["largura"] = r["ls"] - r["li"]
+    return (r.groupby("estimador", sort=False)
+             .agg(cobertura=("cobre", "mean"), largura_media=("largura", "mean"))
+             .assign(n_ouro=n_ouro))
+simulacao = pd.concat([simula(n) for n in (30, 60, 120)])
+simulacao.round(3)
+```
+:::
+:::
+
+**O que está sendo executado.** Cada repetição sorteia uma nova amostra-ouro de tamanho $n$, usa a referência como se fosse a codificação humana dessas ementas, aplica os quatro estimadores e verifica se cada IC contém o valor da referência completa. A cobertura é a proporção de repetições em que isso acontece; um IC de 95% honesto deveria ficar perto de 95%. O ingênuo não usa a amostra-ouro, por isso sua cobertura não melhora com $n$: o viés do LLM não diminui com mais dados.
+
+### Por campo político
+
+::: {.abas}
+::: {.aba data-nome="R"}
+```{r, echo=TRUE}
+dados |>
+  filter(campo %in% c("Esquerda", "Centro", "Direita")) |>
+  group_by(campo) |>
+  group_modify(\(d, ...) {
+    l <- filter(d, na_ouro); u <- filter(d, !na_ouro)
+    compara_estimadores(l$y, l$f, u$f) |> mutate(n_ouro = nrow(l))
+  }) |>
+  ungroup() |>
+  filter(estimador %in% c("Só humanos (amostra-ouro)", "PPI++")) |>
+  select(campo, estimador, n_ouro, estimativa, li, ls) |>
+  mutate(across(where(is.double), \(x) round(x, 3)))
+```
+:::
+::: {.aba data-nome="Python"}
+```{python, echo=TRUE}
+linhas = []
+tres = dados[dados["campo"].isin(["Esquerda", "Centro", "Direita"])]
+for campo, d in tres.groupby("campo"):
+    l, u = d[d["na_ouro"]], d[~d["na_ouro"]]
+    est = compara_estimadores(l["y"], l["f"], u["f"])
+    linhas.append(est.assign(campo=campo, n_ouro=len(l)))
+(pd.concat(linhas)
+   .query("estimador in ['Só humanos (amostra-ouro)', 'PPI++']")
+   [["campo", "estimador", "n_ouro", "estimativa", "li", "ls"]].round(3))
+```
+:::
+:::
+
+**O que está sendo executado.** É o mesmo cálculo, repetido dentro de cada campo: a amostra-ouro de cada campo corrige o LLM **naquele campo**. É isso que protege a comparação entre campos do viés diferencial visto no capítulo anterior, ao preço de intervalos bem mais largos, porque cada campo tem só algumas dezenas de ementas na amostra-ouro.

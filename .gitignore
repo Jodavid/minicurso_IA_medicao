@@ -1,0 +1,19 @@
+_targets/
+.Rhistory
+.RData
+.Rproj.user/
+__pycache__/
+.ipynb_checkpoints/
+.env
+.Renviron
+*_files/
+*_cache/
+material_apoio/respostas/*.csv
+livro/_bookdown_files/
+livro/img/
+livro/*.rds
+
+# backups locais (não publicar)
+backup_originais/
+livro/backup_template/
+slides/backup_template/

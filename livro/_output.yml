@@ -1,0 +1,35 @@
+bookdown::gitbook:
+  css: estilo.css
+  includes:
+    after_body: abas.html
+  split_by: chapter
+  lib_dir: assets
+  config:
+    toc:
+      collapse: section
+      before: |
+        <li class="toc-titulo"><a href="./">IA como Instrumento de Medição</a></li>
+        <li class="toc-sub">II DataPOL · UFPE · 2026</li>
+      after: |
+        <li class="toc-sub"><strong>Jodavid Ferreira</strong> · DE/UFPE<br>coautoria: Claude Opus 5.5 (IA)</li>
+        <li class="toc-sub">Texto: <a href="https://creativecommons.org/licenses/by/4.0/deed.pt-br" target="_blank">CC BY 4.0</a> · Código: <a href="https://opensource.org/license/mit" target="_blank">MIT</a></li>
+        <li class="toc-links"><a href="ia-instrumento-medicao.pdf" target="_blank">PDF</a><a href="material/minicurso_IA_medicao.zip">Material .zip</a></li>
+        <li class="toc-sub"><strong>Slides</strong></li>
+        <li class="toc-links"><a href="slides/parte1_conceitos.html" target="_blank">Parte 1: conceitos</a><a href="slides/slides.html" target="_blank">Versão resumida</a></li>
+        <li class="toc-links"><a href="slides/completo_R.html" target="_blank">Completos · R</a><a href="slides/completo_python.html" target="_blank">Completos · Python</a></li>
+    download: ["pdf"]
+    sharing: null
+    edit: null
+    info: false
+    fontsettings:
+      theme: white
+      family: sans
+      size: 2
+bookdown::pdf_book:
+  latex_engine: xelatex
+  includes:
+    in_header: [preambulo.tex, capa/preambulo.tex]
+  pandoc_args: ["--lua-filter=caixa.lua"]
+  citation_package: natbib
+  keep_tex: false
+  toc_depth: 2

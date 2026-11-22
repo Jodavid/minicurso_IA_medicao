@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xml:lang="pt-BR">
+<head>
+
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>Capítulo 8 Reprodutibilidade (MLOps) | Inteligência Artificial como Instrumento de Medição</title>
+  <meta name="description" content="Livro do minicurso ‘IA como Instrumento de Medição’ (II DataPOL/UFPE, 2026): do dado legislativo bruto à inferência com rótulos produzidos por LLMs, em R e Python." />
+  <meta name="generator" content="bookdown 0.48 and GitBook 2.6.7" />
+
+  <meta property="og:title" content="Capítulo 8 Reprodutibilidade (MLOps) | Inteligência Artificial como Instrumento de Medição" />
+  <meta property="og:type" content="book" />
+  <meta property="og:image" content="https://jodavid.github.io/minicurso-ia-medicao/capa/capa.png" />
+  <meta property="og:description" content="Livro do minicurso ‘IA como Instrumento de Medição’ (II DataPOL/UFPE, 2026): do dado legislativo bruto à inferência com rótulos produzidos por LLMs, em R e Python." />
+  
+
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Capítulo 8 Reprodutibilidade (MLOps) | Inteligência Artificial como Instrumento de Medição" />
+  
+  <meta name="twitter:description" content="Livro do minicurso ‘IA como Instrumento de Medição’ (II DataPOL/UFPE, 2026): do dado legislativo bruto à inferência com rótulos produzidos por LLMs, em R e Python." />
+  <meta name="twitter:image" content="https://jodavid.github.io/minicurso-ia-medicao/capa/capa.png" />
+
+<meta name="author" content="Prof. Dr. Jodavid Ferreira (Departamento de Estatística, UFPE)" />
+<meta name="author" content="Coautoria: Claude Opus 5.5 (modelo de inteligência artificial da Anthropic)" />
+
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  
+  
+<link rel="prev" href="inferencia.html"/>
+<link rel="next" href="etica.html"/>
+<script src="assets/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
+<link href="assets/gitbook-2.6.7/css/style.css" rel="stylesheet" />
+<link href="assets/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
+<link href="assets/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
+<link href="assets/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
+<link href="assets/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
+<link href="assets/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
+<link href="assets/gitbook-2.6.7/css/plugin-clipboard.css" rel="stylesheet" />
+
+
+
+
+
+
+
+
+<link href="assets/anchor-sections-1.1.0/anchor-sections.css" rel="stylesheet" />
+<link href="assets/anchor-sections-1.1.0/anchor-sections-hash.css" rel="stylesheet" />
+<script src="assets/anchor-sections-1.1.0/anchor-sections.js"></script>
+
+
+<style type="text/css">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+<style type="text/css">
+  
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+</style>
+<style type="text/css">
+/* Used with Pandoc 2.11+ new --citeproc when CSL is used */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}
+</style>
+
+<link rel="stylesheet" href="estilo.css" type="text/css" />
+</head>
+
+<body>
+
+
+
+  <div class="book without-animation with-summary font-size-2 font-family-1" data-basepath=".">
+
+    <div class="book-summary">
+      <nav role="navigation">
+
+<ul class="summary">
+<li class="toc-titulo"><a href="./">IA como Instrumento de Medição</a></li>
+<li class="toc-sub">II DataPOL · UFPE · 2026</li>
+
+<li class="divider"></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i>Apresentação</a>
+<ul>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#o-estudo-de-caso"><i class="fa fa-check"></i>O estudo de caso</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#a-quem-se-destina"><i class="fa fa-check"></i>A quem se destina</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#como-usar-este-livro"><i class="fa fa-check"></i>Como usar este livro</a>
+<ul>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#dois-formatos-para-o-minicurso"><i class="fa fa-check"></i>Dois formatos para o minicurso</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#material"><i class="fa fa-check"></i>Material</a></li>
+</ul></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#autoria-e-uso-de-intelig%C3%AAncia-artificial"><i class="fa fa-check"></i>Autoria e uso de inteligência artificial</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#como-citar"><i class="fa fa-check"></i>Como citar</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#licen%C3%A7a"><i class="fa fa-check"></i>Licença</a></li>
+</ul></li>
+<li class="chapter" data-level="1" data-path="intro.html"><a href="intro.html"><i class="fa fa-check"></i><b>1</b> Quem mede a régua?</a>
+<ul>
+<li class="chapter" data-level="1.1" data-path="intro.html"><a href="intro.html#duas-perguntas"><i class="fa fa-check"></i><b>1.1</b> Duas perguntas</a></li>
+<li class="chapter" data-level="1.2" data-path="intro.html"><a href="intro.html#por-que-agora"><i class="fa fa-check"></i><b>1.2</b> Por que agora?</a></li>
+<li class="chapter" data-level="1.3" data-path="intro.html"><a href="intro.html#a-fase-atual-da-estat%C3%ADstica"><i class="fa fa-check"></i><b>1.3</b> A “fase atual” da estatística</a></li>
+<li class="chapter" data-level="1.4" data-path="intro.html"><a href="intro.html#o-caminho-deste-livro"><i class="fa fa-check"></i><b>1.4</b> O caminho deste livro</a></li>
+</ul></li>
+<li class="chapter" data-level="2" data-path="dados.html"><a href="dados.html"><i class="fa fa-check"></i><b>2</b> Dados legislativos</a>
+<ul>
+<li class="chapter" data-level="2.1" data-path="dados.html"><a href="dados.html#as-apis-de-dados-abertos"><i class="fa fa-check"></i><b>2.1</b> As APIs de dados abertos</a></li>
+<li class="chapter" data-level="2.2" data-path="dados.html"><a href="dados.html#a-coleta-tamb%C3%A9m-%C3%A9-medi%C3%A7%C3%A3o"><i class="fa fa-check"></i><b>2.2</b> A coleta também é medição</a></li>
+<li class="chapter" data-level="2.3" data-path="dados.html"><a href="dados.html#mao-dados"><i class="fa fa-check"></i><b>2.3</b> Mão na massa: do JSON da API ao corpus</a>
+<ul>
+<li class="chapter" data-level="2.3.1" data-path="dados.html"><a href="dados.html#uma-chamada-%C3%A0-api"><i class="fa fa-check"></i><b>2.3.1</b> Uma chamada à API</a></li>
+<li class="chapter" data-level="2.3.2" data-path="dados.html"><a href="dados.html#partido-do-senado-e-limpeza-da-ementa"><i class="fa fa-check"></i><b>2.3.2</b> Partido do Senado e limpeza da ementa</a></li>
+<li class="chapter" data-level="2.3.3" data-path="dados.html"><a href="dados.html#o-corpus-congelado"><i class="fa fa-check"></i><b>2.3.3</b> O corpus congelado</a></li>
+<li class="chapter" data-level="2.3.4" data-path="dados.html"><a href="dados.html#o-campo-pol%C3%ADtico"><i class="fa fa-check"></i><b>2.3.4</b> O campo político</a></li>
+<li class="chapter" data-level="2.3.5" data-path="dados.html"><a href="dados.html#a-explos%C3%A3o-legislativa-em-gr%C3%A1fico"><i class="fa fa-check"></i><b>2.3.5</b> A explosão legislativa, em gráfico</a></li>
+<li class="chapter" data-level="2.3.6" data-path="dados.html"><a href="dados.html#a-recoleta-o-que-muda-em-um-m%C3%AAs"><i class="fa fa-check"></i><b>2.3.6</b> A recoleta: o que muda em um mês</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="3" data-path="codificacao.html"><a href="codificacao.html"><i class="fa fa-check"></i><b>3</b> Codificar é medir</a>
+<ul>
+<li class="chapter" data-level="3.1" data-path="codificacao.html"><a href="codificacao.html#o-livro-de-c%C3%B3digos"><i class="fa fa-check"></i><b>3.1</b> O livro de códigos</a>
+<ul>
+<li class="chapter" data-level="3.1.1" data-path="codificacao.html"><a href="codificacao.html#regras-de-decis%C3%A3o"><i class="fa fa-check"></i><b>3.1.1</b> Regras de decisão</a></li>
+</ul></li>
+<li class="chapter" data-level="3.2" data-path="codificacao.html"><a href="codificacao.html#referencia"><i class="fa fa-check"></i><b>3.2</b> A codificação de referência: quem fez e como</a></li>
+<li class="chapter" data-level="3.3" data-path="codificacao.html"><a href="codificacao.html#classes"><i class="fa fa-check"></i><b>3.3</b> Quantas ementas de cada classe</a>
+<ul>
+<li class="chapter" data-level="3.3.1" data-path="codificacao.html"><a href="codificacao.html#o-que-foi-classificado-como-outro"><i class="fa fa-check"></i><b>3.3.1</b> O que foi classificado como OUTRO</a></li>
+</ul></li>
+<li class="chapter" data-level="3.4" data-path="codificacao.html"><a href="codificacao.html#a-amostra-ouro"><i class="fa fa-check"></i><b>3.4</b> A amostra-ouro</a></li>
+<li class="chapter" data-level="3.5" data-path="codificacao.html"><a href="codificacao.html#quanto-n%C3%B3s-concordamos-o-teto-humano"><i class="fa fa-check"></i><b>3.5</b> Quanto nós concordamos? O teto humano</a></li>
+<li class="chapter" data-level="3.6" data-path="codificacao.html"><a href="codificacao.html#mao-codificacao"><i class="fa fa-check"></i><b>3.6</b> Mão na massa: amostra-ouro e concordância</a>
+<ul>
+<li class="chapter" data-level="3.6.1" data-path="codificacao.html"><a href="codificacao.html#o-sorteio-%C3%A9-reprodut%C3%ADvel"><i class="fa fa-check"></i><b>3.6.1</b> O sorteio é reprodutível</a></li>
+<li class="chapter" data-level="3.6.2" data-path="codificacao.html"><a href="codificacao.html#quantos-de-cada-classe-no-corpus-todo"><i class="fa fa-check"></i><b>3.6.2</b> Quantos de cada classe, no corpus todo</a></li>
+<li class="chapter" data-level="3.6.3" data-path="codificacao.html"><a href="codificacao.html#o-que-h%C3%A1-na-amostra-ouro"><i class="fa fa-check"></i><b>3.6.3</b> O que há na amostra-ouro</a></li>
+<li class="chapter" data-level="3.6.4" data-path="codificacao.html"><a href="codificacao.html#concord%C3%A2ncia-entre-codificadores"><i class="fa fa-check"></i><b>3.6.4</b> Concordância entre codificadores</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="4" data-path="baselines.html"><a href="baselines.html"><i class="fa fa-check"></i><b>4</b> Baselines: quanto se acerta sem LLM?</a>
+<ul>
+<li class="chapter" data-level="4.1" data-path="baselines.html"><a href="baselines.html#dicion%C3%A1rio"><i class="fa fa-check"></i><b>4.1</b> Dicionário</a></li>
+<li class="chapter" data-level="4.2" data-path="baselines.html"><a href="baselines.html#tf-idf-e-regress%C3%A3o-log%C3%ADstica"><i class="fa fa-check"></i><b>4.2</b> TF-IDF e regressão logística</a></li>
+<li class="chapter" data-level="4.3" data-path="baselines.html"><a href="baselines.html#resultados"><i class="fa fa-check"></i><b>4.3</b> Resultados</a></li>
+<li class="chapter" data-level="4.4" data-path="baselines.html"><a href="baselines.html#o-mesmo-m%C3%A9todo-implementa%C3%A7%C3%B5es-diferentes"><i class="fa fa-check"></i><b>4.4</b> O “mesmo” método, implementações diferentes</a></li>
+<li class="chapter" data-level="4.5" data-path="baselines.html"><a href="baselines.html#mao-baselines"><i class="fa fa-check"></i><b>4.5</b> Mão na massa: dicionário e TF-IDF</a>
+<ul>
+<li class="chapter" data-level="4.5.1" data-path="baselines.html"><a href="baselines.html#preparar-os-dados"><i class="fa fa-check"></i><b>4.5.1</b> Preparar os dados</a></li>
+<li class="chapter" data-level="4.5.2" data-path="baselines.html"><a href="baselines.html#o-dicion%C3%A1rio-em-a%C3%A7%C3%A3o"><i class="fa fa-check"></i><b>4.5.2</b> O dicionário em ação</a></li>
+<li class="chapter" data-level="4.5.3" data-path="baselines.html"><a href="baselines.html#desempenho-do-dicion%C3%A1rio-na-amostra-ouro"><i class="fa fa-check"></i><b>4.5.3</b> Desempenho do dicionário na amostra-ouro</a></li>
+<li class="chapter" data-level="4.5.4" data-path="baselines.html"><a href="baselines.html#tf-idf-e-regress%C3%A3o-log%C3%ADstica-com-valida%C3%A7%C3%A3o-cruzada"><i class="fa fa-check"></i><b>4.5.4</b> TF-IDF e regressão logística com validação cruzada</a></li>
+<li class="chapter" data-level="4.5.5" data-path="baselines.html"><a href="baselines.html#a-tabela-final"><i class="fa fa-check"></i><b>4.5.5</b> A tabela final</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="5" data-path="llm.html"><a href="llm.html"><i class="fa fa-check"></i><b>5</b> O LLM como instrumento</a>
+<ul>
+<li class="chapter" data-level="5.1" data-path="llm.html"><a href="llm.html#um-modelo-brasileiro-aberto-e-local"><i class="fa fa-check"></i><b>5.1</b> Um modelo brasileiro, aberto e local</a></li>
+<li class="chapter" data-level="5.2" data-path="llm.html"><a href="llm.html#o-prompt-%C3%A9-parte-do-instrumento"><i class="fa fa-check"></i><b>5.2</b> O prompt é parte do instrumento</a></li>
+<li class="chapter" data-level="5.3" data-path="llm.html"><a href="llm.html#cache-as-respostas-do-llm-s%C3%A3o-dados"><i class="fa fa-check"></i><b>5.3</b> Cache: as respostas do LLM são dados</a></li>
+<li class="chapter" data-level="5.4" data-path="llm.html"><a href="llm.html#falhas-de-formato"><i class="fa fa-check"></i><b>5.4</b> Falhas de formato</a></li>
+<li class="chapter" data-level="5.5" data-path="llm.html"><a href="llm.html#mao-llm"><i class="fa fa-check"></i><b>5.5</b> Mão na massa: chamar o modelo, guardar e ler o cache</a>
+<ul>
+<li class="chapter" data-level="5.5.1" data-path="llm.html"><a href="llm.html#o-instrumento-por-escrito"><i class="fa fa-check"></i><b>5.5.1</b> O instrumento, por escrito</a></li>
+<li class="chapter" data-level="5.5.2" data-path="llm.html"><a href="llm.html#o-prompt-e-sua-impress%C3%A3o-digital"><i class="fa fa-check"></i><b>5.5.2</b> O prompt e sua impressão digital</a></li>
+<li class="chapter" data-level="5.5.3" data-path="llm.html"><a href="llm.html#uma-chamada-ao-modelo"><i class="fa fa-check"></i><b>5.5.3</b> Uma chamada ao modelo</a></li>
+<li class="chapter" data-level="5.5.4" data-path="llm.html"><a href="llm.html#extrair-o-r%C3%B3tulo-de-respostas-imperfeitas"><i class="fa fa-check"></i><b>5.5.4</b> Extrair o rótulo de respostas imperfeitas</a></li>
+<li class="chapter" data-level="5.5.5" data-path="llm.html"><a href="llm.html#ler-o-cache"><i class="fa fa-check"></i><b>5.5.5</b> Ler o cache</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="6" data-path="validacao.html"><a href="validacao.html"><i class="fa fa-check"></i><b>6</b> Validação: o instrumento mede o que diz medir?</a>
+<ul>
+<li class="chapter" data-level="6.1" data-path="validacao.html"><a href="validacao.html#validade-concord%C3%A2ncia-com-a-amostra-ouro"><i class="fa fa-check"></i><b>6.1</b> Validade: concordância com a amostra-ouro</a></li>
+<li class="chapter" data-level="6.2" data-path="validacao.html"><a href="validacao.html#onde-o-instrumento-erra"><i class="fa fa-check"></i><b>6.2</b> Onde o instrumento erra</a></li>
+<li class="chapter" data-level="6.3" data-path="validacao.html"><a href="validacao.html#vi%C3%A9s-diferencial"><i class="fa fa-check"></i><b>6.3</b> Viés diferencial</a></li>
+<li class="chapter" data-level="6.4" data-path="validacao.html"><a href="validacao.html#confiabilidade"><i class="fa fa-check"></i><b>6.4</b> Confiabilidade</a></li>
+<li class="chapter" data-level="6.5" data-path="validacao.html"><a href="validacao.html#a-vari%C3%A1vel-eleitoral"><i class="fa fa-check"></i><b>6.5</b> A variável eleitoral</a></li>
+<li class="chapter" data-level="6.6" data-path="validacao.html"><a href="validacao.html#humano-humano"><i class="fa fa-check"></i><b>6.6</b> Humano × humano</a></li>
+<li class="chapter" data-level="6.7" data-path="validacao.html"><a href="validacao.html#mao-validacao"><i class="fa fa-check"></i><b>6.7</b> Mão na massa: validar o instrumento</a>
+<ul>
+<li class="chapter" data-level="6.7.1" data-path="validacao.html"><a href="validacao.html#juntar-o-llm-%C3%A0-amostra-ouro"><i class="fa fa-check"></i><b>6.7.1</b> Juntar o LLM à amostra-ouro</a></li>
+<li class="chapter" data-level="6.7.2" data-path="validacao.html"><a href="validacao.html#validade-com-intervalo-bootstrap"><i class="fa fa-check"></i><b>6.7.2</b> Validade com intervalo bootstrap</a></li>
+<li class="chapter" data-level="6.7.3" data-path="validacao.html"><a href="validacao.html#onde-o-melhor-instrumento-erra"><i class="fa fa-check"></i><b>6.7.3</b> Onde o melhor instrumento erra</a></li>
+<li class="chapter" data-level="6.7.4" data-path="validacao.html"><a href="validacao.html#vi%C3%A9s-diferencial-por-campo-pol%C3%ADtico"><i class="fa fa-check"></i><b>6.7.4</b> Viés diferencial por campo político</a></li>
+<li class="chapter" data-level="6.7.5" data-path="validacao.html"><a href="validacao.html#confiabilidade-sementes-e-prompts"><i class="fa fa-check"></i><b>6.7.5</b> Confiabilidade: sementes e prompts</a></li>
+<li class="chapter" data-level="6.7.6" data-path="validacao.html"><a href="validacao.html#a-vari%C3%A1vel-eleitoral-1"><i class="fa fa-check"></i><b>6.7.6</b> A variável eleitoral</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="7" data-path="inferencia.html"><a href="inferencia.html"><i class="fa fa-check"></i><b>7</b> Inferência com rótulos imperfeitos</a>
+<ul>
+<li class="chapter" data-level="7.1" data-path="inferencia.html"><a href="inferencia.html#duas-solu%C3%A7%C3%B5es-ruins"><i class="fa fa-check"></i><b>7.1</b> Duas soluções ruins</a></li>
+<li class="chapter" data-level="7.2" data-path="inferencia.html"><a href="inferencia.html#prediction-powered-inference"><i class="fa fa-check"></i><b>7.2</b> <em>Prediction-Powered Inference</em></a></li>
+<li class="chapter" data-level="7.3" data-path="inferencia.html"><a href="inferencia.html#ppi"><i class="fa fa-check"></i><b>7.3</b> PPI++</a></li>
+<li class="chapter" data-level="7.4" data-path="inferencia.html"><a href="inferencia.html#que-propor%C3%A7%C3%A3o-dos-projetos-quer-punir"><i class="fa fa-check"></i><b>7.4</b> Que proporção dos projetos quer PUNIR?</a></li>
+<li class="chapter" data-level="7.5" data-path="inferencia.html"><a href="inferencia.html#simula%C3%A7%C3%A3o-com-que-frequ%C3%AAncia-o-ic-acerta"><i class="fa fa-check"></i><b>7.5</b> Simulação: com que frequência o IC acerta?</a></li>
+<li class="chapter" data-level="7.6" data-path="inferencia.html"><a href="inferencia.html#e-entre-campos-pol%C3%ADticos"><i class="fa fa-check"></i><b>7.6</b> E entre campos políticos?</a></li>
+<li class="chapter" data-level="7.7" data-path="inferencia.html"><a href="inferencia.html#o-que-os-n%C3%BAmeros-dizem"><i class="fa fa-check"></i><b>7.7</b> O que os números dizem</a></li>
+<li class="chapter" data-level="7.8" data-path="inferencia.html"><a href="inferencia.html#mao-inferencia"><i class="fa fa-check"></i><b>7.8</b> Mão na massa: os quatro estimadores, passo a passo</a>
+<ul>
+<li class="chapter" data-level="7.8.1" data-path="inferencia.html"><a href="inferencia.html#montar-y-e-f"><i class="fa fa-check"></i><b>7.8.1</b> Montar <span class="math inline">\(Y\)</span> e <span class="math inline">\(f\)</span></a></li>
+<li class="chapter" data-level="7.8.2" data-path="inferencia.html"><a href="inferencia.html#cada-estimador-%C3%A0-m%C3%A3o"><i class="fa fa-check"></i><b>7.8.2</b> Cada estimador, à mão</a></li>
+<li class="chapter" data-level="7.8.3" data-path="inferencia.html"><a href="inferencia.html#com-intervalos-de-confian%C3%A7a"><i class="fa fa-check"></i><b>7.8.3</b> Com intervalos de confiança</a></li>
+<li class="chapter" data-level="7.8.4" data-path="inferencia.html"><a href="inferencia.html#a-simula%C3%A7%C3%A3o-de-cobertura"><i class="fa fa-check"></i><b>7.8.4</b> A simulação de cobertura</a></li>
+<li class="chapter" data-level="7.8.5" data-path="inferencia.html"><a href="inferencia.html#por-campo-pol%C3%ADtico"><i class="fa fa-check"></i><b>7.8.5</b> Por campo político</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="8" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html"><i class="fa fa-check"></i><b>8</b> Reprodutibilidade (MLOps)</a>
+<ul>
+<li class="chapter" data-level="8.1" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#o-que-precisa-ser-versionado"><i class="fa fa-check"></i><b>8.1</b> O que precisa ser versionado?</a></li>
+<li class="chapter" data-level="8.2" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#um-pipeline-declarativo-com-targets"><i class="fa fa-check"></i><b>8.2</b> Um pipeline declarativo com <code>targets</code></a></li>
+<li class="chapter" data-level="8.3" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#r-e-python-duas-trilhas-os-mesmos-resultados"><i class="fa fa-check"></i><b>8.3</b> R e Python: duas trilhas, os mesmos resultados</a></li>
+<li class="chapter" data-level="8.4" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#drift-quando-o-instrumento-muda-sozinho"><i class="fa fa-check"></i><b>8.4</b> <em>Drift</em>: quando o instrumento muda sozinho</a></li>
+<li class="chapter" data-level="8.5" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#c%C3%B3digo-gerado-por-ia"><i class="fa fa-check"></i><b>8.5</b> Código gerado por IA</a></li>
+<li class="chapter" data-level="8.6" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#mao-reprodutibilidade"><i class="fa fa-check"></i><b>8.6</b> Mão na massa: verificar a reprodutibilidade</a>
+<ul>
+<li class="chapter" data-level="8.6.1" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#o-pipeline-sem-execut%C3%A1-lo"><i class="fa fa-check"></i><b>8.6.1</b> O pipeline, sem executá-lo</a></li>
+<li class="chapter" data-level="8.6.2" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#o-cache-confere-com-os-prompts"><i class="fa fa-check"></i><b>8.6.2</b> O cache confere com os prompts?</a></li>
+<li class="chapter" data-level="8.6.3" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#temperatura-0-%C3%A9-determin%C3%ADstica-a-repeti%C3%A7%C3%A3o-de-12112026"><i class="fa fa-check"></i><b>8.6.3</b> Temperatura 0 é determinística? A repetição de 12/11/2026</a></li>
+<li class="chapter" data-level="8.6.4" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#r-e-python-chegam-aos-mesmos-n%C3%BAmeros"><i class="fa fa-check"></i><b>8.6.4</b> R e Python chegam aos mesmos números?</a></li>
+<li class="chapter" data-level="8.6.5" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#o-ambiente"><i class="fa fa-check"></i><b>8.6.5</b> O ambiente</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="9" data-path="etica.html"><a href="etica.html"><i class="fa fa-check"></i><b>9</b> Ética, limites e debate</a>
+<ul>
+<li class="chapter" data-level="9.1" data-path="etica.html"><a href="etica.html#elei%C3%A7%C3%B5es-de-2026-regras-do-tse"><i class="fa fa-check"></i><b>9.1</b> Eleições de 2026: regras do TSE</a></li>
+<li class="chapter" data-level="9.2" data-path="etica.html"><a href="etica.html#o-marco-legal-da-ia-pl-23382023"><i class="fa fa-check"></i><b>9.2</b> O Marco Legal da IA: PL 2338/2023</a></li>
+<li class="chapter" data-level="9.3" data-path="etica.html"><a href="etica.html#o-que-o-corpus-n%C3%A3o-pode-mostrar"><i class="fa fa-check"></i><b>9.3</b> O que o corpus não pode mostrar</a></li>
+<li class="chapter" data-level="9.4" data-path="etica.html"><a href="etica.html#quando-n%C3%A3o-usar-um-llm"><i class="fa fa-check"></i><b>9.4</b> Quando <strong>não</strong> usar um LLM</a></li>
+<li class="chapter" data-level="9.5" data-path="etica.html"><a href="etica.html#para-debater"><i class="fa fa-check"></i><b>9.5</b> Para debater</a></li>
+<li class="chapter" data-level="9.6" data-path="etica.html"><a href="etica.html#mensagem-final"><i class="fa fa-check"></i><b>9.6</b> Mensagem final</a></li>
+</ul></li>
+<li class="appendix"><span><b>Apêndices</b></span></li>
+<li class="chapter" data-level="A" data-path="ambiente.html"><a href="ambiente.html"><i class="fa fa-check"></i><b>A</b> Preparando o ambiente</a>
+<ul>
+<li class="chapter" data-level="A.1" data-path="ambiente.html"><a href="ambiente.html#o-que-voc%C3%AA-precisa"><i class="fa fa-check"></i><b>A.1</b> O que você precisa</a></li>
+<li class="chapter" data-level="A.2" data-path="ambiente.html"><a href="ambiente.html#o-material"><i class="fa fa-check"></i><b>A.2</b> O material</a></li>
+<li class="chapter" data-level="A.3" data-path="ambiente.html"><a href="ambiente.html#r"><i class="fa fa-check"></i><b>A.3</b> R</a></li>
+<li class="chapter" data-level="A.4" data-path="ambiente.html"><a href="ambiente.html#python"><i class="fa fa-check"></i><b>A.4</b> Python</a>
+<ul>
+<li class="chapter" data-level="A.4.1" data-path="ambiente.html"><a href="ambiente.html#no-seu-computador"><i class="fa fa-check"></i><b>A.4.1</b> No seu computador</a></li>
+<li class="chapter" data-level="A.4.2" data-path="ambiente.html"><a href="ambiente.html#no-google-colab"><i class="fa fa-check"></i><b>A.4.2</b> No Google Colab</a></li>
+</ul></li>
+<li class="chapter" data-level="A.5" data-path="ambiente.html"><a href="ambiente.html#ollama-e-o-s5-nano-opcional"><i class="fa fa-check"></i><b>A.5</b> Ollama e o S5-nano (opcional)</a></li>
+<li class="chapter" data-level="A.6" data-path="ambiente.html"><a href="ambiente.html#qual-arquivo-roda-cada-bloco"><i class="fa fa-check"></i><b>A.6</b> Qual arquivo roda cada bloco</a></li>
+<li class="chapter" data-level="A.7" data-path="ambiente.html"><a href="ambiente.html#problemas-comuns"><i class="fa fa-check"></i><b>A.7</b> Problemas comuns</a></li>
+</ul></li>
+<li class="chapter" data-level="B" data-path="checklist.html"><a href="checklist.html"><i class="fa fa-check"></i><b>B</b> Checklist: usar um LLM como instrumento de medição</a>
+<ul>
+<li class="chapter" data-level="B.0.1" data-path="checklist.html"><a href="checklist.html#a.-antes-de-anotar"><i class="fa fa-check"></i><b>B.0.1</b> A. Antes de anotar</a></li>
+<li class="chapter" data-level="B.0.2" data-path="checklist.html"><a href="checklist.html#b.-durante-a-anota%C3%A7%C3%A3o"><i class="fa fa-check"></i><b>B.0.2</b> B. Durante a anotação</a></li>
+<li class="chapter" data-level="B.0.3" data-path="checklist.html"><a href="checklist.html#c.-valida%C3%A7%C3%A3o"><i class="fa fa-check"></i><b>B.0.3</b> C. Validação</a></li>
+<li class="chapter" data-level="B.0.4" data-path="checklist.html"><a href="checklist.html#d.-infer%C3%AAncia"><i class="fa fa-check"></i><b>B.0.4</b> D. Inferência</a></li>
+<li class="chapter" data-level="B.0.5" data-path="checklist.html"><a href="checklist.html#e.-reprodutibilidade-mlops"><i class="fa fa-check"></i><b>B.0.5</b> E. Reprodutibilidade (MLOps)</a></li>
+<li class="chapter" data-level="B.0.6" data-path="checklist.html"><a href="checklist.html#f.-quando-n%C3%A3o-usar-um-llm"><i class="fa fa-check"></i><b>B.0.6</b> F. Quando NÃO usar um LLM</a></li>
+</ul></li>
+<li class="chapter" data-level="C" data-path="prompts.html"><a href="prompts.html"><i class="fa fa-check"></i><b>C</b> Prompts completos</a>
+<ul>
+<li class="chapter" data-level="" data-path="prompts.html"><a href="prompts.html#prompt-v1"><i class="fa fa-check"></i>Prompt v1</a></li>
+<li class="chapter" data-level="" data-path="prompts.html"><a href="prompts.html#prompt-v2"><i class="fa fa-check"></i>Prompt v2</a></li>
+<li class="chapter" data-level="" data-path="prompts.html"><a href="prompts.html#prompt-v3"><i class="fa fa-check"></i>Prompt v3</a></li>
+</ul></li>
+<li class="chapter" data-level="D" data-path="reproduzir.html"><a href="reproduzir.html"><i class="fa fa-check"></i><b>D</b> Como reproduzir</a>
+<ul>
+<li class="chapter" data-level="D.1" data-path="reproduzir.html"><a href="reproduzir.html#sem-llm-e-sem-internet-como-em-sala"><i class="fa fa-check"></i><b>D.1</b> Sem LLM e sem internet (como em sala)</a></li>
+<li class="chapter" data-level="D.2" data-path="reproduzir.html"><a href="reproduzir.html#refazendo-a-coleta-e-a-anota%C3%A7%C3%A3o"><i class="fa fa-check"></i><b>D.2</b> Refazendo a coleta e a anotação</a></li>
+<li class="chapter" data-level="D.3" data-path="reproduzir.html"><a href="reproduzir.html#este-livro-e-os-slides"><i class="fa fa-check"></i><b>D.3</b> Este livro e os slides</a></li>
+<li class="chapter" data-level="D.4" data-path="reproduzir.html"><a href="reproduzir.html#estrutura-do-material"><i class="fa fa-check"></i><b>D.4</b> Estrutura do material</a></li>
+<li class="chapter" data-level="D.5" data-path="reproduzir.html"><a href="reproduzir.html#ambiente-usado-nos-resultados"><i class="fa fa-check"></i><b>D.5</b> Ambiente usado nos resultados</a></li>
+</ul></li>
+<li class="chapter" data-level="E" data-path="declaracao-ia.html"><a href="declaracao-ia.html"><i class="fa fa-check"></i><b>E</b> Declaração de uso de inteligência artificial e responsabilidade</a>
+<ul>
+<li class="chapter" data-level="E.1" data-path="declaracao-ia.html"><a href="declaracao-ia.html#autoria"><i class="fa fa-check"></i><b>E.1</b> Autoria</a></li>
+<li class="chapter" data-level="E.2" data-path="declaracao-ia.html"><a href="declaracao-ia.html#identifica%C3%A7%C3%A3o-da-ferramenta"><i class="fa fa-check"></i><b>E.2</b> Identificação da ferramenta</a></li>
+<li class="chapter" data-level="E.3" data-path="declaracao-ia.html"><a href="declaracao-ia.html#o-que-a-ia-fez"><i class="fa fa-check"></i><b>E.3</b> O que a IA fez</a></li>
+<li class="chapter" data-level="E.4" data-path="declaracao-ia.html"><a href="declaracao-ia.html#o-que-coube-ao-autor-humano"><i class="fa fa-check"></i><b>E.4</b> O que coube ao autor humano</a></li>
+<li class="chapter" data-level="E.5" data-path="declaracao-ia.html"><a href="declaracao-ia.html#responsabilidade"><i class="fa fa-check"></i><b>E.5</b> Responsabilidade</a></li>
+<li class="chapter" data-level="E.6" data-path="declaracao-ia.html"><a href="declaracao-ia.html#dois-pap%C3%A9is-diferentes-para-a-ia"><i class="fa fa-check"></i><b>E.6</b> Dois papéis diferentes para a IA</a></li>
+<li class="chapter" data-level="E.7" data-path="declaracao-ia.html"><a href="declaracao-ia.html#por-que-esta-declara%C3%A7%C3%A3o-existe"><i class="fa fa-check"></i><b>E.7</b> Por que esta declaração existe</a></li>
+</ul></li>
+<li class="chapter" data-level="" data-path="referencias.html"><a href="referencias.html"><i class="fa fa-check"></i>Referências</a></li>
+<li class="divider"></li>
+<li class="toc-sub"><strong>Jodavid Ferreira</strong> · DE/UFPE<br>coautoria: Claude Opus 5.5 (IA)</li>
+<li class="toc-sub">Texto: <a href="https://creativecommons.org/licenses/by/4.0/deed.pt-br" target="_blank">CC BY 4.0</a> · Código: <a href="https://opensource.org/license/mit" target="_blank">MIT</a></li>
+<li class="toc-links"><a href="ia-instrumento-medicao.pdf" target="_blank">PDF</a><a href="material/minicurso_IA_medicao.zip">Material .zip</a></li>
+<li class="toc-sub"><strong>Slides</strong></li>
+<li class="toc-links"><a href="slides/parte1_conceitos.html" target="_blank">Parte 1: conceitos</a><a href="slides/slides.html" target="_blank">Versão resumida</a></li>
+<li class="toc-links"><a href="slides/completo_R.html" target="_blank">Completos · R</a><a href="slides/completo_python.html" target="_blank">Completos · Python</a></li>
+
+</ul>
+
+      </nav>
+    </div>
+
+    <div class="book-body">
+      <div class="body-inner">
+        <div class="book-header" role="navigation">
+          <h1>
+            <i class="fa fa-circle-o-notch fa-spin"></i><a href="./">Inteligência Artificial como Instrumento de Medição</a>
+          </h1>
+        </div>
+
+        <div class="page-wrapper" tabindex="-1" role="main">
+          <div class="page-inner">
+
+            <section class="normal" id="section-">
+<div id="reprodutibilidade" class="section level1 hasAnchor" number="8">
+<h1><span class="header-section-number">Capítulo 8</span> Reprodutibilidade (MLOps)<a href="reprodutibilidade.html#reprodutibilidade" class="anchor-section" aria-label="Anchor link to header"></a></h1>
+<p>Um resultado obtido com um LLM só é científico se outra pessoa conseguir refazê-lo. Isso exige versionar não apenas o código, mas também o <strong>instrumento</strong> e as <strong>respostas</strong> que ele produziu.</p>
+<div id="o-que-precisa-ser-versionado" class="section level2 hasAnchor" number="8.1">
+<h2><span class="header-section-number">8.1</span> O que precisa ser versionado?<a href="reprodutibilidade.html#o-que-precisa-ser-versionado" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<table>
+<caption><span id="tab:tab-versionar">Tabela 8.1: </span>O que versionar numa pesquisa que usa LLMs.</caption>
+<colgroup>
+<col width="9%" />
+<col width="28%" />
+<col width="62%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">Componente</th>
+<th align="left">Como versionar</th>
+<th align="left">Neste material</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Código</td>
+<td align="left">Git</td>
+<td align="left"><code>R/</code>, <code>python/</code></td>
+</tr>
+<tr class="even">
+<td align="left">Ambiente</td>
+<td align="left"><code>renv</code> / <code>requirements.txt</code> / Docker</td>
+<td align="left"><code>R/00_pacotes.R</code>, <code>requirements.txt</code>, <code>resultados/sessionInfo.txt</code></td>
+</tr>
+<tr class="odd">
+<td align="left">Dados brutos</td>
+<td align="left">Congelados, com data de coleta</td>
+<td align="left"><code>dados/bruto/</code>, <code>dados/processado/corpus.csv</code> (06/11/2026; a coleta anterior fica em <code>historico/</code>)</td>
+</tr>
+<tr class="even">
+<td align="left">Instrumento</td>
+<td align="left">Modelo (digest dos pesos) + prompt (hash) + parâmetros</td>
+<td align="left"><code>modelos/Modelfile.s5-nano-instruct</code>, <code>prompts/</code> + <code>CHANGELOG.md</code>; digest, hash, temperatura e semente em cada registro</td>
+</tr>
+<tr class="odd">
+<td align="left">Respostas do LLM</td>
+<td align="left">Cache (é dado, não lixo)</td>
+<td align="left"><code>dados/cache_llm/*.jsonl</code></td>
+</tr>
+<tr class="even">
+<td align="left">Referência humana</td>
+<td align="left">Arquivo com codificador e status de revisão</td>
+<td align="left"><code>dados/anotacoes/referencia_completa.csv</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="um-pipeline-declarativo-com-targets" class="section level2 hasAnchor" number="8.2">
+<h2><span class="header-section-number">8.2</span> Um pipeline declarativo com <code>targets</code><a href="reprodutibilidade.html#um-pipeline-declarativo-com-targets" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>O pacote <code>targets</code> <span class="citation">(<a href="#ref-landau2021">Landau 2021</a>)</span> descreve a análise como um <strong>grafo de dependências</strong>: cada etapa declara de quais arquivos depende e quais arquivos produz. Ao rodar <code>targets::tar_make()</code>, só é refeito o que ficou desatualizado. Se você editar o prompt v2, o <code>targets</code> sabe que a validação e a inferência precisam ser refeitas, mas a amostra-ouro e os baselines não.</p>
+<div class="sourceCode" id="cb276"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb276-1"><a href="reprodutibilidade.html#cb276-1" tabindex="-1"></a>targets<span class="sc">::</span><span class="fu">tar_make</span>()        <span class="co"># roda só o que mudou</span></span>
+<span id="cb276-2"><a href="reprodutibilidade.html#cb276-2" tabindex="-1"></a>targets<span class="sc">::</span><span class="fu">tar_outdated</span>()    <span class="co"># o que ficou desatualizado?</span></span>
+<span id="cb276-3"><a href="reprodutibilidade.html#cb276-3" tabindex="-1"></a>targets<span class="sc">::</span><span class="fu">tar_visnetwork</span>()  <span class="co"># desenha o grafo de dependências</span></span></code></pre></div>
+<p>A coleta e a anotação com o LLM <strong>não</strong> são refeitas automaticamente: dependem de APIs externas e são caras. Elas entram no pipeline como <strong>arquivos versionados</strong>, que é o que garante a replicação. Este é o trecho de <code>_targets.R</code> que declara essas entradas:</p>
+<div class="sourceCode" id="cb277"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb277-1"><a href="reprodutibilidade.html#cb277-1" tabindex="-1"></a>  <span class="fu">tar_target</span>(arq_corpus, <span class="st">&quot;dados/processado/corpus.csv&quot;</span>, <span class="at">format =</span> <span class="st">&quot;file&quot;</span>),</span>
+<span id="cb277-2"><a href="reprodutibilidade.html#cb277-2" tabindex="-1"></a>  <span class="fu">tar_target</span>(arq_referencia, <span class="st">&quot;dados/anotacoes/referencia_completa.csv&quot;</span>, <span class="at">format =</span> <span class="st">&quot;file&quot;</span>),</span>
+<span id="cb277-3"><a href="reprodutibilidade.html#cb277-3" tabindex="-1"></a>  <span class="fu">tar_target</span>(arq_prompts, <span class="fu">list.files</span>(<span class="st">&quot;prompts&quot;</span>, <span class="st">&quot;</span><span class="sc">\\</span><span class="st">.txt$&quot;</span>, <span class="at">full.names =</span> <span class="cn">TRUE</span>), <span class="at">format =</span> <span class="st">&quot;file&quot;</span>,</span>
+<span id="cb277-4"><a href="reprodutibilidade.html#cb277-4" tabindex="-1"></a>             <span class="at">cue =</span> <span class="fu">tar_cue</span>(<span class="at">mode =</span> <span class="st">&quot;always&quot;</span>)),</span>
+<span id="cb277-5"><a href="reprodutibilidade.html#cb277-5" tabindex="-1"></a>  <span class="fu">tar_target</span>(arq_cache_llm, <span class="fu">list.files</span>(<span class="st">&quot;dados/cache_llm&quot;</span>, <span class="st">&quot;</span><span class="sc">\\</span><span class="st">.jsonl$&quot;</span>, <span class="at">full.names =</span> <span class="cn">TRUE</span>), <span class="at">format =</span> <span class="st">&quot;file&quot;</span>,</span>
+<span id="cb277-6"><a href="reprodutibilidade.html#cb277-6" tabindex="-1"></a>             <span class="at">cue =</span> <span class="fu">tar_cue</span>(<span class="at">mode =</span> <span class="st">&quot;always&quot;</span>)),</span>
+<span id="cb277-7"><a href="reprodutibilidade.html#cb277-7" tabindex="-1"></a>  <span class="fu">tar_target</span>(arq_funcoes, <span class="fu">c</span>(<span class="st">&quot;R/funcoes_medicao.R&quot;</span>, <span class="st">&quot;R/tema_graficos.R&quot;</span>), <span class="at">format =</span> <span class="st">&quot;file&quot;</span>),</span>
+<span id="cb277-8"><a href="reprodutibilidade.html#cb277-8" tabindex="-1"></a>  <span class="fu">tar_target</span>(arq_scripts, <span class="fu">list.files</span>(<span class="st">&quot;R&quot;</span>, <span class="st">&quot;^0[2-6]_.*</span><span class="sc">\\</span><span class="st">.R$&quot;</span>, <span class="at">full.names =</span> <span class="cn">TRUE</span>), <span class="at">format =</span> <span class="st">&quot;file&quot;</span>),</span></code></pre></div>
+<div class="caixa aviso">
+<p><span class="titulo-caixa">Uma armadilha encontrada na verificação deste material</span>
+Na primeira versão do pipeline, as entradas <code>arq_prompts</code> e <code>arq_cache_llm</code> eram declaradas apenas com <code>format = "file"</code>. Isso detecta <strong>edições</strong> em arquivos já conhecidos, mas <strong>não detecta arquivos novos</strong>: o comando <code>list.files()</code> não é reexecutado, porque o código dele não mudou. Na prática, se alguém criasse um prompt v4 ou uma nova execução do LLM, o <code>targets</code> diria que estava tudo atualizado e as tabelas ficariam velhas, em silêncio.</p>
+<p>A correção foi acrescentar <code>cue = tar_cue(mode = "always")</code> a essas duas entradas: a lista de arquivos é refeita a cada execução, mas as etapas seguintes só rodam se o conteúdo tiver mudado. O episódio ilustra o ponto deste capítulo: <strong>ferramentas de reprodutibilidade também precisam ser testadas</strong>.</p>
+</div>
+</div>
+<div id="r-e-python-duas-trilhas-os-mesmos-resultados" class="section level2 hasAnchor" number="8.3">
+<h2><span class="header-section-number">8.3</span> R e Python: duas trilhas, os mesmos resultados<a href="reprodutibilidade.html#r-e-python-duas-trilhas-os-mesmos-resultados" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>O material tem uma trilha completa em Python (notebooks prontos para o Google Colab em <code>python/</code>), que reproduz as mesmas tabelas e figuras. As duas trilhas dão <strong>os mesmos resultados</strong>, com duas ressalvas: o baseline TF-IDF, já discutido (Capítulo <a href="baselines.html#baselines">4</a>), e os números que dependem do gerador aleatório (ICs bootstrap e simulação de cobertura), que diferem em até 0,01 porque R e Python sorteiam de forma diferente mesmo com a mesma semente. Para garantir essa correspondência, até o hash do prompt é calculado da mesma forma nas duas linguagens (leitura byte a byte do arquivo).</p>
+</div>
+<div id="drift-quando-o-instrumento-muda-sozinho" class="section level2 hasAnchor" number="8.4">
+<h2><span class="header-section-number">8.4</span> <em>Drift</em>: quando o instrumento muda sozinho<a href="reprodutibilidade.html#drift-quando-o-instrumento-muda-sozinho" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>Um questionário impresso não muda entre uma aplicação e outra. Uma API comercial de LLM pode mudar: o provedor atualiza o modelo e <strong>o mesmo prompt passa a produzir outra medida</strong>. As defesas são:</p>
+<ul>
+<li>usar um <strong>modelo local com versão fixa</strong>, como neste material, <strong>ou</strong> registrar o identificador exato do modelo, a data e as respostas brutas;</li>
+<li><strong>monitorar</strong>: re-anotar periodicamente a amostra-ouro e acompanhar o kappa ao longo do tempo.</li>
+</ul>
+<p>Mesmo um modelo local, com versão fixa, não é perfeitamente determinístico. Para medir isso, repetimos em 12/11/2026 as três anotações com temperatura 0, nas mesmas condições: os mesmos pesos (mesmo <em>digest</em>), a mesma versão do Ollama, o mesmo prompt e a mesma semente (<code>python python/anotar_llm.py --todas-t0 --pasta dados/repeticao</code>). Mudaram de rótulo 0, 3 e 2 das 304 ementas com os prompts v1, v2 e v3. A causa são pequenas diferenças numéricas nos cálculos da GPU: quando duas respostas estão quase empatadas, essas diferenças bastam para trocar a mais provável. Não por acaso, uma das ementas que mudaram (doc0233) está entre os casos marcados como ambíguos durante a construção do livro de códigos.</p>
+<p>Duas lições. Primeiro, <strong>temperatura 0 não garante a mesma resposta</strong>: a replicação exata vem do <strong>cache</strong> das respostas brutas, não de reexecutar o modelo. Segundo, o modelo é só uma parte do instrumento, que inclui também o <strong>software que o executa</strong>. Atualizar o Ollama pode mudar as respostas, mesmo com os mesmos pesos. Por isso cada registro do cache guarda a versão do Ollama e o <em>digest</em> dos pesos.</p>
+</div>
+<div id="código-gerado-por-ia" class="section level2 hasAnchor" number="8.5">
+<h2><span class="header-section-number">8.5</span> Código gerado por IA<a href="reprodutibilidade.html#c%C3%B3digo-gerado-por-ia" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>Agentes de programação (Claude Code, Codex e similares) também produzem análises, e cada vez mais. A regra proposta aqui é simples: <strong>trate o código gerado por IA como o de um coautor</strong>. Ele precisa de revisão, testes e versionamento, e quem o publica responde por ele.</p>
+<p>Este livro segue essa regra: foi produzido com o auxílio do Claude Opus 5.5, e o uso está declarado no Apêndice <a href="declaracao-ia.html#declaracao-ia">E</a>. Antes da publicação, o material foi verificado de ponta a ponta, com o resultado abaixo.</p>
+<table>
+<caption><span id="tab:tab-verificacao">Tabela 8.2: </span>Verificações de reprodutibilidade realizadas em 23/10/2026, 06/11/2026, 11 e 12/11/2026 e 18/11/2026 (R 4.6, Python 3.11, Ollama 0.40.15).</caption>
+<colgroup>
+<col width="25%" />
+<col width="74%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">Verificação</th>
+<th align="left">Resultado</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Pipeline R (<code>targets::tar_make()</code>) a partir de um diretório limpo</td>
+<td align="left">10 etapas concluídas; as 8 tabelas idênticas, byte a byte, às do material</td>
+</tr>
+<tr class="even">
+<td align="left">Notebooks Python 01 a 05 executados do início ao fim</td>
+<td align="left">Nenhum erro; 9 de 10 tabelas idênticas às do material</td>
+</tr>
+<tr class="odd">
+<td align="left">Tabela de validade em Python</td>
+<td align="left">Linha extra esperada: a demonstração ao vivo do notebook 03 (semente 7) aparece como instrumento à parte</td>
+</tr>
+<tr class="even">
+<td align="left">Detecção de arquivos novos pelo <code>targets</code></td>
+<td align="left">Falhava; corrigida com <code>tar_cue(mode = "always")</code></td>
+</tr>
+<tr class="odd">
+<td align="left">Slides (<code>quarto render slides/slides.qmd</code>)</td>
+<td align="left">Renderizados sem erro</td>
+</tr>
+<tr class="even">
+<td align="left">Aviso de referência preliminar</td>
+<td align="left">Emitido corretamente pelos scripts</td>
+</tr>
+<tr class="odd">
+<td align="left"><strong>06/11/2026:</strong> nova coleta (Capítulo <a href="dados.html#dados">2</a>) e novo sorteio da amostra-ouro; pipeline R e notebooks 01 a 05 refeitos</td>
+<td align="left">Sem erros; R e Python coincidem, exceto no TF-IDF (já discutido) e nos números que dependem do gerador aleatório (ICs bootstrap e simulação, diferenças de até 0,01)</td>
+</tr>
+<tr class="even">
+<td align="left"><strong>11/11/2026:</strong> anotação do corpus com o <code>s5-nano-instruct</code> no Ollama 0.40.15 (6 execuções)</td>
+<td align="left">1.824 respostas, nenhuma falha de formato (Capítulo <a href="llm.html#llm">5</a>)</td>
+</tr>
+<tr class="odd">
+<td align="left"><strong>11/11/2026:</strong> pipeline R e notebooks 03 a 05 refeitos com o cache</td>
+<td align="left">Sem erros; R e Python coincidem, exceto no TF-IDF e nos ICs bootstrap (diferenças de até 0,01)</td>
+</tr>
+<tr class="even">
+<td align="left"><strong>12/11/2026:</strong> repetição das três anotações a temperatura 0 (<code>dados/repeticao/</code>)</td>
+<td align="left">5 mudanças de rótulo em 912 pares de respostas (seção anterior)</td>
+</tr>
+<tr class="odd">
+<td align="left"><strong>18/11/2026:</strong> revisão final antes da publicação</td>
+<td align="left"><code>tar_make()</code> falhava: caches antigos de outro modelo (<code>gemma4-e2b</code>) em <code>dados/cache_llm/</code> eram lidos junto com os do S5-nano e duplicavam as linhas. Corrigido: a leitura filtra pelo instrumento (<code>INSTRUMENTO</code> em R e Python) e os caches antigos foram para <code>historico_gemma4-e2b/</code>. Pipeline R e notebooks 02, 04 e 05 refeitos: tabelas idênticas às anteriores</td>
+</tr>
+</tbody>
+</table>
+<p>O checklist completo para usar um LLM como instrumento de medição está no Apêndice <a href="checklist.html#checklist">B</a>.</p>
+</div>
+<div id="mao-reprodutibilidade" class="section level2 hasAnchor" number="8.6">
+<h2><span class="header-section-number">8.6</span> Mão na massa: verificar a reprodutibilidade<a href="reprodutibilidade.html#mao-reprodutibilidade" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<div class="caixa executar">
+<p><span class="titulo-caixa">Como executar</span></p>
+<ul>
+<li><strong>Pipeline completo em R</strong>, na raiz do projeto: <code>targets::tar_make()</code> refaz amostra-ouro, baselines, validação, inferência e figuras (cerca de 2 minutos), mas só o que estiver desatualizado. <code>targets::tar_outdated()</code> lista o que seria refeito; <code>targets::tar_visnetwork()</code> desenha o grafo (requer o pacote <code>visNetwork</code>).</li>
+<li><strong>Em Python</strong>: rode os notebooks <code>python/01</code> a <code>05</code> em ordem (no Jupyter: <em>Run All</em>; no terminal: <code>jupyter nbconvert --to notebook --execute --inplace python/0*.ipynb</code>). As tabelas vão para <code>resultados/python/tabelas/</code>.</li>
+<li><strong>Repetir a anotação a temperatura 0</strong> sem misturá-la ao cache: <code>python python/anotar_llm.py --todas-t0 --pasta dados/repeticao</code> (precisa do Ollama).</li>
+<li>Os blocos abaixo só <strong>leem</strong> arquivos: nenhum deles refaz o pipeline ou grava resultados.</li>
+</ul>
+</div>
+<div id="o-pipeline-sem-executá-lo" class="section level3 hasAnchor" number="8.6.1">
+<h3><span class="header-section-number">8.6.1</span> O pipeline, sem executá-lo<a href="reprodutibilidade.html#o-pipeline-sem-execut%C3%A1-lo" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p><code>tar_manifest()</code> lê <code>_targets.R</code> e lista as etapas e o comando de cada uma, sem rodar nada:</p>
+<div class="abas">
+<div class="aba" data-nome="R">
+<div class="sourceCode" id="cb278"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb278-1"><a href="reprodutibilidade.html#cb278-1" tabindex="-1"></a><span class="fu">library</span>(targets)</span>
+<span id="cb278-2"><a href="reprodutibilidade.html#cb278-2" tabindex="-1"></a><span class="fu">tar_manifest</span>() <span class="sc">|&gt;</span></span>
+<span id="cb278-3"><a href="reprodutibilidade.html#cb278-3" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">command =</span> stringr<span class="sc">::</span><span class="fu">str_trunc</span>(command, <span class="dv">60</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb278-4"><a href="reprodutibilidade.html#cb278-4" tabindex="-1"></a>  <span class="fu">print</span>(<span class="at">n =</span> <span class="dv">20</span>)</span></code></pre></div>
+<pre><code># A tibble: 11 × 2
+   name           command                                                       
+   &lt;chr&gt;          &lt;chr&gt;                                                         
+ 1 arq_scripts    &quot;list.files(\&quot;R\&quot;, \&quot;^0[2-6]_.*\\\\.R$\&quot;, full.names = TRUE)&quot; 
+ 2 arq_funcoes    &quot;c(\&quot;R/funcoes_medicao.R\&quot;, \&quot;R/tema_graficos.R\&quot;)&quot;           
+ 3 arq_prompts    &quot;list.files(\&quot;prompts\&quot;, \&quot;\\\\.txt$\&quot;, full.names = TRUE)&quot;   
+ 4 arq_corpus     &quot;\&quot;dados/processado/corpus.csv\&quot;&quot;                             
+ 5 arq_referencia &quot;\&quot;dados/anotacoes/referencia_completa.csv\&quot;&quot;                 
+ 6 arq_cache_llm  &quot;list.files(\&quot;dados/cache_llm\&quot;, \&quot;\\\\.jsonl$\&quot;, full.names …
+ 7 amostra_ouro   &quot;roda_script(\&quot;R/02_amostra_ouro.R\&quot;, c(\&quot;dados/anotacoes/amo…
+ 8 baselines      &quot;roda_script(\&quot;R/03_baselines.R\&quot;, c(\&quot;resultados/tabelas/bas…
+ 9 validacao      &quot;roda_script(\&quot;R/05_validacao.R\&quot;, c(\&quot;resultados/tabelas/val…
+10 inferencia     &quot;roda_script(\&quot;R/06_inferencia.R\&quot;, c(\&quot;resultados/tabelas/es…
+11 sessao         &quot;{\n     inferencia\n     writeLines(capture.output(sessionI.…</code></pre>
+<div class="sourceCode" id="cb280"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb280-1"><a href="reprodutibilidade.html#cb280-1" tabindex="-1"></a><span class="fu">tar_make</span>()        <span class="co"># refaz só o que mudou (grava em resultados/)</span></span>
+<span id="cb280-2"><a href="reprodutibilidade.html#cb280-2" tabindex="-1"></a><span class="fu">tar_outdated</span>()    <span class="co"># o que ficou desatualizado?</span></span>
+<span id="cb280-3"><a href="reprodutibilidade.html#cb280-3" tabindex="-1"></a><span class="fu">tar_visnetwork</span>()  <span class="co"># o grafo de dependências, interativo</span></span></code></pre></div>
+</div>
+<div class="aba" data-nome="Python">
+<p>A trilha Python não usa um gerenciador de pipeline: a ordem é a dos notebooks, e cada um lê o que o anterior gravou. Para o equivalente ao <code>targets</code> em Python, veja ferramentas como <code>snakemake</code> ou <code>DVC</code>. O que podemos fazer aqui é listar as etapas e o que cada uma produz:</p>
+<div class="sourceCode" id="cb281"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb281-1"><a href="reprodutibilidade.html#cb281-1" tabindex="-1"></a><span class="im">import</span> json, re</span>
+<span id="cb281-2"><a href="reprodutibilidade.html#cb281-2" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb281-3"><a href="reprodutibilidade.html#cb281-3" tabindex="-1"></a><span class="cf">for</span> nb <span class="kw">in</span> <span class="bu">sorted</span>(Path(<span class="st">&quot;python&quot;</span>).glob(<span class="st">&quot;0*.ipynb&quot;</span>)):</span>
+<span id="cb281-4"><a href="reprodutibilidade.html#cb281-4" tabindex="-1"></a>    celulas <span class="op">=</span> json.loads(nb.read_text(encoding<span class="op">=</span><span class="st">&quot;utf-8&quot;</span>))[<span class="st">&quot;cells&quot;</span>]</span>
+<span id="cb281-5"><a href="reprodutibilidade.html#cb281-5" tabindex="-1"></a>    codigo <span class="op">=</span> <span class="st">&quot;&quot;</span>.join(<span class="st">&quot;&quot;</span>.join(c[<span class="st">&quot;source&quot;</span>]) <span class="cf">for</span> c <span class="kw">in</span> celulas <span class="cf">if</span> c[<span class="st">&quot;cell_type&quot;</span>] <span class="op">==</span> <span class="st">&quot;code&quot;</span>)</span>
+<span id="cb281-6"><a href="reprodutibilidade.html#cb281-6" tabindex="-1"></a>    grava <span class="op">=</span> <span class="bu">sorted</span>(<span class="bu">set</span>(re.findall(<span class="vs">r&#39;&quot;</span><span class="kw">(</span><span class="vs">tabelas/</span><span class="pp">[</span><span class="dv">\w</span><span class="pp">.]</span><span class="op">+</span><span class="cf">|</span><span class="vs">figuras/</span><span class="pp">[</span><span class="dv">\w</span><span class="pp">.]</span><span class="op">+</span><span class="kw">)</span><span class="vs">&quot;&#39;</span>, codigo)))</span>
+<span id="cb281-7"><a href="reprodutibilidade.html#cb281-7" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f&quot;</span><span class="sc">{</span>nb<span class="sc">.</span>name<span class="sc">:24}</span><span class="ss"> </span><span class="sc">{</span><span class="bu">len</span>(celulas)<span class="sc">:3}</span><span class="ss"> células  grava: </span><span class="sc">{</span><span class="st">&#39;, &#39;</span><span class="sc">.</span>join(grava[:<span class="dv">3</span>]) <span class="kw">or</span> <span class="st">&#39;-&#39;</span><span class="sc">}</span><span class="ss">&quot;</span></span>
+<span id="cb281-8"><a href="reprodutibilidade.html#cb281-8" tabindex="-1"></a>          <span class="op">+</span> (<span class="st">&quot; ...&quot;</span> <span class="cf">if</span> <span class="bu">len</span>(grava) <span class="op">&gt;</span> <span class="dv">3</span> <span class="cf">else</span> <span class="st">&quot;&quot;</span>))</span></code></pre></div>
+<pre><code>01_coleta.ipynb           16 células  grava: -
+02_baselines.ipynb         9 células  grava: tabelas/baselines.csv, tabelas/dicionario_corpus.csv, tabelas/predicoes_baselines.csv
+03_anotacao_llm.ipynb     16 células  grava: -
+04_validacao.ipynb        18 células  grava: figuras/01_validade_kappa.png, figuras/02_matriz_confusao.png, figuras/03_vies_diferencial.png ...
+05_inferencia.ipynb       16 células  grava: figuras/00_projetos_por_ano.png, figuras/05_estimadores_punir.png, figuras/06_punir_por_campo.png ...</code></pre>
+</div>
+</div>
+</div>
+<div id="o-cache-confere-com-os-prompts" class="section level3 hasAnchor" number="8.6.2">
+<h3><span class="header-section-number">8.6.2</span> O cache confere com os prompts?<a href="reprodutibilidade.html#o-cache-confere-com-os-prompts" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>Uma verificação de integridade simples e poderosa: recalcular o hash de cada prompt e conferir com o <code>prompt_sha</code> gravado em <strong>cada</strong> resposta do cache. Se alguém editou um prompt depois da anotação, aparece aqui.</p>
+<div class="abas">
+<div class="aba" data-nome="R">
+<div class="sourceCode" id="cb283"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb283-1"><a href="reprodutibilidade.html#cb283-1" tabindex="-1"></a><span class="fu">source</span>(<span class="st">&quot;R/funcoes_medicao.R&quot;</span>)</span>
+<span id="cb283-2"><a href="reprodutibilidade.html#cb283-2" tabindex="-1"></a>sha_arquivo <span class="ot">&lt;-</span> <span class="cf">function</span>(arq) {</span>
+<span id="cb283-3"><a href="reprodutibilidade.html#cb283-3" tabindex="-1"></a>  txt <span class="ot">&lt;-</span> <span class="fu">readChar</span>(arq, <span class="fu">file.size</span>(arq), <span class="at">useBytes =</span> <span class="cn">TRUE</span>); <span class="fu">Encoding</span>(txt) <span class="ot">&lt;-</span> <span class="st">&quot;UTF-8&quot;</span></span>
+<span id="cb283-4"><a href="reprodutibilidade.html#cb283-4" tabindex="-1"></a>  <span class="fu">substr</span>(digest<span class="sc">::</span><span class="fu">digest</span>(txt, <span class="at">algo =</span> <span class="st">&quot;sha256&quot;</span>, <span class="at">serialize =</span> <span class="cn">FALSE</span>), <span class="dv">1</span>, <span class="dv">12</span>)</span>
+<span id="cb283-5"><a href="reprodutibilidade.html#cb283-5" tabindex="-1"></a>}</span>
+<span id="cb283-6"><a href="reprodutibilidade.html#cb283-6" tabindex="-1"></a>atuais <span class="ot">&lt;-</span> <span class="fu">tibble</span>(<span class="at">arq =</span> <span class="fu">list.files</span>(<span class="st">&quot;prompts&quot;</span>, <span class="st">&quot;</span><span class="sc">\\</span><span class="st">.txt$&quot;</span>, <span class="at">full.names =</span> <span class="cn">TRUE</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb283-7"><a href="reprodutibilidade.html#cb283-7" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">prompt_id =</span> <span class="fu">str_extract</span>(arq, <span class="st">&quot;v</span><span class="sc">\\</span><span class="st">d&quot;</span>),</span>
+<span id="cb283-8"><a href="reprodutibilidade.html#cb283-8" tabindex="-1"></a>         <span class="at">sha_atual =</span> purrr<span class="sc">::</span><span class="fu">map_chr</span>(arq, sha_arquivo))</span>
+<span id="cb283-9"><a href="reprodutibilidade.html#cb283-9" tabindex="-1"></a><span class="fu">carrega_llm</span>() <span class="sc">|&gt;</span></span>
+<span id="cb283-10"><a href="reprodutibilidade.html#cb283-10" tabindex="-1"></a>  <span class="fu">left_join</span>(atuais, <span class="at">by =</span> <span class="st">&quot;prompt_id&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb283-11"><a href="reprodutibilidade.html#cb283-11" tabindex="-1"></a>  <span class="fu">count</span>(prompt_id, prompt_sha, sha_atual, <span class="at">confere =</span> prompt_sha <span class="sc">==</span> sha_atual,</span>
+<span id="cb283-12"><a href="reprodutibilidade.html#cb283-12" tabindex="-1"></a>        <span class="at">digest =</span> modelo_digest, <span class="at">ollama =</span> ollama_versao)</span></code></pre></div>
+<pre><code># A tibble: 3 × 7
+  prompt_id prompt_sha   sha_atual    confere digest       ollama      n
+  &lt;chr&gt;     &lt;chr&gt;        &lt;chr&gt;        &lt;lgl&gt;   &lt;chr&gt;        &lt;chr&gt;   &lt;int&gt;
+1 v1        5eb0f92ea13d 5eb0f92ea13d TRUE    85ec77c8f04e 0.40.15   304
+2 v2        c4b5a5ade801 c4b5a5ade801 TRUE    85ec77c8f04e 0.40.15  1216
+3 v3        6fdbfaf1d613 6fdbfaf1d613 TRUE    85ec77c8f04e 0.40.15   304</code></pre>
+</div>
+<div class="aba" data-nome="Python">
+<div class="sourceCode" id="cb285"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb285-1"><a href="reprodutibilidade.html#cb285-1" tabindex="-1"></a><span class="im">import</span> hashlib</span>
+<span id="cb285-2"><a href="reprodutibilidade.html#cb285-2" tabindex="-1"></a>atuais <span class="op">=</span> {arq.stem.split(<span class="st">&quot;_&quot;</span>)[<span class="dv">1</span>]: hashlib.sha256(arq.read_bytes()).hexdigest()[:<span class="dv">12</span>]</span>
+<span id="cb285-3"><a href="reprodutibilidade.html#cb285-3" tabindex="-1"></a>          <span class="cf">for</span> arq <span class="kw">in</span> Path(<span class="st">&quot;prompts&quot;</span>).glob(<span class="st">&quot;prompt_v*.txt&quot;</span>)}</span>
+<span id="cb285-4"><a href="reprodutibilidade.html#cb285-4" tabindex="-1"></a>cache <span class="op">=</span> carrega_llm(<span class="st">&quot;.&quot;</span>)</span>
+<span id="cb285-5"><a href="reprodutibilidade.html#cb285-5" tabindex="-1"></a>cache[<span class="st">&quot;sha_atual&quot;</span>] <span class="op">=</span> cache[<span class="st">&quot;prompt_id&quot;</span>].<span class="bu">map</span>(atuais)</span>
+<span id="cb285-6"><a href="reprodutibilidade.html#cb285-6" tabindex="-1"></a>cache[<span class="st">&quot;confere&quot;</span>] <span class="op">=</span> cache[<span class="st">&quot;prompt_sha&quot;</span>] <span class="op">==</span> cache[<span class="st">&quot;sha_atual&quot;</span>]</span>
+<span id="cb285-7"><a href="reprodutibilidade.html#cb285-7" tabindex="-1"></a>cache.groupby([<span class="st">&quot;prompt_id&quot;</span>, <span class="st">&quot;prompt_sha&quot;</span>, <span class="st">&quot;sha_atual&quot;</span>, <span class="st">&quot;confere&quot;</span>,</span>
+<span id="cb285-8"><a href="reprodutibilidade.html#cb285-8" tabindex="-1"></a>               <span class="st">&quot;modelo_digest&quot;</span>, <span class="st">&quot;ollama_versao&quot;</span>]).size()</span></code></pre></div>
+<pre><code>prompt_id  prompt_sha    sha_atual     confere  modelo_digest  ollama_versao
+v1         5eb0f92ea13d  5eb0f92ea13d  True     85ec77c8f04e   0.40.15           304
+v2         c4b5a5ade801  c4b5a5ade801  True     85ec77c8f04e   0.40.15          1216
+v3         6fdbfaf1d613  6fdbfaf1d613  True     85ec77c8f04e   0.40.15           304
+dtype: int64</code></pre>
+</div>
+</div>
+<p><strong>O que está sendo executado.</strong> Para cada arquivo de prompt, calculamos o SHA-256 do conteúdo (os 12 primeiros caracteres bastam para identificá-lo) e juntamos ao cache pelo <code>prompt_id</code>. Todas as 1824 respostas conferem com os prompts atuais, vieram dos mesmos pesos (mesmo <em>digest</em>) e da mesma versão do Ollama. Note que a versão Python lê os <strong>bytes</strong> do arquivo; a versão R lê o arquivo byte a byte (<code>useBytes = TRUE</code>) pelo mesmo motivo: o hash precisa ser idêntico nas duas linguagens.</p>
+</div>
+<div id="temperatura-0-é-determinística-a-repetição-de-12112026" class="section level3 hasAnchor" number="8.6.3">
+<h3><span class="header-section-number">8.6.3</span> Temperatura 0 é determinística? A repetição de 12/11/2026<a href="reprodutibilidade.html#temperatura-0-%C3%A9-determin%C3%ADstica-a-repeti%C3%A7%C3%A3o-de-12112026" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p><span class="saida-registrada">Saída registrada: comparação entre <code>dados/cache_llm/</code> (11/11/2026) e <code>dados/repeticao/</code> (12/11/2026)</span></p>
+<div class="abas">
+<div class="aba" data-nome="R">
+<div class="sourceCode" id="cb287"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb287-1"><a href="reprodutibilidade.html#cb287-1" tabindex="-1"></a>compara <span class="ot">&lt;-</span> <span class="cf">function</span>(p) {</span>
+<span id="cb287-2"><a href="reprodutibilidade.html#cb287-2" tabindex="-1"></a>  arq <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">&quot;s5-nano-instruct__&quot;</span>, p, <span class="st">&quot;__t0.0__s42.jsonl&quot;</span>)</span>
+<span id="cb287-3"><a href="reprodutibilidade.html#cb287-3" tabindex="-1"></a>  a <span class="ot">&lt;-</span> <span class="fu">stream_in</span>(<span class="fu">file</span>(<span class="fu">file.path</span>(<span class="st">&quot;dados/cache_llm&quot;</span>, arq)), <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb287-4"><a href="reprodutibilidade.html#cb287-4" tabindex="-1"></a>  b <span class="ot">&lt;-</span> <span class="fu">stream_in</span>(<span class="fu">file</span>(<span class="fu">file.path</span>(<span class="st">&quot;dados/repeticao&quot;</span>, arq)), <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb287-5"><a href="reprodutibilidade.html#cb287-5" tabindex="-1"></a>  <span class="fu">inner_join</span>(<span class="fu">select</span>(a, doc_id, <span class="at">antes =</span> categoria_llm),</span>
+<span id="cb287-6"><a href="reprodutibilidade.html#cb287-6" tabindex="-1"></a>             <span class="fu">select</span>(b, doc_id, <span class="at">depois =</span> categoria_llm), <span class="at">by =</span> <span class="st">&quot;doc_id&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb287-7"><a href="reprodutibilidade.html#cb287-7" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">prompt =</span> p)</span>
+<span id="cb287-8"><a href="reprodutibilidade.html#cb287-8" tabindex="-1"></a>}</span>
+<span id="cb287-9"><a href="reprodutibilidade.html#cb287-9" tabindex="-1"></a>rep0 <span class="ot">&lt;-</span> purrr<span class="sc">::</span><span class="fu">map</span>(<span class="fu">c</span>(<span class="st">&quot;v1&quot;</span>, <span class="st">&quot;v2&quot;</span>, <span class="st">&quot;v3&quot;</span>), compara) <span class="sc">|&gt;</span> purrr<span class="sc">::</span><span class="fu">list_rbind</span>()</span>
+<span id="cb287-10"><a href="reprodutibilidade.html#cb287-10" tabindex="-1"></a>rep0 <span class="sc">|&gt;</span> <span class="fu">group_by</span>(prompt) <span class="sc">|&gt;</span> <span class="fu">summarise</span>(<span class="at">n =</span> <span class="fu">n</span>(), <span class="at">mudaram =</span> <span class="fu">sum</span>(antes <span class="sc">!=</span> depois))</span></code></pre></div>
+<pre><code># A tibble: 3 × 3
+  prompt     n mudaram
+  &lt;chr&gt;  &lt;int&gt;   &lt;int&gt;
+1 v1       304       0
+2 v2       304       3
+3 v3       304       2</code></pre>
+<div class="sourceCode" id="cb289"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb289-1"><a href="reprodutibilidade.html#cb289-1" tabindex="-1"></a>rep0 <span class="sc">|&gt;</span> <span class="fu">filter</span>(antes <span class="sc">!=</span> depois)</span></code></pre></div>
+<pre><code>   doc_id    antes   depois prompt
+1 doc0059  REGULAR    PUNIR     v2
+2 doc0233    PUNIR  REGULAR     v2
+3 doc0255    OUTRO PROMOVER     v2
+4 doc0267 PROMOVER  REGULAR     v3
+5 doc0272    PUNIR  REGULAR     v3</code></pre>
+</div>
+<div class="aba" data-nome="Python">
+<div class="sourceCode" id="cb291"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb291-1"><a href="reprodutibilidade.html#cb291-1" tabindex="-1"></a><span class="kw">def</span> compara(p):</span>
+<span id="cb291-2"><a href="reprodutibilidade.html#cb291-2" tabindex="-1"></a>    arq <span class="op">=</span> <span class="ss">f&quot;s5-nano-instruct__</span><span class="sc">{</span>p<span class="sc">}</span><span class="ss">__t0.0__s42.jsonl&quot;</span></span>
+<span id="cb291-3"><a href="reprodutibilidade.html#cb291-3" tabindex="-1"></a>    a <span class="op">=</span> pd.read_json(Path(<span class="st">&quot;dados/cache_llm&quot;</span>) <span class="op">/</span> arq, lines<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb291-4"><a href="reprodutibilidade.html#cb291-4" tabindex="-1"></a>    b <span class="op">=</span> pd.read_json(Path(<span class="st">&quot;dados/repeticao&quot;</span>) <span class="op">/</span> arq, lines<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb291-5"><a href="reprodutibilidade.html#cb291-5" tabindex="-1"></a>    <span class="cf">return</span> (a[[<span class="st">&quot;doc_id&quot;</span>, <span class="st">&quot;categoria_llm&quot;</span>]].rename(columns<span class="op">=</span>{<span class="st">&quot;categoria_llm&quot;</span>: <span class="st">&quot;antes&quot;</span>})</span>
+<span id="cb291-6"><a href="reprodutibilidade.html#cb291-6" tabindex="-1"></a>            .merge(b[[<span class="st">&quot;doc_id&quot;</span>, <span class="st">&quot;categoria_llm&quot;</span>]]</span>
+<span id="cb291-7"><a href="reprodutibilidade.html#cb291-7" tabindex="-1"></a>                   .rename(columns<span class="op">=</span>{<span class="st">&quot;categoria_llm&quot;</span>: <span class="st">&quot;depois&quot;</span>}), on<span class="op">=</span><span class="st">&quot;doc_id&quot;</span>)</span>
+<span id="cb291-8"><a href="reprodutibilidade.html#cb291-8" tabindex="-1"></a>            .assign(prompt<span class="op">=</span>p))</span>
+<span id="cb291-9"><a href="reprodutibilidade.html#cb291-9" tabindex="-1"></a>rep0 <span class="op">=</span> pd.concat([compara(p) <span class="cf">for</span> p <span class="kw">in</span> [<span class="st">&quot;v1&quot;</span>, <span class="st">&quot;v2&quot;</span>, <span class="st">&quot;v3&quot;</span>]])</span>
+<span id="cb291-10"><a href="reprodutibilidade.html#cb291-10" tabindex="-1"></a><span class="bu">print</span>(rep0.assign(mudou<span class="op">=</span>rep0[<span class="st">&quot;antes&quot;</span>] <span class="op">!=</span> rep0[<span class="st">&quot;depois&quot;</span>])</span>
+<span id="cb291-11"><a href="reprodutibilidade.html#cb291-11" tabindex="-1"></a>      .groupby(<span class="st">&quot;prompt&quot;</span>).agg(n<span class="op">=</span>(<span class="st">&quot;doc_id&quot;</span>, <span class="st">&quot;size&quot;</span>), mudaram<span class="op">=</span>(<span class="st">&quot;mudou&quot;</span>, <span class="st">&quot;sum&quot;</span>)))</span></code></pre></div>
+<pre><code>          n  mudaram
+prompt              
+v1      304        0
+v2      304        3
+v3      304        2</code></pre>
+<div class="sourceCode" id="cb293"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb293-1"><a href="reprodutibilidade.html#cb293-1" tabindex="-1"></a>rep0[rep0[<span class="st">&quot;antes&quot;</span>] <span class="op">!=</span> rep0[<span class="st">&quot;depois&quot;</span>]]</span></code></pre></div>
+<pre><code>      doc_id     antes    depois prompt
+58   doc0059   REGULAR     PUNIR     v2
+232  doc0233     PUNIR   REGULAR     v2
+254  doc0255     OUTRO  PROMOVER     v2
+266  doc0267  PROMOVER   REGULAR     v3
+271  doc0272     PUNIR   REGULAR     v3</code></pre>
+</div>
+</div>
+<p><strong>O que está sendo executado.</strong> Para cada prompt, juntamos a anotação original e a repetição pelo <code>doc_id</code> e contamos as ementas cujo rótulo mudou. Mesmo modelo, mesmos pesos, mesmo Ollama, mesmo prompt, mesma semente, temperatura 0, e ainda assim alguns rótulos mudam. É por isso que a replicação exata deste material parte do <strong>cache</strong>, não de uma nova execução do modelo.</p>
+</div>
+<div id="r-e-python-chegam-aos-mesmos-números" class="section level3 hasAnchor" number="8.6.4">
+<h3><span class="header-section-number">8.6.4</span> R e Python chegam aos mesmos números?<a href="reprodutibilidade.html#r-e-python-chegam-aos-mesmos-n%C3%BAmeros" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>Se as duas trilhas já tiverem rodado, as tabelas de resultados podem ser comparadas diretamente:</p>
+<div class="abas">
+<div class="aba" data-nome="R">
+<div class="sourceCode" id="cb295"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb295-1"><a href="reprodutibilidade.html#cb295-1" tabindex="-1"></a>r_tab  <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">&quot;resultados/tabelas/estimativas_punir.csv&quot;</span>, <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb295-2"><a href="reprodutibilidade.html#cb295-2" tabindex="-1"></a>py_tab <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">&quot;resultados/python/tabelas/estimativas_punir.csv&quot;</span>,</span>
+<span id="cb295-3"><a href="reprodutibilidade.html#cb295-3" tabindex="-1"></a>                   <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb295-4"><a href="reprodutibilidade.html#cb295-4" tabindex="-1"></a><span class="fu">inner_join</span>(<span class="fu">select</span>(r_tab, estimador, <span class="at">r =</span> estimativa, <span class="at">r_li =</span> li),</span>
+<span id="cb295-5"><a href="reprodutibilidade.html#cb295-5" tabindex="-1"></a>           <span class="fu">select</span>(py_tab, estimador, <span class="at">py =</span> estimativa, <span class="at">py_li =</span> li), <span class="at">by =</span> <span class="st">&quot;estimador&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb295-6"><a href="reprodutibilidade.html#cb295-6" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">dif_estimativa =</span> r <span class="sc">-</span> py, <span class="at">dif_li =</span> r_li <span class="sc">-</span> py_li)</span></code></pre></div>
+<pre><code># A tibble: 4 × 7
+  estimador                     r  r_li    py py_li dif_estimativa dif_li
+  &lt;chr&gt;                     &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;          &lt;dbl&gt;  &lt;dbl&gt;
+1 Só humanos (amostra-ouro) 0.183 0.114 0.183 0.114              0      0
+2 Ingênuo (LLM = verdade)   0.230 0.183 0.230 0.183              0      0
+3 PPI                       0.206 0.136 0.206 0.136              0      0
+4 PPI++                     0.194 0.144 0.194 0.144              0      0</code></pre>
+</div>
+<div class="aba" data-nome="Python">
+<div class="sourceCode" id="cb297"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb297-1"><a href="reprodutibilidade.html#cb297-1" tabindex="-1"></a>r_tab <span class="op">=</span> pd.read_csv(<span class="st">&quot;resultados/tabelas/estimativas_punir.csv&quot;</span>)</span>
+<span id="cb297-2"><a href="reprodutibilidade.html#cb297-2" tabindex="-1"></a>py_tab <span class="op">=</span> pd.read_csv(<span class="st">&quot;resultados/python/tabelas/estimativas_punir.csv&quot;</span>)</span>
+<span id="cb297-3"><a href="reprodutibilidade.html#cb297-3" tabindex="-1"></a>comp <span class="op">=</span> r_tab[[<span class="st">&quot;estimador&quot;</span>, <span class="st">&quot;estimativa&quot;</span>, <span class="st">&quot;li&quot;</span>]].merge(</span>
+<span id="cb297-4"><a href="reprodutibilidade.html#cb297-4" tabindex="-1"></a>    py_tab[[<span class="st">&quot;estimador&quot;</span>, <span class="st">&quot;estimativa&quot;</span>, <span class="st">&quot;li&quot;</span>]], on<span class="op">=</span><span class="st">&quot;estimador&quot;</span>, suffixes<span class="op">=</span>(<span class="st">&quot;_r&quot;</span>, <span class="st">&quot;_py&quot;</span>))</span>
+<span id="cb297-5"><a href="reprodutibilidade.html#cb297-5" tabindex="-1"></a>comp.assign(dif_estimativa<span class="op">=</span>comp[<span class="st">&quot;estimativa_r&quot;</span>] <span class="op">-</span> comp[<span class="st">&quot;estimativa_py&quot;</span>],</span>
+<span id="cb297-6"><a href="reprodutibilidade.html#cb297-6" tabindex="-1"></a>            dif_li<span class="op">=</span>comp[<span class="st">&quot;li_r&quot;</span>] <span class="op">-</span> comp[<span class="st">&quot;li_py&quot;</span>])</span></code></pre></div>
+<pre><code>                   estimador  estimativa_r      li_r  estimativa_py     li_py  dif_estimativa  \
+0  Só humanos (amostra-ouro)      0.183333  0.113812       0.183333  0.113812             0.0   
+1    Ingênuo (LLM = verdade)      0.230263  0.182860       0.230263  0.182860             0.0   
+2                        PPI      0.205797  0.136087       0.205797  0.136087             0.0   
+3                      PPI++      0.194406  0.144185       0.194406  0.144185             0.0   
+
+         dif_li  
+0  0.000000e+00  
+1  0.000000e+00  
+2  1.110223e-16  
+3  0.000000e+00  </code></pre>
+</div>
+</div>
+<p><strong>O que está sendo executado.</strong> As estimativas pontuais e os ICs normais não dependem de sorteio, e por isso as diferenças entre as linguagens são zero (ou da ordem de <span class="math inline">\(10^{-16}\)</span>, o erro de arredondamento do computador). As diferenças de até 0,01 aparecem só nas tabelas que dependem do gerador aleatório (ICs bootstrap da validação e simulação de cobertura).</p>
+</div>
+<div id="o-ambiente" class="section level3 hasAnchor" number="8.6.5">
+<h3><span class="header-section-number">8.6.5</span> O ambiente<a href="reprodutibilidade.html#o-ambiente" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<div class="abas">
+<div class="aba" data-nome="R">
+<div class="sourceCode" id="cb299"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb299-1"><a href="reprodutibilidade.html#cb299-1" tabindex="-1"></a>R.version.string</span></code></pre></div>
+<pre><code>[1] &quot;R version 4.6.2 (2026-10-29)&quot;</code></pre>
+<div class="sourceCode" id="cb301"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb301-1"><a href="reprodutibilidade.html#cb301-1" tabindex="-1"></a>pacotes <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;dplyr&quot;</span>, <span class="st">&quot;glmnet&quot;</span>, <span class="st">&quot;tm&quot;</span>, <span class="st">&quot;targets&quot;</span>, <span class="st">&quot;httr2&quot;</span>)</span>
+<span id="cb301-2"><a href="reprodutibilidade.html#cb301-2" tabindex="-1"></a><span class="fu">sapply</span>(pacotes, \(p) <span class="fu">as.character</span>(<span class="fu">packageVersion</span>(p)))</span></code></pre></div>
+<pre><code>   dplyr   glmnet       tm  targets    httr2 
+ &quot;1.2.1&quot;    &quot;5.1&quot; &quot;0.7.19&quot; &quot;1.12.0&quot;  &quot;1.3.0&quot; </code></pre>
+</div>
+<div class="aba" data-nome="Python">
+<div class="sourceCode" id="cb303"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb303-1"><a href="reprodutibilidade.html#cb303-1" tabindex="-1"></a><span class="im">import</span> sys, sklearn, matplotlib</span>
+<span id="cb303-2"><a href="reprodutibilidade.html#cb303-2" tabindex="-1"></a><span class="bu">print</span>(sys.version.split()[<span class="dv">0</span>])</span></code></pre></div>
+<pre><code>3.11.5</code></pre>
+<div class="sourceCode" id="cb305"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb305-1"><a href="reprodutibilidade.html#cb305-1" tabindex="-1"></a><span class="bu">print</span>({<span class="st">&quot;pandas&quot;</span>: pd.__version__, <span class="st">&quot;numpy&quot;</span>: np.__version__,</span>
+<span id="cb305-2"><a href="reprodutibilidade.html#cb305-2" tabindex="-1"></a>       <span class="st">&quot;scikit-learn&quot;</span>: sklearn.__version__, <span class="st">&quot;matplotlib&quot;</span>: matplotlib.__version__})</span></code></pre></div>
+<pre><code>{&#39;pandas&#39;: &#39;2.1.4&#39;, &#39;numpy&#39;: &#39;1.26.4&#39;, &#39;scikit-learn&#39;: &#39;1.4.2&#39;, &#39;matplotlib&#39;: &#39;3.7.5&#39;}</code></pre>
+</div>
+</div>
+<p>O registro completo do ambiente usado nos resultados publicados está em <code>resultados/sessionInfo.txt</code>, gravado pelo próprio pipeline. Ao reproduzir, compare as versões: diferenças grandes (por exemplo, uma versão nova do <code>glmnet</code> ou do <code>scikit-learn</code>) podem mudar o baseline TF-IDF.</p>
+
+</div>
+</div>
+</div>
+<h3>Referências<a href="referencias.html#referencias" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<div id="refs" class="references csl-bib-body hanging-indent">
+<div id="ref-landau2021" class="csl-entry">
+Landau, William Michael. 2021. <span>“The targets <span>R</span> package: a dynamic <span>Make</span>-like function-oriented pipeline toolkit for reproducibility and high-performance computing”</span>. <em>Journal of Open Source Software</em> 6 (57): 2959.
+</div>
+</div>
+<!-- Abas R | Python do livro: transforma ::: {.abas} / ::: {.aba data-nome="R"} em abas.
+     A escolha vale para todas as abas da página e fica lembrada entre os capítulos. -->
+<script>
+(function () {
+  var CHAVE = "livro-linguagem";
+  function lerPref() { try { return localStorage.getItem(CHAVE); } catch (e) { return null; } }
+  function salvarPref(v) { try { localStorage.setItem(CHAVE, v); } catch (e) {} }
+  function filhas(box) {
+    return Array.prototype.filter.call(box.children, function (el) { return el.classList.contains("aba"); });
+  }
+  function escolhe(nome) {
+    document.querySelectorAll(".abas").forEach(function (box) {
+      var abas = filhas(box);
+      if (!abas.length) return;
+      var alvo = abas.some(function (a) { return a.getAttribute("data-nome") === nome; }) ? nome : abas[0].getAttribute("data-nome");
+      abas.forEach(function (a) { a.hidden = a.getAttribute("data-nome") !== alvo; });
+      box.querySelectorAll(":scope > .abas-barra > button").forEach(function (b) {
+        var ativo = b.textContent === alvo;
+        b.classList.toggle("ativo", ativo);
+        b.setAttribute("aria-selected", ativo ? "true" : "false");
+      });
+    });
+  }
+  function monta() {
+    document.querySelectorAll(".abas").forEach(function (box) {
+      if (box.getAttribute("data-pronto")) return;
+      box.setAttribute("data-pronto", "1");
+      var barra = document.createElement("div");
+      barra.className = "abas-barra";
+      barra.setAttribute("role", "tablist");
+      filhas(box).forEach(function (aba) {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.setAttribute("role", "tab");
+        b.textContent = aba.getAttribute("data-nome");
+        b.addEventListener("click", function () { salvarPref(b.textContent); escolhe(b.textContent); });
+        barra.appendChild(b);
+      });
+      box.insertBefore(barra, box.firstChild);
+    });
+    escolhe(lerPref() || "R");
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", monta); else monta();
+  if (window.gitbook && gitbook.events) gitbook.events.bind("page.change", monta);
+})();
+</script>
+            </section>
+
+          </div>
+        </div>
+      </div>
+<a href="inferencia.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+<a href="etica.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
+    </div>
+  </div>
+<script src="assets/gitbook-2.6.7/js/app.min.js"></script>
+<script src="assets/gitbook-2.6.7/js/clipboard.min.js"></script>
+<script src="assets/gitbook-2.6.7/js/plugin-search.js"></script>
+<script src="assets/gitbook-2.6.7/js/plugin-sharing.js"></script>
+<script src="assets/gitbook-2.6.7/js/plugin-fontsettings.js"></script>
+<script src="assets/gitbook-2.6.7/js/plugin-bookdown.js"></script>
+<script src="assets/gitbook-2.6.7/js/jquery.highlight.js"></script>
+<script src="assets/gitbook-2.6.7/js/plugin-clipboard.js"></script>
+<script>
+gitbook.require(["gitbook"], function(gitbook) {
+gitbook.start({
+  "sharing": null,
+  "fontsettings": {
+    "theme": "white",
+    "family": "sans",
+    "size": 2
+  },
+  "edit": null,
+  "history": {
+    "link": null,
+    "text": null
+  },
+  "view": {
+    "link": null,
+    "text": null
+  },
+  "download": ["ia-instrumento-medicao.pdf"],
+  "search": {
+    "engine": "fuse",
+    "options": null
+  },
+  "toc": {
+    "collapse": "section"
+  },
+  "info": false
+});
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    var src = "true";
+    if (src === "" || src === "true") src = "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/latest.js?config=TeX-MML-AM_CHTML";
+    if (location.protocol !== "file:")
+      if (/^https?:/.test(src))
+        src = src.replace(/^https?:/, '');
+    script.src = src;
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+</body>
+
+</html>

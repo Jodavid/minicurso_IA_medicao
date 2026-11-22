@@ -1,0 +1,143 @@
+# Checklist: usar um LLM como instrumento de medição {#checklist}
+
+Use antes de submeter um artigo (ou de confiar num resultado) que dependa de rótulos produzidos por IA. Este é o conteúdo de `CHECKLIST.md`, no material do minicurso.
+
+```{r, results="asis"}
+inclui_md("CHECKLIST.md")
+```
+
+# Prompts completos {#prompts}
+
+Os três prompts usados no minicurso, exatamente como foram enviados ao modelo (`{{ementa}}` é substituído pelo texto de cada ementa). O hash SHA-256 de cada arquivo fica registrado em cada resposta do cache.
+
+```{r, results="asis"}
+for (v in c("v1_simples", "v2_codebook", "v3_fewshot")) {
+  arq <- file.path("prompts", paste0("prompt_", v, ".txt"))
+  txt <- readChar(file.path(RAIZ, arq), file.size(file.path(RAIZ, arq)), useBytes = TRUE)
+  Encoding(txt) <- "UTF-8"
+  sha <- substr(digest::digest(txt, algo = "sha256", serialize = FALSE), 1, 12)
+  cat("\n## Prompt ", sub("_.*", "", v), " {-}\n\n`", arq, "` · SHA-256: `", sha, "`\n\n", sep = "")
+  cat("```text\n", txt, "\n```\n", sep = "")
+}
+```
+
+# Como reproduzir {#reproduzir}
+
+## Sem LLM e sem internet (como em sala)
+
+Tudo parte dos dados e do cache congelados. Em R:
+
+```r
+source("R/00_pacotes.R")   # instala as dependências (uma vez)
+targets::tar_make()        # refaz amostra-ouro, baselines, validação, inferência e figuras
+```
+
+ou, passo a passo: `Rscript R/02_amostra_ouro.R`, `R/03_baselines.R`, `R/05_validacao.R`, `R/06_inferencia.R`.
+
+Em Python: abra os notebooks de `python/` (no Jupyter ou no Google Colab) na ordem 01 a 05. A primeira célula de cada um configura o ambiente; as dependências estão em `requirements.txt`. A instalação de tudo, passo a passo, está no Apêndice \@ref(ambiente).
+
+## Refazendo a coleta e a anotação
+
+```bash
+Rscript R/01_coleta.R                # ~5 a 10 min, APIs públicas (gera um corpus novo!)
+ollama pull hf.co/maritaca-ai/S5-nano-GGUF:Q4_K_M         # S5-nano em 4 bits (~3,5 GB)
+ollama create s5-nano-instruct -f modelos/Modelfile.s5-nano-instruct
+python python/anotar_llm.py --todas  # ~15 min numa GPU de notebook; retoma de onde parou
+```
+
+## Este livro e os slides
+
+```r
+setwd("livro")
+source("build.R")                      # compila o livro em ../docs/
+```
+
+```bash
+quarto render slides/parte1_conceitos.qmd   # Parte 1: conceitos (formato A, 2 h)
+quarto render slides/completo_R.qmd         # minicurso completo com código R (formato B, 4 h)
+quarto render slides/completo_python.qmd    # minicurso completo com código Python (formato B, 4 h)
+quarto render slides/slides.qmd             # versão resumida, com resultados
+```
+
+## Estrutura do material
+
+```text
+minicurso_IA_medicao/
+├── README.md, ROTEIRO.md, CODEBOOK.md, CHECKLIST.md
+├── _targets.R               pipeline reprodutível (R/targets)
+├── requirements.txt         dependências Python
+├── R/                       funções e scripts dos blocos 1 a 6
+├── python/                  trilha equivalente (notebooks para o Colab)
+├── prompts/                 prompts versionados + CHANGELOG
+├── dados/
+│   ├── bruto/               respostas das APIs (congeladas)
+│   ├── processado/          corpus.csv (304 proposições)
+│   ├── anotacoes/           referência, amostra-ouro, baselines
+│   └── cache_llm/           todas as respostas do LLM
+├── resultados/              tabelas e figuras
+├── slides/                  slides em Quarto
+├── material_apoio/          contexto regulatório, exercício de codificação
+├── livro/                   fontes deste livro (bookdown)
+└── docs/                    livro compilado (pronto para o GitHub Pages)
+```
+
+## Ambiente usado nos resultados
+
+```{r, comment=""}
+cat(readLines(file.path(RAIZ, "resultados/sessionInfo.txt"))[1:3], sep = "\n")
+```
+
+O `sessionInfo()` completo está em `resultados/sessionInfo.txt`.
+
+# Declaração de uso de inteligência artificial e responsabilidade {#declaracao-ia}
+
+## Autoria
+
+Este livro e o material do minicurso **"Inteligência Artificial como Instrumento de Medição: Validação Estatística e Reprodutibilidade"** (II DataPOL, UFPE, 2026) têm como autor o **Prof. Dr. Jodavid Ferreira** (Departamento de Estatística, UFPE), em **coautoria com o Claude Opus 5.5**, modelo de inteligência artificial desenvolvido pela Anthropic.
+
+## Identificação da ferramenta
+
+Seguindo o que o próprio minicurso recomenda para qualquer instrumento baseado em IA:
+
+```{r tab-ia}
+tibble::tribble(
+  ~Item, ~Registro,
+  "Modelo", "Claude Opus 5.5 (Anthropic)",
+  "Identificador", "`claude-opus-5-5`",
+  "Interface", "Claude Code (agente de programação em linha de comando)",
+  "Período de uso", "Outubro e novembro de 2026",
+  "Papel", "Coautor e auxiliar na produção do material"
+) |> knitr::kable(caption = "Identificação da IA usada na produção deste material.")
+```
+
+## O que a IA fez
+
+- Auxiliou na **escrita e revisão do código** em R e Python.
+- Auxiliou na **redação e organização do texto** do livro e do material de apoio.
+- Fez a **codificação preliminar de referência** das ementas (`dados/anotacoes/referencia_completa.csv`), aplicando o livro de códigos com base apenas na ementa: as 298 da coleta de 08/10/2026 e, em 06/11/2026, as 6 novas. Esses rótulos **ainda não foram revisados por humanos** (`codificador = "preliminar"`, `revisado = FALSE`); por isso os resultados do livro são ilustrativos (Seção \@ref(referencia)).
+- **Verificou a reprodutibilidade** do material: executou o pipeline em R e os notebooks em Python, comparou os resultados com os publicados, identificou e corrigiu uma falha no pipeline `targets` (Capítulo \@ref(reprodutibilidade)).
+- Em 06/11/2026, a pedido do autor, **refez a coleta** (Capítulo \@ref(dados)), fez a codificação preliminar dos 6 projetos novos (doc0299 a doc0304), refez as análises e **gerou a capa do livro** (`livro/capa/gera_capa.py`).
+- Em 11 e 12/11/2026, a pedido do autor, **configurou o S5-nano** (Maritaca AI) no Ollama como `s5-nano-instruct` (modo *instruct*, 4 bits), **anotou o corpus** com ele, repetiu as anotações a temperatura 0 para o teste de reprodutibilidade (Capítulo \@ref(reprodutibilidade)), refez as análises e atualizou o livro e os slides. A escolha do modelo é do autor.
+- **Compilou este livro** com o pacote `bookdown`.
+
+## O que coube ao autor humano
+
+- A **concepção** do minicurso, da pergunta de pesquisa e do estudo de caso.
+- As **decisões metodológicas** e a definição do livro de códigos.
+- A **curadoria, revisão e aprovação** do conteúdo final.
+- A **responsabilidade** pelo que é publicado.
+
+## Responsabilidade
+
+A IA foi usada como **ferramenta auxiliar**. Ela não substitui o julgamento do autor e não responde pelo conteúdo. **O autor humano assume integral responsabilidade** por todo o conteúdo deste livro e do material do minicurso, incluindo textos, códigos, análises, interpretações e eventuais erros. Correções e sugestões são bem-vindas pelo e-mail jodavid.ferreira@ufpe.br.
+
+## Dois papéis diferentes para a IA
+
+Para evitar confusão, vale repetir a distinção feita na Apresentação:
+
+- O **S5-nano** (Maritaca AI, modo *instruct*, `s5-nano-instruct`) é o **instrumento de medição** estudado no minicurso: classifica as ementas, e seu erro é medido e corrigido nos Capítulos \@ref(validacao) e \@ref(inferencia).
+- O **Claude Opus 5.5** é o **coautor** que auxiliou na produção do material (código, texto, verificação e compilação) e que fez a **codificação preliminar de referência**. Ele não é o instrumento cuja validade o livro avalia, mas, enquanto a referência não for revisada por humanos, a validade do S5-nano é medida **contra os rótulos dele**: o kappa é uma concordância entre duas IAs.
+
+## Por que esta declaração existe
+
+Porque o argumento central do minicurso vale também para quem o escreveu: a IA é um instrumento com erros, cujo uso deve ser **documentado, verificado e assumido**. Declarar o uso de IA não diminui o trabalho; torna-o **auditável**.

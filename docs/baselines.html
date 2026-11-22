@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xml:lang="pt-BR">
+<head>
+
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>Capítulo 4 Baselines: quanto se acerta sem LLM? | Inteligência Artificial como Instrumento de Medição</title>
+  <meta name="description" content="Livro do minicurso ‘IA como Instrumento de Medição’ (II DataPOL/UFPE, 2026): do dado legislativo bruto à inferência com rótulos produzidos por LLMs, em R e Python." />
+  <meta name="generator" content="bookdown 0.48 and GitBook 2.6.7" />
+
+  <meta property="og:title" content="Capítulo 4 Baselines: quanto se acerta sem LLM? | Inteligência Artificial como Instrumento de Medição" />
+  <meta property="og:type" content="book" />
+  <meta property="og:image" content="https://jodavid.github.io/minicurso-ia-medicao/capa/capa.png" />
+  <meta property="og:description" content="Livro do minicurso ‘IA como Instrumento de Medição’ (II DataPOL/UFPE, 2026): do dado legislativo bruto à inferência com rótulos produzidos por LLMs, em R e Python." />
+  
+
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Capítulo 4 Baselines: quanto se acerta sem LLM? | Inteligência Artificial como Instrumento de Medição" />
+  
+  <meta name="twitter:description" content="Livro do minicurso ‘IA como Instrumento de Medição’ (II DataPOL/UFPE, 2026): do dado legislativo bruto à inferência com rótulos produzidos por LLMs, em R e Python." />
+  <meta name="twitter:image" content="https://jodavid.github.io/minicurso-ia-medicao/capa/capa.png" />
+
+<meta name="author" content="Prof. Dr. Jodavid Ferreira (Departamento de Estatística, UFPE)" />
+<meta name="author" content="Coautoria: Claude Opus 5.5 (modelo de inteligência artificial da Anthropic)" />
+
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  
+  
+<link rel="prev" href="codificacao.html"/>
+<link rel="next" href="llm.html"/>
+<script src="assets/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
+<link href="assets/gitbook-2.6.7/css/style.css" rel="stylesheet" />
+<link href="assets/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
+<link href="assets/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
+<link href="assets/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
+<link href="assets/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
+<link href="assets/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
+<link href="assets/gitbook-2.6.7/css/plugin-clipboard.css" rel="stylesheet" />
+
+
+
+
+
+
+
+
+<link href="assets/anchor-sections-1.1.0/anchor-sections.css" rel="stylesheet" />
+<link href="assets/anchor-sections-1.1.0/anchor-sections-hash.css" rel="stylesheet" />
+<script src="assets/anchor-sections-1.1.0/anchor-sections.js"></script>
+
+
+<style type="text/css">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+<style type="text/css">
+  
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+</style>
+<style type="text/css">
+/* Used with Pandoc 2.11+ new --citeproc when CSL is used */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}
+</style>
+
+<link rel="stylesheet" href="estilo.css" type="text/css" />
+</head>
+
+<body>
+
+
+
+  <div class="book without-animation with-summary font-size-2 font-family-1" data-basepath=".">
+
+    <div class="book-summary">
+      <nav role="navigation">
+
+<ul class="summary">
+<li class="toc-titulo"><a href="./">IA como Instrumento de Medição</a></li>
+<li class="toc-sub">II DataPOL · UFPE · 2026</li>
+
+<li class="divider"></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i>Apresentação</a>
+<ul>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#o-estudo-de-caso"><i class="fa fa-check"></i>O estudo de caso</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#a-quem-se-destina"><i class="fa fa-check"></i>A quem se destina</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#como-usar-este-livro"><i class="fa fa-check"></i>Como usar este livro</a>
+<ul>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#dois-formatos-para-o-minicurso"><i class="fa fa-check"></i>Dois formatos para o minicurso</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#material"><i class="fa fa-check"></i>Material</a></li>
+</ul></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#autoria-e-uso-de-intelig%C3%AAncia-artificial"><i class="fa fa-check"></i>Autoria e uso de inteligência artificial</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#como-citar"><i class="fa fa-check"></i>Como citar</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#licen%C3%A7a"><i class="fa fa-check"></i>Licença</a></li>
+</ul></li>
+<li class="chapter" data-level="1" data-path="intro.html"><a href="intro.html"><i class="fa fa-check"></i><b>1</b> Quem mede a régua?</a>
+<ul>
+<li class="chapter" data-level="1.1" data-path="intro.html"><a href="intro.html#duas-perguntas"><i class="fa fa-check"></i><b>1.1</b> Duas perguntas</a></li>
+<li class="chapter" data-level="1.2" data-path="intro.html"><a href="intro.html#por-que-agora"><i class="fa fa-check"></i><b>1.2</b> Por que agora?</a></li>
+<li class="chapter" data-level="1.3" data-path="intro.html"><a href="intro.html#a-fase-atual-da-estat%C3%ADstica"><i class="fa fa-check"></i><b>1.3</b> A “fase atual” da estatística</a></li>
+<li class="chapter" data-level="1.4" data-path="intro.html"><a href="intro.html#o-caminho-deste-livro"><i class="fa fa-check"></i><b>1.4</b> O caminho deste livro</a></li>
+</ul></li>
+<li class="chapter" data-level="2" data-path="dados.html"><a href="dados.html"><i class="fa fa-check"></i><b>2</b> Dados legislativos</a>
+<ul>
+<li class="chapter" data-level="2.1" data-path="dados.html"><a href="dados.html#as-apis-de-dados-abertos"><i class="fa fa-check"></i><b>2.1</b> As APIs de dados abertos</a></li>
+<li class="chapter" data-level="2.2" data-path="dados.html"><a href="dados.html#a-coleta-tamb%C3%A9m-%C3%A9-medi%C3%A7%C3%A3o"><i class="fa fa-check"></i><b>2.2</b> A coleta também é medição</a></li>
+<li class="chapter" data-level="2.3" data-path="dados.html"><a href="dados.html#mao-dados"><i class="fa fa-check"></i><b>2.3</b> Mão na massa: do JSON da API ao corpus</a>
+<ul>
+<li class="chapter" data-level="2.3.1" data-path="dados.html"><a href="dados.html#uma-chamada-%C3%A0-api"><i class="fa fa-check"></i><b>2.3.1</b> Uma chamada à API</a></li>
+<li class="chapter" data-level="2.3.2" data-path="dados.html"><a href="dados.html#partido-do-senado-e-limpeza-da-ementa"><i class="fa fa-check"></i><b>2.3.2</b> Partido do Senado e limpeza da ementa</a></li>
+<li class="chapter" data-level="2.3.3" data-path="dados.html"><a href="dados.html#o-corpus-congelado"><i class="fa fa-check"></i><b>2.3.3</b> O corpus congelado</a></li>
+<li class="chapter" data-level="2.3.4" data-path="dados.html"><a href="dados.html#o-campo-pol%C3%ADtico"><i class="fa fa-check"></i><b>2.3.4</b> O campo político</a></li>
+<li class="chapter" data-level="2.3.5" data-path="dados.html"><a href="dados.html#a-explos%C3%A3o-legislativa-em-gr%C3%A1fico"><i class="fa fa-check"></i><b>2.3.5</b> A explosão legislativa, em gráfico</a></li>
+<li class="chapter" data-level="2.3.6" data-path="dados.html"><a href="dados.html#a-recoleta-o-que-muda-em-um-m%C3%AAs"><i class="fa fa-check"></i><b>2.3.6</b> A recoleta: o que muda em um mês</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="3" data-path="codificacao.html"><a href="codificacao.html"><i class="fa fa-check"></i><b>3</b> Codificar é medir</a>
+<ul>
+<li class="chapter" data-level="3.1" data-path="codificacao.html"><a href="codificacao.html#o-livro-de-c%C3%B3digos"><i class="fa fa-check"></i><b>3.1</b> O livro de códigos</a>
+<ul>
+<li class="chapter" data-level="3.1.1" data-path="codificacao.html"><a href="codificacao.html#regras-de-decis%C3%A3o"><i class="fa fa-check"></i><b>3.1.1</b> Regras de decisão</a></li>
+</ul></li>
+<li class="chapter" data-level="3.2" data-path="codificacao.html"><a href="codificacao.html#referencia"><i class="fa fa-check"></i><b>3.2</b> A codificação de referência: quem fez e como</a></li>
+<li class="chapter" data-level="3.3" data-path="codificacao.html"><a href="codificacao.html#classes"><i class="fa fa-check"></i><b>3.3</b> Quantas ementas de cada classe</a>
+<ul>
+<li class="chapter" data-level="3.3.1" data-path="codificacao.html"><a href="codificacao.html#o-que-foi-classificado-como-outro"><i class="fa fa-check"></i><b>3.3.1</b> O que foi classificado como OUTRO</a></li>
+</ul></li>
+<li class="chapter" data-level="3.4" data-path="codificacao.html"><a href="codificacao.html#a-amostra-ouro"><i class="fa fa-check"></i><b>3.4</b> A amostra-ouro</a></li>
+<li class="chapter" data-level="3.5" data-path="codificacao.html"><a href="codificacao.html#quanto-n%C3%B3s-concordamos-o-teto-humano"><i class="fa fa-check"></i><b>3.5</b> Quanto nós concordamos? O teto humano</a></li>
+<li class="chapter" data-level="3.6" data-path="codificacao.html"><a href="codificacao.html#mao-codificacao"><i class="fa fa-check"></i><b>3.6</b> Mão na massa: amostra-ouro e concordância</a>
+<ul>
+<li class="chapter" data-level="3.6.1" data-path="codificacao.html"><a href="codificacao.html#o-sorteio-%C3%A9-reprodut%C3%ADvel"><i class="fa fa-check"></i><b>3.6.1</b> O sorteio é reprodutível</a></li>
+<li class="chapter" data-level="3.6.2" data-path="codificacao.html"><a href="codificacao.html#quantos-de-cada-classe-no-corpus-todo"><i class="fa fa-check"></i><b>3.6.2</b> Quantos de cada classe, no corpus todo</a></li>
+<li class="chapter" data-level="3.6.3" data-path="codificacao.html"><a href="codificacao.html#o-que-h%C3%A1-na-amostra-ouro"><i class="fa fa-check"></i><b>3.6.3</b> O que há na amostra-ouro</a></li>
+<li class="chapter" data-level="3.6.4" data-path="codificacao.html"><a href="codificacao.html#concord%C3%A2ncia-entre-codificadores"><i class="fa fa-check"></i><b>3.6.4</b> Concordância entre codificadores</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="4" data-path="baselines.html"><a href="baselines.html"><i class="fa fa-check"></i><b>4</b> Baselines: quanto se acerta sem LLM?</a>
+<ul>
+<li class="chapter" data-level="4.1" data-path="baselines.html"><a href="baselines.html#dicion%C3%A1rio"><i class="fa fa-check"></i><b>4.1</b> Dicionário</a></li>
+<li class="chapter" data-level="4.2" data-path="baselines.html"><a href="baselines.html#tf-idf-e-regress%C3%A3o-log%C3%ADstica"><i class="fa fa-check"></i><b>4.2</b> TF-IDF e regressão logística</a></li>
+<li class="chapter" data-level="4.3" data-path="baselines.html"><a href="baselines.html#resultados"><i class="fa fa-check"></i><b>4.3</b> Resultados</a></li>
+<li class="chapter" data-level="4.4" data-path="baselines.html"><a href="baselines.html#o-mesmo-m%C3%A9todo-implementa%C3%A7%C3%B5es-diferentes"><i class="fa fa-check"></i><b>4.4</b> O “mesmo” método, implementações diferentes</a></li>
+<li class="chapter" data-level="4.5" data-path="baselines.html"><a href="baselines.html#mao-baselines"><i class="fa fa-check"></i><b>4.5</b> Mão na massa: dicionário e TF-IDF</a>
+<ul>
+<li class="chapter" data-level="4.5.1" data-path="baselines.html"><a href="baselines.html#preparar-os-dados"><i class="fa fa-check"></i><b>4.5.1</b> Preparar os dados</a></li>
+<li class="chapter" data-level="4.5.2" data-path="baselines.html"><a href="baselines.html#o-dicion%C3%A1rio-em-a%C3%A7%C3%A3o"><i class="fa fa-check"></i><b>4.5.2</b> O dicionário em ação</a></li>
+<li class="chapter" data-level="4.5.3" data-path="baselines.html"><a href="baselines.html#desempenho-do-dicion%C3%A1rio-na-amostra-ouro"><i class="fa fa-check"></i><b>4.5.3</b> Desempenho do dicionário na amostra-ouro</a></li>
+<li class="chapter" data-level="4.5.4" data-path="baselines.html"><a href="baselines.html#tf-idf-e-regress%C3%A3o-log%C3%ADstica-com-valida%C3%A7%C3%A3o-cruzada"><i class="fa fa-check"></i><b>4.5.4</b> TF-IDF e regressão logística com validação cruzada</a></li>
+<li class="chapter" data-level="4.5.5" data-path="baselines.html"><a href="baselines.html#a-tabela-final"><i class="fa fa-check"></i><b>4.5.5</b> A tabela final</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="5" data-path="llm.html"><a href="llm.html"><i class="fa fa-check"></i><b>5</b> O LLM como instrumento</a>
+<ul>
+<li class="chapter" data-level="5.1" data-path="llm.html"><a href="llm.html#um-modelo-brasileiro-aberto-e-local"><i class="fa fa-check"></i><b>5.1</b> Um modelo brasileiro, aberto e local</a></li>
+<li class="chapter" data-level="5.2" data-path="llm.html"><a href="llm.html#o-prompt-%C3%A9-parte-do-instrumento"><i class="fa fa-check"></i><b>5.2</b> O prompt é parte do instrumento</a></li>
+<li class="chapter" data-level="5.3" data-path="llm.html"><a href="llm.html#cache-as-respostas-do-llm-s%C3%A3o-dados"><i class="fa fa-check"></i><b>5.3</b> Cache: as respostas do LLM são dados</a></li>
+<li class="chapter" data-level="5.4" data-path="llm.html"><a href="llm.html#falhas-de-formato"><i class="fa fa-check"></i><b>5.4</b> Falhas de formato</a></li>
+<li class="chapter" data-level="5.5" data-path="llm.html"><a href="llm.html#mao-llm"><i class="fa fa-check"></i><b>5.5</b> Mão na massa: chamar o modelo, guardar e ler o cache</a>
+<ul>
+<li class="chapter" data-level="5.5.1" data-path="llm.html"><a href="llm.html#o-instrumento-por-escrito"><i class="fa fa-check"></i><b>5.5.1</b> O instrumento, por escrito</a></li>
+<li class="chapter" data-level="5.5.2" data-path="llm.html"><a href="llm.html#o-prompt-e-sua-impress%C3%A3o-digital"><i class="fa fa-check"></i><b>5.5.2</b> O prompt e sua impressão digital</a></li>
+<li class="chapter" data-level="5.5.3" data-path="llm.html"><a href="llm.html#uma-chamada-ao-modelo"><i class="fa fa-check"></i><b>5.5.3</b> Uma chamada ao modelo</a></li>
+<li class="chapter" data-level="5.5.4" data-path="llm.html"><a href="llm.html#extrair-o-r%C3%B3tulo-de-respostas-imperfeitas"><i class="fa fa-check"></i><b>5.5.4</b> Extrair o rótulo de respostas imperfeitas</a></li>
+<li class="chapter" data-level="5.5.5" data-path="llm.html"><a href="llm.html#ler-o-cache"><i class="fa fa-check"></i><b>5.5.5</b> Ler o cache</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="6" data-path="validacao.html"><a href="validacao.html"><i class="fa fa-check"></i><b>6</b> Validação: o instrumento mede o que diz medir?</a>
+<ul>
+<li class="chapter" data-level="6.1" data-path="validacao.html"><a href="validacao.html#validade-concord%C3%A2ncia-com-a-amostra-ouro"><i class="fa fa-check"></i><b>6.1</b> Validade: concordância com a amostra-ouro</a></li>
+<li class="chapter" data-level="6.2" data-path="validacao.html"><a href="validacao.html#onde-o-instrumento-erra"><i class="fa fa-check"></i><b>6.2</b> Onde o instrumento erra</a></li>
+<li class="chapter" data-level="6.3" data-path="validacao.html"><a href="validacao.html#vi%C3%A9s-diferencial"><i class="fa fa-check"></i><b>6.3</b> Viés diferencial</a></li>
+<li class="chapter" data-level="6.4" data-path="validacao.html"><a href="validacao.html#confiabilidade"><i class="fa fa-check"></i><b>6.4</b> Confiabilidade</a></li>
+<li class="chapter" data-level="6.5" data-path="validacao.html"><a href="validacao.html#a-vari%C3%A1vel-eleitoral"><i class="fa fa-check"></i><b>6.5</b> A variável eleitoral</a></li>
+<li class="chapter" data-level="6.6" data-path="validacao.html"><a href="validacao.html#humano-humano"><i class="fa fa-check"></i><b>6.6</b> Humano × humano</a></li>
+<li class="chapter" data-level="6.7" data-path="validacao.html"><a href="validacao.html#mao-validacao"><i class="fa fa-check"></i><b>6.7</b> Mão na massa: validar o instrumento</a>
+<ul>
+<li class="chapter" data-level="6.7.1" data-path="validacao.html"><a href="validacao.html#juntar-o-llm-%C3%A0-amostra-ouro"><i class="fa fa-check"></i><b>6.7.1</b> Juntar o LLM à amostra-ouro</a></li>
+<li class="chapter" data-level="6.7.2" data-path="validacao.html"><a href="validacao.html#validade-com-intervalo-bootstrap"><i class="fa fa-check"></i><b>6.7.2</b> Validade com intervalo bootstrap</a></li>
+<li class="chapter" data-level="6.7.3" data-path="validacao.html"><a href="validacao.html#onde-o-melhor-instrumento-erra"><i class="fa fa-check"></i><b>6.7.3</b> Onde o melhor instrumento erra</a></li>
+<li class="chapter" data-level="6.7.4" data-path="validacao.html"><a href="validacao.html#vi%C3%A9s-diferencial-por-campo-pol%C3%ADtico"><i class="fa fa-check"></i><b>6.7.4</b> Viés diferencial por campo político</a></li>
+<li class="chapter" data-level="6.7.5" data-path="validacao.html"><a href="validacao.html#confiabilidade-sementes-e-prompts"><i class="fa fa-check"></i><b>6.7.5</b> Confiabilidade: sementes e prompts</a></li>
+<li class="chapter" data-level="6.7.6" data-path="validacao.html"><a href="validacao.html#a-vari%C3%A1vel-eleitoral-1"><i class="fa fa-check"></i><b>6.7.6</b> A variável eleitoral</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="7" data-path="inferencia.html"><a href="inferencia.html"><i class="fa fa-check"></i><b>7</b> Inferência com rótulos imperfeitos</a>
+<ul>
+<li class="chapter" data-level="7.1" data-path="inferencia.html"><a href="inferencia.html#duas-solu%C3%A7%C3%B5es-ruins"><i class="fa fa-check"></i><b>7.1</b> Duas soluções ruins</a></li>
+<li class="chapter" data-level="7.2" data-path="inferencia.html"><a href="inferencia.html#prediction-powered-inference"><i class="fa fa-check"></i><b>7.2</b> <em>Prediction-Powered Inference</em></a></li>
+<li class="chapter" data-level="7.3" data-path="inferencia.html"><a href="inferencia.html#ppi"><i class="fa fa-check"></i><b>7.3</b> PPI++</a></li>
+<li class="chapter" data-level="7.4" data-path="inferencia.html"><a href="inferencia.html#que-propor%C3%A7%C3%A3o-dos-projetos-quer-punir"><i class="fa fa-check"></i><b>7.4</b> Que proporção dos projetos quer PUNIR?</a></li>
+<li class="chapter" data-level="7.5" data-path="inferencia.html"><a href="inferencia.html#simula%C3%A7%C3%A3o-com-que-frequ%C3%AAncia-o-ic-acerta"><i class="fa fa-check"></i><b>7.5</b> Simulação: com que frequência o IC acerta?</a></li>
+<li class="chapter" data-level="7.6" data-path="inferencia.html"><a href="inferencia.html#e-entre-campos-pol%C3%ADticos"><i class="fa fa-check"></i><b>7.6</b> E entre campos políticos?</a></li>
+<li class="chapter" data-level="7.7" data-path="inferencia.html"><a href="inferencia.html#o-que-os-n%C3%BAmeros-dizem"><i class="fa fa-check"></i><b>7.7</b> O que os números dizem</a></li>
+<li class="chapter" data-level="7.8" data-path="inferencia.html"><a href="inferencia.html#mao-inferencia"><i class="fa fa-check"></i><b>7.8</b> Mão na massa: os quatro estimadores, passo a passo</a>
+<ul>
+<li class="chapter" data-level="7.8.1" data-path="inferencia.html"><a href="inferencia.html#montar-y-e-f"><i class="fa fa-check"></i><b>7.8.1</b> Montar <span class="math inline">\(Y\)</span> e <span class="math inline">\(f\)</span></a></li>
+<li class="chapter" data-level="7.8.2" data-path="inferencia.html"><a href="inferencia.html#cada-estimador-%C3%A0-m%C3%A3o"><i class="fa fa-check"></i><b>7.8.2</b> Cada estimador, à mão</a></li>
+<li class="chapter" data-level="7.8.3" data-path="inferencia.html"><a href="inferencia.html#com-intervalos-de-confian%C3%A7a"><i class="fa fa-check"></i><b>7.8.3</b> Com intervalos de confiança</a></li>
+<li class="chapter" data-level="7.8.4" data-path="inferencia.html"><a href="inferencia.html#a-simula%C3%A7%C3%A3o-de-cobertura"><i class="fa fa-check"></i><b>7.8.4</b> A simulação de cobertura</a></li>
+<li class="chapter" data-level="7.8.5" data-path="inferencia.html"><a href="inferencia.html#por-campo-pol%C3%ADtico"><i class="fa fa-check"></i><b>7.8.5</b> Por campo político</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="8" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html"><i class="fa fa-check"></i><b>8</b> Reprodutibilidade (MLOps)</a>
+<ul>
+<li class="chapter" data-level="8.1" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#o-que-precisa-ser-versionado"><i class="fa fa-check"></i><b>8.1</b> O que precisa ser versionado?</a></li>
+<li class="chapter" data-level="8.2" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#um-pipeline-declarativo-com-targets"><i class="fa fa-check"></i><b>8.2</b> Um pipeline declarativo com <code>targets</code></a></li>
+<li class="chapter" data-level="8.3" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#r-e-python-duas-trilhas-os-mesmos-resultados"><i class="fa fa-check"></i><b>8.3</b> R e Python: duas trilhas, os mesmos resultados</a></li>
+<li class="chapter" data-level="8.4" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#drift-quando-o-instrumento-muda-sozinho"><i class="fa fa-check"></i><b>8.4</b> <em>Drift</em>: quando o instrumento muda sozinho</a></li>
+<li class="chapter" data-level="8.5" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#c%C3%B3digo-gerado-por-ia"><i class="fa fa-check"></i><b>8.5</b> Código gerado por IA</a></li>
+<li class="chapter" data-level="8.6" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#mao-reprodutibilidade"><i class="fa fa-check"></i><b>8.6</b> Mão na massa: verificar a reprodutibilidade</a>
+<ul>
+<li class="chapter" data-level="8.6.1" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#o-pipeline-sem-execut%C3%A1-lo"><i class="fa fa-check"></i><b>8.6.1</b> O pipeline, sem executá-lo</a></li>
+<li class="chapter" data-level="8.6.2" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#o-cache-confere-com-os-prompts"><i class="fa fa-check"></i><b>8.6.2</b> O cache confere com os prompts?</a></li>
+<li class="chapter" data-level="8.6.3" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#temperatura-0-%C3%A9-determin%C3%ADstica-a-repeti%C3%A7%C3%A3o-de-12112026"><i class="fa fa-check"></i><b>8.6.3</b> Temperatura 0 é determinística? A repetição de 12/11/2026</a></li>
+<li class="chapter" data-level="8.6.4" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#r-e-python-chegam-aos-mesmos-n%C3%BAmeros"><i class="fa fa-check"></i><b>8.6.4</b> R e Python chegam aos mesmos números?</a></li>
+<li class="chapter" data-level="8.6.5" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#o-ambiente"><i class="fa fa-check"></i><b>8.6.5</b> O ambiente</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="9" data-path="etica.html"><a href="etica.html"><i class="fa fa-check"></i><b>9</b> Ética, limites e debate</a>
+<ul>
+<li class="chapter" data-level="9.1" data-path="etica.html"><a href="etica.html#elei%C3%A7%C3%B5es-de-2026-regras-do-tse"><i class="fa fa-check"></i><b>9.1</b> Eleições de 2026: regras do TSE</a></li>
+<li class="chapter" data-level="9.2" data-path="etica.html"><a href="etica.html#o-marco-legal-da-ia-pl-23382023"><i class="fa fa-check"></i><b>9.2</b> O Marco Legal da IA: PL 2338/2023</a></li>
+<li class="chapter" data-level="9.3" data-path="etica.html"><a href="etica.html#o-que-o-corpus-n%C3%A3o-pode-mostrar"><i class="fa fa-check"></i><b>9.3</b> O que o corpus não pode mostrar</a></li>
+<li class="chapter" data-level="9.4" data-path="etica.html"><a href="etica.html#quando-n%C3%A3o-usar-um-llm"><i class="fa fa-check"></i><b>9.4</b> Quando <strong>não</strong> usar um LLM</a></li>
+<li class="chapter" data-level="9.5" data-path="etica.html"><a href="etica.html#para-debater"><i class="fa fa-check"></i><b>9.5</b> Para debater</a></li>
+<li class="chapter" data-level="9.6" data-path="etica.html"><a href="etica.html#mensagem-final"><i class="fa fa-check"></i><b>9.6</b> Mensagem final</a></li>
+</ul></li>
+<li class="appendix"><span><b>Apêndices</b></span></li>
+<li class="chapter" data-level="A" data-path="ambiente.html"><a href="ambiente.html"><i class="fa fa-check"></i><b>A</b> Preparando o ambiente</a>
+<ul>
+<li class="chapter" data-level="A.1" data-path="ambiente.html"><a href="ambiente.html#o-que-voc%C3%AA-precisa"><i class="fa fa-check"></i><b>A.1</b> O que você precisa</a></li>
+<li class="chapter" data-level="A.2" data-path="ambiente.html"><a href="ambiente.html#o-material"><i class="fa fa-check"></i><b>A.2</b> O material</a></li>
+<li class="chapter" data-level="A.3" data-path="ambiente.html"><a href="ambiente.html#r"><i class="fa fa-check"></i><b>A.3</b> R</a></li>
+<li class="chapter" data-level="A.4" data-path="ambiente.html"><a href="ambiente.html#python"><i class="fa fa-check"></i><b>A.4</b> Python</a>
+<ul>
+<li class="chapter" data-level="A.4.1" data-path="ambiente.html"><a href="ambiente.html#no-seu-computador"><i class="fa fa-check"></i><b>A.4.1</b> No seu computador</a></li>
+<li class="chapter" data-level="A.4.2" data-path="ambiente.html"><a href="ambiente.html#no-google-colab"><i class="fa fa-check"></i><b>A.4.2</b> No Google Colab</a></li>
+</ul></li>
+<li class="chapter" data-level="A.5" data-path="ambiente.html"><a href="ambiente.html#ollama-e-o-s5-nano-opcional"><i class="fa fa-check"></i><b>A.5</b> Ollama e o S5-nano (opcional)</a></li>
+<li class="chapter" data-level="A.6" data-path="ambiente.html"><a href="ambiente.html#qual-arquivo-roda-cada-bloco"><i class="fa fa-check"></i><b>A.6</b> Qual arquivo roda cada bloco</a></li>
+<li class="chapter" data-level="A.7" data-path="ambiente.html"><a href="ambiente.html#problemas-comuns"><i class="fa fa-check"></i><b>A.7</b> Problemas comuns</a></li>
+</ul></li>
+<li class="chapter" data-level="B" data-path="checklist.html"><a href="checklist.html"><i class="fa fa-check"></i><b>B</b> Checklist: usar um LLM como instrumento de medição</a>
+<ul>
+<li class="chapter" data-level="B.0.1" data-path="checklist.html"><a href="checklist.html#a.-antes-de-anotar"><i class="fa fa-check"></i><b>B.0.1</b> A. Antes de anotar</a></li>
+<li class="chapter" data-level="B.0.2" data-path="checklist.html"><a href="checklist.html#b.-durante-a-anota%C3%A7%C3%A3o"><i class="fa fa-check"></i><b>B.0.2</b> B. Durante a anotação</a></li>
+<li class="chapter" data-level="B.0.3" data-path="checklist.html"><a href="checklist.html#c.-valida%C3%A7%C3%A3o"><i class="fa fa-check"></i><b>B.0.3</b> C. Validação</a></li>
+<li class="chapter" data-level="B.0.4" data-path="checklist.html"><a href="checklist.html#d.-infer%C3%AAncia"><i class="fa fa-check"></i><b>B.0.4</b> D. Inferência</a></li>
+<li class="chapter" data-level="B.0.5" data-path="checklist.html"><a href="checklist.html#e.-reprodutibilidade-mlops"><i class="fa fa-check"></i><b>B.0.5</b> E. Reprodutibilidade (MLOps)</a></li>
+<li class="chapter" data-level="B.0.6" data-path="checklist.html"><a href="checklist.html#f.-quando-n%C3%A3o-usar-um-llm"><i class="fa fa-check"></i><b>B.0.6</b> F. Quando NÃO usar um LLM</a></li>
+</ul></li>
+<li class="chapter" data-level="C" data-path="prompts.html"><a href="prompts.html"><i class="fa fa-check"></i><b>C</b> Prompts completos</a>
+<ul>
+<li class="chapter" data-level="" data-path="prompts.html"><a href="prompts.html#prompt-v1"><i class="fa fa-check"></i>Prompt v1</a></li>
+<li class="chapter" data-level="" data-path="prompts.html"><a href="prompts.html#prompt-v2"><i class="fa fa-check"></i>Prompt v2</a></li>
+<li class="chapter" data-level="" data-path="prompts.html"><a href="prompts.html#prompt-v3"><i class="fa fa-check"></i>Prompt v3</a></li>
+</ul></li>
+<li class="chapter" data-level="D" data-path="reproduzir.html"><a href="reproduzir.html"><i class="fa fa-check"></i><b>D</b> Como reproduzir</a>
+<ul>
+<li class="chapter" data-level="D.1" data-path="reproduzir.html"><a href="reproduzir.html#sem-llm-e-sem-internet-como-em-sala"><i class="fa fa-check"></i><b>D.1</b> Sem LLM e sem internet (como em sala)</a></li>
+<li class="chapter" data-level="D.2" data-path="reproduzir.html"><a href="reproduzir.html#refazendo-a-coleta-e-a-anota%C3%A7%C3%A3o"><i class="fa fa-check"></i><b>D.2</b> Refazendo a coleta e a anotação</a></li>
+<li class="chapter" data-level="D.3" data-path="reproduzir.html"><a href="reproduzir.html#este-livro-e-os-slides"><i class="fa fa-check"></i><b>D.3</b> Este livro e os slides</a></li>
+<li class="chapter" data-level="D.4" data-path="reproduzir.html"><a href="reproduzir.html#estrutura-do-material"><i class="fa fa-check"></i><b>D.4</b> Estrutura do material</a></li>
+<li class="chapter" data-level="D.5" data-path="reproduzir.html"><a href="reproduzir.html#ambiente-usado-nos-resultados"><i class="fa fa-check"></i><b>D.5</b> Ambiente usado nos resultados</a></li>
+</ul></li>
+<li class="chapter" data-level="E" data-path="declaracao-ia.html"><a href="declaracao-ia.html"><i class="fa fa-check"></i><b>E</b> Declaração de uso de inteligência artificial e responsabilidade</a>
+<ul>
+<li class="chapter" data-level="E.1" data-path="declaracao-ia.html"><a href="declaracao-ia.html#autoria"><i class="fa fa-check"></i><b>E.1</b> Autoria</a></li>
+<li class="chapter" data-level="E.2" data-path="declaracao-ia.html"><a href="declaracao-ia.html#identifica%C3%A7%C3%A3o-da-ferramenta"><i class="fa fa-check"></i><b>E.2</b> Identificação da ferramenta</a></li>
+<li class="chapter" data-level="E.3" data-path="declaracao-ia.html"><a href="declaracao-ia.html#o-que-a-ia-fez"><i class="fa fa-check"></i><b>E.3</b> O que a IA fez</a></li>
+<li class="chapter" data-level="E.4" data-path="declaracao-ia.html"><a href="declaracao-ia.html#o-que-coube-ao-autor-humano"><i class="fa fa-check"></i><b>E.4</b> O que coube ao autor humano</a></li>
+<li class="chapter" data-level="E.5" data-path="declaracao-ia.html"><a href="declaracao-ia.html#responsabilidade"><i class="fa fa-check"></i><b>E.5</b> Responsabilidade</a></li>
+<li class="chapter" data-level="E.6" data-path="declaracao-ia.html"><a href="declaracao-ia.html#dois-pap%C3%A9is-diferentes-para-a-ia"><i class="fa fa-check"></i><b>E.6</b> Dois papéis diferentes para a IA</a></li>
+<li class="chapter" data-level="E.7" data-path="declaracao-ia.html"><a href="declaracao-ia.html#por-que-esta-declara%C3%A7%C3%A3o-existe"><i class="fa fa-check"></i><b>E.7</b> Por que esta declaração existe</a></li>
+</ul></li>
+<li class="chapter" data-level="" data-path="referencias.html"><a href="referencias.html"><i class="fa fa-check"></i>Referências</a></li>
+<li class="divider"></li>
+<li class="toc-sub"><strong>Jodavid Ferreira</strong> · DE/UFPE<br>coautoria: Claude Opus 5.5 (IA)</li>
+<li class="toc-sub">Texto: <a href="https://creativecommons.org/licenses/by/4.0/deed.pt-br" target="_blank">CC BY 4.0</a> · Código: <a href="https://opensource.org/license/mit" target="_blank">MIT</a></li>
+<li class="toc-links"><a href="ia-instrumento-medicao.pdf" target="_blank">PDF</a><a href="material/minicurso_IA_medicao.zip">Material .zip</a></li>
+<li class="toc-sub"><strong>Slides</strong></li>
+<li class="toc-links"><a href="slides/parte1_conceitos.html" target="_blank">Parte 1: conceitos</a><a href="slides/slides.html" target="_blank">Versão resumida</a></li>
+<li class="toc-links"><a href="slides/completo_R.html" target="_blank">Completos · R</a><a href="slides/completo_python.html" target="_blank">Completos · Python</a></li>
+
+</ul>
+
+      </nav>
+    </div>
+
+    <div class="book-body">
+      <div class="body-inner">
+        <div class="book-header" role="navigation">
+          <h1>
+            <i class="fa fa-circle-o-notch fa-spin"></i><a href="./">Inteligência Artificial como Instrumento de Medição</a>
+          </h1>
+        </div>
+
+        <div class="page-wrapper" tabindex="-1" role="main">
+          <div class="page-inner">
+
+            <section class="normal" id="section-">
+<div id="baselines" class="section level1 hasAnchor" number="4">
+<h1><span class="header-section-number">Capítulo 4</span> Baselines: quanto se acerta sem LLM?<a href="baselines.html#baselines" class="anchor-section" aria-label="Anchor link to header"></a></h1>
+<p>Antes de usar um LLM, precisamos saber <strong>quanto se acerta sem ele</strong>. Um LLM só “vale a pena” se superar instrumentos mais baratos e mais transparentes <strong>de forma estatisticamente consistente</strong>, e isso é uma afirmação a ser testada, não uma impressão.</p>
+<div id="dicionário" class="section level2 hasAnchor" number="4.1">
+<h2><span class="header-section-number">4.1</span> Dicionário<a href="baselines.html#dicion%C3%A1rio" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>O primeiro baseline é um <strong>dicionário</strong>: um conjunto de expressões regulares que traduzem o livro de códigos em regras explícitas. É barato, transparente e totalmente auditável.</p>
+<div class="sourceCode" id="cb103"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb103-1"><a href="baselines.html#cb103-1" tabindex="-1"></a>classifica_dicionario <span class="ot">&lt;-</span> <span class="cf">function</span>(ementa) {</span>
+<span id="cb103-2"><a href="baselines.html#cb103-2" tabindex="-1"></a>  x <span class="ot">&lt;-</span> <span class="fu">str_to_lower</span>(ementa)</span>
+<span id="cb103-3"><a href="baselines.html#cb103-3" tabindex="-1"></a>  <span class="fu">case_when</span>(</span>
+<span id="cb103-4"><a href="baselines.html#cb103-4" tabindex="-1"></a>    <span class="fu">str_detect</span>(x, REGEX<span class="sc">$</span>punir) <span class="sc">&amp;</span> <span class="fu">str_detect</span>(x, REGEX<span class="sc">$</span>ia) <span class="sc">~</span> <span class="st">&quot;PUNIR&quot;</span>,</span>
+<span id="cb103-5"><a href="baselines.html#cb103-5" tabindex="-1"></a>    <span class="sc">!</span><span class="fu">str_detect</span>(x, REGEX<span class="sc">$</span>ia)                               <span class="sc">~</span> <span class="st">&quot;OUTRO&quot;</span>,</span>
+<span id="cb103-6"><a href="baselines.html#cb103-6" tabindex="-1"></a>    <span class="fu">str_detect</span>(x, REGEX<span class="sc">$</span>promover)                          <span class="sc">~</span> <span class="st">&quot;PROMOVER&quot;</span>,</span>
+<span id="cb103-7"><a href="baselines.html#cb103-7" tabindex="-1"></a>    <span class="cn">TRUE</span>                                                   <span class="sc">~</span> <span class="st">&quot;REGULAR&quot;</span></span>
+<span id="cb103-8"><a href="baselines.html#cb103-8" tabindex="-1"></a>  ) <span class="sc">|&gt;</span> <span class="fu">factor</span>(<span class="at">levels =</span> CATEGORIAS)</span>
+<span id="cb103-9"><a href="baselines.html#cb103-9" tabindex="-1"></a>}</span></code></pre></div>
+<p>As expressões <code>REGEX$punir</code>, <code>REGEX$ia</code> e <code>REGEX$promover</code> estão em <code>R/funcoes_medicao.R</code>. A ordem das regras implementa a precedência do livro de códigos.</p>
+</div>
+<div id="tf-idf-e-regressão-logística" class="section level2 hasAnchor" number="4.2">
+<h2><span class="header-section-number">4.2</span> TF-IDF e regressão logística<a href="baselines.html#tf-idf-e-regress%C3%A3o-log%C3%ADstica" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>O segundo baseline é um modelo de aprendizado supervisionado clássico: as ementas viram vetores TF-IDF (após remover pontuação, números e <em>stopwords</em> e aplicar <em>stemming</em>), e uma <strong>regressão logística multinomial com penalização elastic-net</strong> (<code>glmnet</code>) é ajustada. Como a amostra-ouro é pequena, o desempenho é estimado por <strong>validação cruzada com 10 dobras</strong>: cada ementa é classificada por um modelo que não a viu no treino.</p>
+</div>
+<div id="resultados" class="section level2 hasAnchor" number="4.3">
+<h2><span class="header-section-number">4.3</span> Resultados<a href="baselines.html#resultados" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<table>
+<caption><span id="tab:tab-baselines">Tabela 4.1: </span>Desempenho dos baselines na amostra-ouro (n = 120).</caption>
+<thead>
+<tr class="header">
+<th align="left">Método</th>
+<th align="center">Acurácia</th>
+<th align="center">F1 macro</th>
+<th align="center">Kappa</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Dicionário (regex)</td>
+<td align="center">81%</td>
+<td align="center">0,78</td>
+<td align="center">0,70</td>
+</tr>
+<tr class="even">
+<td align="left">TF-IDF + logística (CV 10)</td>
+<td align="center">68%</td>
+<td align="center">0,50</td>
+<td align="center">0,41</td>
+</tr>
+<tr class="odd">
+<td align="left">Classe majoritária (REGULAR)</td>
+<td align="center">57%</td>
+<td align="center">0,18</td>
+<td align="center">0,00</td>
+</tr>
+</tbody>
+</table>
+<p>A linha <strong>classe majoritária</strong> é o piso: chutar sempre REGULAR acerta 57% das ementas, mas tem kappa zero, porque não acerta nada além do que o acaso já acertaria. É por isso que a acurácia sozinha engana quando as classes são desbalanceadas.</p>
+<div class="caixa aviso">
+<p><span class="titulo-caixa">O dicionário “viu a prova”</span>
+As regras do dicionário foram escritas <strong>depois de ler as ementas do corpus</strong>. Seu desempenho aqui (kappa 0,70) é, portanto, <strong>otimista</strong>: é um caso clássico de <em>data leakage</em>. Num estudo real, as regras seriam definidas antes, ou validadas em dados novos (por exemplo, proposições apresentadas depois da data de coleta).</p>
+</div>
+</div>
+<div id="o-mesmo-método-implementações-diferentes" class="section level2 hasAnchor" number="4.4">
+<h2><span class="header-section-number">4.4</span> O “mesmo” método, implementações diferentes<a href="baselines.html#o-mesmo-m%C3%A9todo-implementa%C3%A7%C3%B5es-diferentes" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>As trilhas em R e Python do minicurso produzem os <strong>mesmos números em todas as análises</strong> (a menos de diferenças de até 0,01 nos resultados que dependem de sorteios), com uma exceção instrutiva: o baseline TF-IDF. Em R, com <code>glmnet</code> (elastic-net e <em>stemming</em>), o kappa é 0,41; em Python, com <code>scikit-learn</code> (penalização L2, sem <em>stemming</em>), é 0,51. “TF-IDF + logística” não é um método, é uma família de escolhas, e cada escolha precisa ser relatada.</p>
+</div>
+<div id="mao-baselines" class="section level2 hasAnchor" number="4.5">
+<h2><span class="header-section-number">4.5</span> Mão na massa: dicionário e TF-IDF<a href="baselines.html#mao-baselines" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<div class="caixa executar">
+<p><span class="titulo-caixa">Como executar</span></p>
+<ul>
+<li><strong>Em R</strong>: <code>Rscript R/03_baselines.R</code> (menos de 1 minuto). O script grava <code>resultados/tabelas/baselines.csv</code>, <code>dados/anotacoes/predicoes_baselines.csv</code> e <code>dados/anotacoes/dicionario_corpus.csv</code>; os blocos abaixo fazem as mesmas contas sem gravar.</li>
+<li><strong>Em Python</strong>: notebook <code>python/02_baselines.ipynb</code> (grava em <code>resultados/python/</code>).</li>
+<li>Pelo pipeline: <code>targets::tar_make()</code> refaz este bloco se a amostra-ouro, as funções ou o script mudarem.</li>
+</ul>
+</div>
+<div id="preparar-os-dados" class="section level3 hasAnchor" number="4.5.1">
+<h3><span class="header-section-number">4.5.1</span> Preparar os dados<a href="baselines.html#preparar-os-dados" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<div class="abas">
+<div class="aba" data-nome="R">
+<div class="sourceCode" id="cb104"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb104-1"><a href="baselines.html#cb104-1" tabindex="-1"></a><span class="fu">source</span>(<span class="st">&quot;R/funcoes_medicao.R&quot;</span>)</span>
+<span id="cb104-2"><a href="baselines.html#cb104-2" tabindex="-1"></a>corpus <span class="ot">&lt;-</span> <span class="fu">carrega_corpus</span>()</span>
+<span id="cb104-3"><a href="baselines.html#cb104-3" tabindex="-1"></a>ouro   <span class="ot">&lt;-</span> <span class="fu">carrega_ouro</span>() <span class="sc">|&gt;</span> <span class="fu">left_join</span>(<span class="fu">select</span>(corpus, doc_id, ementa), <span class="at">by =</span> <span class="st">&quot;doc_id&quot;</span>)</span>
+<span id="cb104-4"><a href="baselines.html#cb104-4" tabindex="-1"></a><span class="fu">dim</span>(ouro)</span></code></pre></div>
+<pre><code>[1] 120   7</code></pre>
+</div>
+<div class="aba" data-nome="Python">
+<div class="sourceCode" id="cb106"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb106-1"><a href="baselines.html#cb106-1" tabindex="-1"></a><span class="im">from</span> medicao <span class="im">import</span> (CATEGORIAS, STOPWORDS_PT, carrega_corpus, carrega_ouro,</span>
+<span id="cb106-2"><a href="baselines.html#cb106-2" tabindex="-1"></a>                     classifica_dicionario, resumo_metricas)</span>
+<span id="cb106-3"><a href="baselines.html#cb106-3" tabindex="-1"></a>corpus <span class="op">=</span> carrega_corpus(<span class="st">&quot;.&quot;</span>)</span>
+<span id="cb106-4"><a href="baselines.html#cb106-4" tabindex="-1"></a>ouro <span class="op">=</span> carrega_ouro(<span class="st">&quot;.&quot;</span>).merge(corpus[[<span class="st">&quot;doc_id&quot;</span>, <span class="st">&quot;ementa&quot;</span>]], on<span class="op">=</span><span class="st">&quot;doc_id&quot;</span>)</span></code></pre></div>
+<pre><code>AVISO: a amostra-ouro ainda NÃO foi revisada por humanos (coluna `revisado`). Os resultados são ilustrativos.</code></pre>
+<div class="sourceCode" id="cb108"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb108-1"><a href="baselines.html#cb108-1" tabindex="-1"></a>ouro.shape</span></code></pre></div>
+<pre><code>(120, 7)</code></pre>
+</div>
+</div>
+<p><code>carrega_ouro()</code> avisa que a referência ainda não foi revisada por humanos (em R, o aviso aparece como <em>warning</em>; em Python, como mensagem). Ele é proposital: enquanto a coluna <code>revisado</code> estiver toda <code>FALSE</code>, os números são ilustrativos.</p>
+</div>
+<div id="o-dicionário-em-ação" class="section level3 hasAnchor" number="4.5.2">
+<h3><span class="header-section-number">4.5.2</span> O dicionário em ação<a href="baselines.html#o-dicion%C3%A1rio-em-a%C3%A7%C3%A3o" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>Antes de medir o desempenho, vale ver o dicionário decidir, ementa a ementa:</p>
+<div class="abas">
+<div class="aba" data-nome="R">
+<div class="sourceCode" id="cb110"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb110-1"><a href="baselines.html#cb110-1" tabindex="-1"></a>exemplos <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb110-2"><a href="baselines.html#cb110-2" tabindex="-1"></a>  <span class="st">&quot;Tipifica o crime de divulgação de deepfake de conteúdo sexual.&quot;</span>,</span>
+<span id="cb110-3"><a href="baselines.html#cb110-3" tabindex="-1"></a>  <span class="st">&quot;Dispõe sobre a rotulagem de conteúdo gerado por inteligência artificial.&quot;</span>,</span>
+<span id="cb110-4"><a href="baselines.html#cb110-4" tabindex="-1"></a>  <span class="st">&quot;Institui programa de capacitação em inteligência artificial nas escolas.&quot;</span>,</span>
+<span id="cb110-5"><a href="baselines.html#cb110-5" tabindex="-1"></a>  <span class="st">&quot;Altera o Código Penal para aumentar a pena do crime de estelionato.&quot;</span>)</span>
+<span id="cb110-6"><a href="baselines.html#cb110-6" tabindex="-1"></a><span class="fu">tibble</span>(<span class="at">ementa =</span> exemplos, <span class="at">dicionario =</span> <span class="fu">classifica_dicionario</span>(exemplos))</span></code></pre></div>
+<pre><code># A tibble: 4 × 2
+  ementa                                                              dicionario
+  &lt;chr&gt;                                                               &lt;fct&gt;     
+1 Tipifica o crime de divulgação de deepfake de conteúdo sexual.      PUNIR     
+2 Dispõe sobre a rotulagem de conteúdo gerado por inteligência artif… REGULAR   
+3 Institui programa de capacitação em inteligência artificial nas es… PROMOVER  
+4 Altera o Código Penal para aumentar a pena do crime de estelionato. OUTRO     </code></pre>
+</div>
+<div class="aba" data-nome="Python">
+<div class="sourceCode" id="cb112"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb112-1"><a href="baselines.html#cb112-1" tabindex="-1"></a>exemplos <span class="op">=</span> [</span>
+<span id="cb112-2"><a href="baselines.html#cb112-2" tabindex="-1"></a>    <span class="st">&quot;Tipifica o crime de divulgação de deepfake de conteúdo sexual.&quot;</span>,</span>
+<span id="cb112-3"><a href="baselines.html#cb112-3" tabindex="-1"></a>    <span class="st">&quot;Dispõe sobre a rotulagem de conteúdo gerado por inteligência artificial.&quot;</span>,</span>
+<span id="cb112-4"><a href="baselines.html#cb112-4" tabindex="-1"></a>    <span class="st">&quot;Institui programa de capacitação em inteligência artificial nas escolas.&quot;</span>,</span>
+<span id="cb112-5"><a href="baselines.html#cb112-5" tabindex="-1"></a>    <span class="st">&quot;Altera o Código Penal para aumentar a pena do crime de estelionato.&quot;</span>]</span>
+<span id="cb112-6"><a href="baselines.html#cb112-6" tabindex="-1"></a><span class="cf">for</span> e <span class="kw">in</span> exemplos:</span>
+<span id="cb112-7"><a href="baselines.html#cb112-7" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f&quot;</span><span class="sc">{</span>classifica_dicionario(e)<span class="sc">:9}</span><span class="ss"> </span><span class="sc">{</span>e<span class="sc">}</span><span class="ss">&quot;</span>)</span></code></pre></div>
+<pre><code>PUNIR     Tipifica o crime de divulgação de deepfake de conteúdo sexual.
+REGULAR   Dispõe sobre a rotulagem de conteúdo gerado por inteligência artificial.
+PROMOVER  Institui programa de capacitação em inteligência artificial nas escolas.
+OUTRO     Altera o Código Penal para aumentar a pena do crime de estelionato.</code></pre>
+</div>
+</div>
+<p><strong>O que está sendo executado.</strong> A função testa as regras <strong>na ordem da precedência</strong>: primeiro, “tem termo penal <strong>e</strong> termo de IA?” (PUNIR); depois, “não tem termo de IA?” (OUTRO); depois, “tem termo de fomento?” (PROMOVER); o que sobra é REGULAR. A quarta ementa mostra a importância da ordem: ela é penal, mas não fala de IA, e por isso vai para OUTRO, como manda a regra 7 do livro de códigos.</p>
+</div>
+<div id="desempenho-do-dicionário-na-amostra-ouro" class="section level3 hasAnchor" number="4.5.3">
+<h3><span class="header-section-number">4.5.3</span> Desempenho do dicionário na amostra-ouro<a href="baselines.html#desempenho-do-dicion%C3%A1rio-na-amostra-ouro" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<div class="abas">
+<div class="aba" data-nome="R">
+<div class="sourceCode" id="cb114"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb114-1"><a href="baselines.html#cb114-1" tabindex="-1"></a>ouro <span class="ot">&lt;-</span> ouro <span class="sc">|&gt;</span> <span class="fu">mutate</span>(<span class="at">pred_dic =</span> <span class="fu">classifica_dicionario</span>(ementa))</span>
+<span id="cb114-2"><a href="baselines.html#cb114-2" tabindex="-1"></a><span class="fu">resumo_metricas</span>(ouro<span class="sc">$</span>categoria, ouro<span class="sc">$</span>pred_dic)</span></code></pre></div>
+<pre><code># A tibble: 1 × 5
+      n falhas_formato acuracia f1_macro kappa
+  &lt;int&gt;          &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt; &lt;dbl&gt;
+1   120              0    0.808    0.782 0.699</code></pre>
+<div class="sourceCode" id="cb116"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb116-1"><a href="baselines.html#cb116-1" tabindex="-1"></a><span class="fu">table</span>(<span class="at">humano =</span> ouro<span class="sc">$</span>categoria, <span class="at">dicionario =</span> ouro<span class="sc">$</span>pred_dic)</span></code></pre></div>
+<pre><code>          dicionario
+humano     PUNIR REGULAR PROMOVER OUTRO
+  OUTRO        0       1        1    11
+  PROMOVER     0       5       11     0
+  PUNIR       20       0        0     2
+  REGULAR      1      55       11     2</code></pre>
+</div>
+<div class="aba" data-nome="Python">
+<div class="sourceCode" id="cb118"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb118-1"><a href="baselines.html#cb118-1" tabindex="-1"></a>ouro[<span class="st">&quot;pred_dic&quot;</span>] <span class="op">=</span> ouro[<span class="st">&quot;ementa&quot;</span>].<span class="bu">map</span>(classifica_dicionario)</span>
+<span id="cb118-2"><a href="baselines.html#cb118-2" tabindex="-1"></a><span class="bu">print</span>(resumo_metricas(ouro[<span class="st">&quot;categoria&quot;</span>], ouro[<span class="st">&quot;pred_dic&quot;</span>]))</span></code></pre></div>
+<pre><code>{&#39;n&#39;: 120, &#39;falhas_formato&#39;: 0.0, &#39;acuracia&#39;: 0.8083333333333333, &#39;f1_macro&#39;: 0.7815508135275577, &#39;kappa&#39;: 0.698887191795767}</code></pre>
+<div class="sourceCode" id="cb120"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb120-1"><a href="baselines.html#cb120-1" tabindex="-1"></a>pd.crosstab(ouro[<span class="st">&quot;categoria&quot;</span>], ouro[<span class="st">&quot;pred_dic&quot;</span>],</span>
+<span id="cb120-2"><a href="baselines.html#cb120-2" tabindex="-1"></a>            rownames<span class="op">=</span>[<span class="st">&quot;humano&quot;</span>], colnames<span class="op">=</span>[<span class="st">&quot;dicionário&quot;</span>])</span></code></pre></div>
+<pre><code>dicionário  OUTRO  PROMOVER  PUNIR  REGULAR
+humano                                     
+OUTRO          11         1      0        1
+PROMOVER        0        11      0        5
+PUNIR           2         0     20        0
+REGULAR         2        11      1       55</code></pre>
+</div>
+</div>
+<p><strong>O que está sendo executado.</strong> <code>resumo_metricas()</code> compara o rótulo humano (<code>categoria</code>) com o do instrumento e devolve o tamanho da amostra, a taxa de falhas de formato (zero para o dicionário, que sempre responde), a acurácia, o F1 macro e o kappa. A tabela cruzada é a matriz de confusão: as linhas são a referência humana, as colunas, o dicionário; tudo fora da diagonal é erro.</p>
+</div>
+<div id="tf-idf-e-regressão-logística-com-validação-cruzada" class="section level3 hasAnchor" number="4.5.4">
+<h3><span class="header-section-number">4.5.4</span> TF-IDF e regressão logística com validação cruzada<a href="baselines.html#tf-idf-e-regress%C3%A3o-log%C3%ADstica-com-valida%C3%A7%C3%A3o-cruzada" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>Este é o bloco mais demorado do capítulo (alguns segundos em R): são 10 ajustes do modelo, cada um com sua própria validação cruzada interna para escolher a penalização.</p>
+<div class="abas">
+<div class="aba" data-nome="R">
+<div class="sourceCode" id="cb122"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb122-1"><a href="baselines.html#cb122-1" tabindex="-1"></a><span class="fu">library</span>(tm); <span class="fu">library</span>(glmnet)</span>
+<span id="cb122-2"><a href="baselines.html#cb122-2" tabindex="-1"></a>prepara_dtm <span class="ot">&lt;-</span> <span class="cf">function</span>(textos) {</span>
+<span id="cb122-3"><a href="baselines.html#cb122-3" tabindex="-1"></a>  vc <span class="ot">&lt;-</span> <span class="fu">VCorpus</span>(<span class="fu">VectorSource</span>(<span class="fu">str_to_lower</span>(textos)))</span>
+<span id="cb122-4"><a href="baselines.html#cb122-4" tabindex="-1"></a>  vc <span class="ot">&lt;-</span> <span class="fu">tm_map</span>(vc, removePunctuation)</span>
+<span id="cb122-5"><a href="baselines.html#cb122-5" tabindex="-1"></a>  vc <span class="ot">&lt;-</span> <span class="fu">tm_map</span>(vc, removeNumbers)</span>
+<span id="cb122-6"><a href="baselines.html#cb122-6" tabindex="-1"></a>  vc <span class="ot">&lt;-</span> <span class="fu">tm_map</span>(vc, removeWords, <span class="fu">stopwords</span>(<span class="st">&quot;portuguese&quot;</span>))</span>
+<span id="cb122-7"><a href="baselines.html#cb122-7" tabindex="-1"></a>  vc <span class="ot">&lt;-</span> <span class="fu">tm_map</span>(vc, stemDocument, <span class="at">language =</span> <span class="st">&quot;portuguese&quot;</span>)</span>
+<span id="cb122-8"><a href="baselines.html#cb122-8" tabindex="-1"></a>  vc <span class="ot">&lt;-</span> <span class="fu">tm_map</span>(vc, stripWhitespace)</span>
+<span id="cb122-9"><a href="baselines.html#cb122-9" tabindex="-1"></a>  <span class="fu">DocumentTermMatrix</span>(vc, <span class="at">control =</span> <span class="fu">list</span>(<span class="at">weighting =</span> weightTfIdf,</span>
+<span id="cb122-10"><a href="baselines.html#cb122-10" tabindex="-1"></a>                                        <span class="at">bounds =</span> <span class="fu">list</span>(<span class="at">global =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="cn">Inf</span>))))</span>
+<span id="cb122-11"><a href="baselines.html#cb122-11" tabindex="-1"></a>}</span>
+<span id="cb122-12"><a href="baselines.html#cb122-12" tabindex="-1"></a>X <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(<span class="fu">prepara_dtm</span>(ouro<span class="sc">$</span>ementa))</span>
+<span id="cb122-13"><a href="baselines.html#cb122-13" tabindex="-1"></a>y <span class="ot">&lt;-</span> <span class="fu">factor</span>(ouro<span class="sc">$</span>categoria, <span class="at">levels =</span> CATEGORIAS)</span>
+<span id="cb122-14"><a href="baselines.html#cb122-14" tabindex="-1"></a><span class="fu">dim</span>(X)                                   <span class="co"># ementas × termos</span></span></code></pre></div>
+<pre><code>[1] 120 303</code></pre>
+<div class="sourceCode" id="cb124"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb124-1"><a href="baselines.html#cb124-1" tabindex="-1"></a><span class="fu">head</span>(<span class="fu">sort</span>(<span class="fu">colSums</span>(X), <span class="at">decreasing =</span> <span class="cn">TRUE</span>), <span class="dv">8</span>)</span></code></pre></div>
+<pre><code>        uso         lei        sobr       dispõ     sistema       outra 
+   5.284869    5.120141    4.832737    4.825751    4.409097    4.386553 
+providência      nacion 
+   4.215609    4.157223 </code></pre>
+<div class="sourceCode" id="cb126"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb126-1"><a href="baselines.html#cb126-1" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2026</span>)</span>
+<span id="cb126-2"><a href="baselines.html#cb126-2" tabindex="-1"></a>dobras  <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="fu">rep</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>, <span class="at">length.out =</span> <span class="fu">nrow</span>(X)))</span>
+<span id="cb126-3"><a href="baselines.html#cb126-3" tabindex="-1"></a>pred_ml <span class="ot">&lt;-</span> <span class="fu">factor</span>(<span class="fu">rep</span>(<span class="cn">NA</span>, <span class="fu">nrow</span>(X)), <span class="at">levels =</span> CATEGORIAS)</span>
+<span id="cb126-4"><a href="baselines.html#cb126-4" tabindex="-1"></a><span class="cf">for</span> (d <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>) {                       <span class="co"># d = dobra deixada de fora</span></span>
+<span id="cb126-5"><a href="baselines.html#cb126-5" tabindex="-1"></a>  treino <span class="ot">&lt;-</span> dobras <span class="sc">!=</span> d</span>
+<span id="cb126-6"><a href="baselines.html#cb126-6" tabindex="-1"></a>  fit <span class="ot">&lt;-</span> <span class="fu">cv.glmnet</span>(X[treino, ], y[treino], <span class="at">family =</span> <span class="st">&quot;multinomial&quot;</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>,</span>
+<span id="cb126-7"><a href="baselines.html#cb126-7" tabindex="-1"></a>                   <span class="at">nfolds =</span> <span class="dv">5</span>, <span class="at">type.measure =</span> <span class="st">&quot;class&quot;</span>)</span>
+<span id="cb126-8"><a href="baselines.html#cb126-8" tabindex="-1"></a>  pred_ml[<span class="sc">!</span>treino] <span class="ot">&lt;-</span> <span class="fu">predict</span>(fit, X[<span class="sc">!</span>treino, , <span class="at">drop =</span> <span class="cn">FALSE</span>],</span>
+<span id="cb126-9"><a href="baselines.html#cb126-9" tabindex="-1"></a>                              <span class="at">s =</span> <span class="st">&quot;lambda.min&quot;</span>, <span class="at">type =</span> <span class="st">&quot;class&quot;</span>)</span>
+<span id="cb126-10"><a href="baselines.html#cb126-10" tabindex="-1"></a>}</span>
+<span id="cb126-11"><a href="baselines.html#cb126-11" tabindex="-1"></a><span class="fu">resumo_metricas</span>(ouro<span class="sc">$</span>categoria, pred_ml)</span></code></pre></div>
+<pre><code># A tibble: 1 × 5
+      n falhas_formato acuracia f1_macro kappa
+  &lt;int&gt;          &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt; &lt;dbl&gt;
+1   120              0    0.683    0.501 0.407</code></pre>
+</div>
+<div class="aba" data-nome="Python">
+<div class="sourceCode" id="cb128"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb128-1"><a href="baselines.html#cb128-1" tabindex="-1"></a><span class="im">from</span> sklearn.feature_extraction.text <span class="im">import</span> TfidfVectorizer</span>
+<span id="cb128-2"><a href="baselines.html#cb128-2" tabindex="-1"></a><span class="im">from</span> sklearn.linear_model <span class="im">import</span> LogisticRegressionCV</span>
+<span id="cb128-3"><a href="baselines.html#cb128-3" tabindex="-1"></a><span class="im">from</span> sklearn.model_selection <span class="im">import</span> StratifiedKFold, cross_val_predict</span>
+<span id="cb128-4"><a href="baselines.html#cb128-4" tabindex="-1"></a><span class="im">from</span> sklearn.pipeline <span class="im">import</span> make_pipeline</span>
+<span id="cb128-5"><a href="baselines.html#cb128-5" tabindex="-1"></a></span>
+<span id="cb128-6"><a href="baselines.html#cb128-6" tabindex="-1"></a>vetorizador <span class="op">=</span> TfidfVectorizer(lowercase<span class="op">=</span><span class="va">True</span>, stop_words<span class="op">=</span>STOPWORDS_PT, min_df<span class="op">=</span><span class="dv">2</span>,</span>
+<span id="cb128-7"><a href="baselines.html#cb128-7" tabindex="-1"></a>                              token_pattern<span class="op">=</span><span class="vs">r&quot;</span><span class="fu">(?u)</span><span class="dv">\b</span><span class="pp">[^</span><span class="dv">\W\d</span><span class="pp">_]</span><span class="op">{2,}</span><span class="dv">\b</span><span class="vs">&quot;</span>)</span>
+<span id="cb128-8"><a href="baselines.html#cb128-8" tabindex="-1"></a>X <span class="op">=</span> vetorizador.fit_transform(ouro[<span class="st">&quot;ementa&quot;</span>])</span>
+<span id="cb128-9"><a href="baselines.html#cb128-9" tabindex="-1"></a><span class="bu">print</span>(X.shape)                                <span class="co"># ementas × termos</span></span></code></pre></div>
+<pre><code>(120, 313)</code></pre>
+<div class="sourceCode" id="cb130"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb130-1"><a href="baselines.html#cb130-1" tabindex="-1"></a>peso <span class="op">=</span> pd.Series(X.<span class="bu">sum</span>(axis<span class="op">=</span><span class="dv">0</span>).A1, index<span class="op">=</span>vetorizador.get_feature_names_out())</span>
+<span id="cb130-2"><a href="baselines.html#cb130-2" tabindex="-1"></a><span class="bu">print</span>(peso.sort_values(ascending<span class="op">=</span><span class="va">False</span>).head(<span class="dv">8</span>).<span class="bu">round</span>(<span class="dv">2</span>))</span></code></pre></div>
+<pre><code>artificial      9.97
+inteligência    9.90
+lei             9.50
+sobre           7.95
+nº              7.47
+altera          7.07
+uso             6.76
+dispõe          6.43
+dtype: float64</code></pre>
+<div class="sourceCode" id="cb132"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb132-1"><a href="baselines.html#cb132-1" tabindex="-1"></a>modelo <span class="op">=</span> make_pipeline(</span>
+<span id="cb132-2"><a href="baselines.html#cb132-2" tabindex="-1"></a>    TfidfVectorizer(lowercase<span class="op">=</span><span class="va">True</span>, stop_words<span class="op">=</span>STOPWORDS_PT, min_df<span class="op">=</span><span class="dv">2</span>,</span>
+<span id="cb132-3"><a href="baselines.html#cb132-3" tabindex="-1"></a>                    token_pattern<span class="op">=</span><span class="vs">r&quot;</span><span class="fu">(?u)</span><span class="dv">\b</span><span class="pp">[^</span><span class="dv">\W\d</span><span class="pp">_]</span><span class="op">{2,}</span><span class="dv">\b</span><span class="vs">&quot;</span>),</span>
+<span id="cb132-4"><a href="baselines.html#cb132-4" tabindex="-1"></a>    LogisticRegressionCV(Cs<span class="op">=</span><span class="dv">10</span>, cv<span class="op">=</span><span class="dv">5</span>, max_iter<span class="op">=</span><span class="dv">5000</span>, scoring<span class="op">=</span><span class="st">&quot;accuracy&quot;</span>))</span>
+<span id="cb132-5"><a href="baselines.html#cb132-5" tabindex="-1"></a>dobras <span class="op">=</span> StratifiedKFold(n_splits<span class="op">=</span><span class="dv">10</span>, shuffle<span class="op">=</span><span class="va">True</span>, random_state<span class="op">=</span><span class="dv">2026</span>)</span>
+<span id="cb132-6"><a href="baselines.html#cb132-6" tabindex="-1"></a>ouro[<span class="st">&quot;pred_ml&quot;</span>] <span class="op">=</span> cross_val_predict(modelo, ouro[<span class="st">&quot;ementa&quot;</span>], ouro[<span class="st">&quot;categoria&quot;</span>], cv<span class="op">=</span>dobras)</span>
+<span id="cb132-7"><a href="baselines.html#cb132-7" tabindex="-1"></a>resumo_metricas(ouro[<span class="st">&quot;categoria&quot;</span>], ouro[<span class="st">&quot;pred_ml&quot;</span>])</span></code></pre></div>
+<pre><code>{&#39;n&#39;: 120, &#39;falhas_formato&#39;: 0.0, &#39;acuracia&#39;: 0.725, &#39;f1_macro&#39;: 0.5649471360520506, &#39;kappa&#39;: 0.5077076081551466}</code></pre>
+</div>
+</div>
+<p><strong>O que está sendo executado.</strong> Primeiro, cada ementa vira um vetor: uma coluna por termo que aparece em pelo menos duas ementas, com peso TF-IDF (frequência do termo na ementa, descontada pela frequência do termo no corpus). Em R, antes disso, removemos pontuação, números e <em>stopwords</em> e reduzimos as palavras ao radical (<em>stemming</em>: “criminaliza” e “criminalização” viram o mesmo termo); em Python, só removemos as <em>stopwords</em>. Depois, as 120 ementas são divididas em 10 dobras. Para cada dobra, o modelo é treinado nas outras nove e prevê a dobra deixada de fora; assim, <strong>toda previsão é feita por um modelo que não viu aquela ementa</strong>. Repare nos termos de maior peso total: são palavras da redação legislativa (“lei”, “uso”, “dispõe”, “sobre”), que nada dizem sobre punir, regular ou promover. Com 120 exemplos, sobra pouca informação para o modelo aprender a fronteira entre as categorias. Repare também que o R encontra 303 termos e o Python, 313: o <em>stemming</em> junta palavras que o Python mantém separadas.</p>
+</div>
+<div id="a-tabela-final" class="section level3 hasAnchor" number="4.5.5">
+<h3><span class="header-section-number">4.5.5</span> A tabela final<a href="baselines.html#a-tabela-final" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<div class="abas">
+<div class="aba" data-nome="R">
+<div class="sourceCode" id="cb134"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb134-1"><a href="baselines.html#cb134-1" tabindex="-1"></a><span class="fu">bind_rows</span>(</span>
+<span id="cb134-2"><a href="baselines.html#cb134-2" tabindex="-1"></a>  <span class="st">&quot;Dicionário (regex)&quot;</span>           <span class="ot">=</span> <span class="fu">resumo_metricas</span>(ouro<span class="sc">$</span>categoria, ouro<span class="sc">$</span>pred_dic),</span>
+<span id="cb134-3"><a href="baselines.html#cb134-3" tabindex="-1"></a>  <span class="st">&quot;TF-IDF + logística (CV 10)&quot;</span>   <span class="ot">=</span> <span class="fu">resumo_metricas</span>(ouro<span class="sc">$</span>categoria, pred_ml),</span>
+<span id="cb134-4"><a href="baselines.html#cb134-4" tabindex="-1"></a>  <span class="st">&quot;Classe majoritária (REGULAR)&quot;</span> <span class="ot">=</span> <span class="fu">resumo_metricas</span>(ouro<span class="sc">$</span>categoria,</span>
+<span id="cb134-5"><a href="baselines.html#cb134-5" tabindex="-1"></a>                                                   <span class="fu">rep</span>(<span class="st">&quot;REGULAR&quot;</span>, <span class="fu">nrow</span>(ouro))),</span>
+<span id="cb134-6"><a href="baselines.html#cb134-6" tabindex="-1"></a>  <span class="at">.id =</span> <span class="st">&quot;metodo&quot;</span></span>
+<span id="cb134-7"><a href="baselines.html#cb134-7" tabindex="-1"></a>) <span class="sc">|&gt;</span> <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">where</span>(is.double), \(x) <span class="fu">round</span>(x, <span class="dv">3</span>)))</span></code></pre></div>
+<pre><code># A tibble: 3 × 6
+  metodo                           n falhas_formato acuracia f1_macro kappa
+  &lt;chr&gt;                        &lt;int&gt;          &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt; &lt;dbl&gt;
+1 Dicionário (regex)             120              0    0.808    0.782 0.699
+2 TF-IDF + logística (CV 10)     120              0    0.683    0.501 0.407
+3 Classe majoritária (REGULAR)   120              0    0.575    0.183 0    </code></pre>
+</div>
+<div class="aba" data-nome="Python">
+<div class="sourceCode" id="cb136"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb136-1"><a href="baselines.html#cb136-1" tabindex="-1"></a>maj <span class="op">=</span> pd.Series([<span class="st">&quot;REGULAR&quot;</span>] <span class="op">*</span> <span class="bu">len</span>(ouro))</span>
+<span id="cb136-2"><a href="baselines.html#cb136-2" tabindex="-1"></a>h <span class="op">=</span> ouro[<span class="st">&quot;categoria&quot;</span>]</span>
+<span id="cb136-3"><a href="baselines.html#cb136-3" tabindex="-1"></a>pd.DataFrame([</span>
+<span id="cb136-4"><a href="baselines.html#cb136-4" tabindex="-1"></a>    {<span class="st">&quot;metodo&quot;</span>: <span class="st">&quot;Dicionário (regex)&quot;</span>, <span class="op">**</span>resumo_metricas(h, ouro[<span class="st">&quot;pred_dic&quot;</span>])},</span>
+<span id="cb136-5"><a href="baselines.html#cb136-5" tabindex="-1"></a>    {<span class="st">&quot;metodo&quot;</span>: <span class="st">&quot;TF-IDF + logística (CV 10)&quot;</span>, <span class="op">**</span>resumo_metricas(h, ouro[<span class="st">&quot;pred_ml&quot;</span>])},</span>
+<span id="cb136-6"><a href="baselines.html#cb136-6" tabindex="-1"></a>    {<span class="st">&quot;metodo&quot;</span>: <span class="st">&quot;Classe majoritária (REGULAR)&quot;</span>, <span class="op">**</span>resumo_metricas(h, maj)},</span>
+<span id="cb136-7"><a href="baselines.html#cb136-7" tabindex="-1"></a>]).<span class="bu">round</span>(<span class="dv">3</span>)</span></code></pre></div>
+<pre><code>                         metodo    n  falhas_formato  acuracia  f1_macro  kappa
+0            Dicionário (regex)  120             0.0     0.808     0.782  0.699
+1    TF-IDF + logística (CV 10)  120             0.0     0.725     0.565  0.508
+2  Classe majoritária (REGULAR)  120             0.0     0.575     0.183  0.000</code></pre>
+</div>
+</div>
+<p>Compare as duas abas: o dicionário e a classe majoritária dão <strong>exatamente</strong> os mesmos números nas duas linguagens (são regras determinísticas); o TF-IDF, não, pelas razões discutidas na seção anterior. A terceira linha mostra por que a acurácia sozinha engana: chutar sempre REGULAR acerta mais da metade das ementas, com kappa zero.</p>
+
+</div>
+</div>
+</div>
+<!-- Abas R | Python do livro: transforma ::: {.abas} / ::: {.aba data-nome="R"} em abas.
+     A escolha vale para todas as abas da página e fica lembrada entre os capítulos. -->
+<script>
+(function () {
+  var CHAVE = "livro-linguagem";
+  function lerPref() { try { return localStorage.getItem(CHAVE); } catch (e) { return null; } }
+  function salvarPref(v) { try { localStorage.setItem(CHAVE, v); } catch (e) {} }
+  function filhas(box) {
+    return Array.prototype.filter.call(box.children, function (el) { return el.classList.contains("aba"); });
+  }
+  function escolhe(nome) {
+    document.querySelectorAll(".abas").forEach(function (box) {
+      var abas = filhas(box);
+      if (!abas.length) return;
+      var alvo = abas.some(function (a) { return a.getAttribute("data-nome") === nome; }) ? nome : abas[0].getAttribute("data-nome");
+      abas.forEach(function (a) { a.hidden = a.getAttribute("data-nome") !== alvo; });
+      box.querySelectorAll(":scope > .abas-barra > button").forEach(function (b) {
+        var ativo = b.textContent === alvo;
+        b.classList.toggle("ativo", ativo);
+        b.setAttribute("aria-selected", ativo ? "true" : "false");
+      });
+    });
+  }
+  function monta() {
+    document.querySelectorAll(".abas").forEach(function (box) {
+      if (box.getAttribute("data-pronto")) return;
+      box.setAttribute("data-pronto", "1");
+      var barra = document.createElement("div");
+      barra.className = "abas-barra";
+      barra.setAttribute("role", "tablist");
+      filhas(box).forEach(function (aba) {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.setAttribute("role", "tab");
+        b.textContent = aba.getAttribute("data-nome");
+        b.addEventListener("click", function () { salvarPref(b.textContent); escolhe(b.textContent); });
+        barra.appendChild(b);
+      });
+      box.insertBefore(barra, box.firstChild);
+    });
+    escolhe(lerPref() || "R");
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", monta); else monta();
+  if (window.gitbook && gitbook.events) gitbook.events.bind("page.change", monta);
+})();
+</script>
+            </section>
+
+          </div>
+        </div>
+      </div>
+<a href="codificacao.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+<a href="llm.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
+    </div>
+  </div>
+<script src="assets/gitbook-2.6.7/js/app.min.js"></script>
+<script src="assets/gitbook-2.6.7/js/clipboard.min.js"></script>
+<script src="assets/gitbook-2.6.7/js/plugin-search.js"></script>
+<script src="assets/gitbook-2.6.7/js/plugin-sharing.js"></script>
+<script src="assets/gitbook-2.6.7/js/plugin-fontsettings.js"></script>
+<script src="assets/gitbook-2.6.7/js/plugin-bookdown.js"></script>
+<script src="assets/gitbook-2.6.7/js/jquery.highlight.js"></script>
+<script src="assets/gitbook-2.6.7/js/plugin-clipboard.js"></script>
+<script>
+gitbook.require(["gitbook"], function(gitbook) {
+gitbook.start({
+  "sharing": null,
+  "fontsettings": {
+    "theme": "white",
+    "family": "sans",
+    "size": 2
+  },
+  "edit": null,
+  "history": {
+    "link": null,
+    "text": null
+  },
+  "view": {
+    "link": null,
+    "text": null
+  },
+  "download": ["ia-instrumento-medicao.pdf"],
+  "search": {
+    "engine": "fuse",
+    "options": null
+  },
+  "toc": {
+    "collapse": "section"
+  },
+  "info": false
+});
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    var src = "true";
+    if (src === "" || src === "true") src = "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/latest.js?config=TeX-MML-AM_CHTML";
+    if (location.protocol !== "file:")
+      if (/^https?:/.test(src))
+        src = src.replace(/^https?:/, '');
+    script.src = src;
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+</body>
+
+</html>

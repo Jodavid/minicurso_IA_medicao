@@ -1,0 +1,392 @@
+/*-- scss:defaults --*/
+// =============================================================================
+// Template Minimalista (Azul & Cinza/Ardósia) — Slides do Minicurso (RevealJS)
+// II DataPOL · UFPE · 2026
+// =============================================================================
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap');
+
+// Escala de Azuis
+$azul-noite:   #0f2440;
+$azul-escuro:  #1c3f6e;
+$azul-medio:   #2b5b9e;
+$azul:         #3d7ccc;
+$azul-claro:   #7ba4de;
+$azul-borda:   #c9dcf5;
+$azul-fundo:   #f2f7fd;
+
+// Escala de Cinzas / Ardósia (Slate)
+$tinta:        #182026;
+$tinta-sec:    #334155;
+$cinza-escuro: #475569;
+$cinza:        #64748b;
+$cinza-claro:  #94a3b8;
+$borda:        #e2e8f0;
+$cinza-fundo:  #f4f6f9;
+$papel:        #fcfcfb;
+
+// Variáveis base do RevealJS / Quarto
+$body-bg: $papel;
+$body-color: $tinta;
+$link-color: $azul-medio;
+$code-color: $azul-escuro;
+$presentation-heading-color: $azul-noite;
+$presentation-heading-font-weight: 800;
+$presentation-font-size-root: 29px;
+$presentation-line-height: 1.42;
+$font-family-sans-serif: "Inter", "Lato", "Source Sans Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+$font-family-monospace: "JetBrains Mono", "DejaVu Sans Mono", "Liberation Mono", monospace;
+
+// Callouts em Azul & Cinza
+$callout-color-note: $azul;
+$callout-color-tip: $azul-escuro;
+$callout-color-warning: $cinza-escuro;
+$callout-color-important: $azul-escuro;
+$callout-color-caution: $cinza-escuro;
+
+/*-- scss:rules --*/
+
+// --- Tipografia Geral e Links ------------------------------------------------
+.reveal {
+  font-family: $font-family-sans-serif;
+  color: $tinta;
+  letter-spacing: -0.008em;
+}
+
+.reveal p {
+  margin-bottom: 0.65em;
+}
+
+.reveal strong {
+  color: $azul-noite;
+  font-weight: 700;
+}
+
+.reveal .has-dark-background strong {
+  color: #ffffff;
+}
+
+// --- Slide de Capa (#title-slide) --------------------------------------------
+.reveal #title-slide {
+  text-align: left;
+  padding: 1.5em 2.2em;
+}
+
+.reveal #title-slide h1.title {
+  color: #ffffff;
+  font-size: 2.05em;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.028em;
+  margin-bottom: 0.45em;
+  padding-bottom: 0.4em;
+  position: relative;
+}
+
+.reveal #title-slide h1.title::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 96px;
+  height: 5px;
+  background: linear-gradient(90deg, #5ea1f0 0%, #5ea1f0 72%, rgba(203, 213, 225, 0.45) 72%, rgba(203, 213, 225, 0.45) 100%);
+  border-radius: 3px;
+}
+
+.reveal #title-slide p.subtitle {
+  color: #dbe7f5;
+  font-size: 1.18em;
+  font-weight: 300;
+  letter-spacing: 0.005em;
+  margin-top: 0.2em;
+  margin-bottom: 1.8em;
+}
+
+.reveal #title-slide .quarto-title-authors {
+  display: flex;
+  justify-content: flex-start;
+  border-top: 1px solid rgba(203, 213, 225, 0.24);
+  padding-top: 0.9em;
+  margin-top: 1.2em;
+}
+
+.reveal #title-slide .quarto-title-author {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.reveal #title-slide .quarto-title-author-name {
+  color: #ffffff;
+  font-size: 0.88em;
+  font-weight: 600;
+  margin-bottom: 0.2em;
+}
+
+.reveal #title-slide .quarto-title-affiliation {
+  color: $cinza-claro;
+  font-size: 0.76em;
+  font-weight: 400;
+}
+
+// Textura de grade discreta nos slides de fundo escuro (capa e divisores)
+.reveal .slide-background.title-slide,
+.reveal .slide-background.level1,
+.reveal .slide-background[style*="rgb(28, 63, 110)"],
+.reveal .slide-background[style*="rgb(15, 36, 64)"] {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(135deg, #1c3f6e 0%, #0f2440 100%) !important;
+  background-size: 48px 48px, 48px 48px, 100% 100% !important;
+}
+
+// --- Slides Divisores de Seção (Level 1) -------------------------------------
+.reveal section.title-slide.slide.level1 {
+  text-align: left;
+  padding-left: 1.5em;
+}
+
+.reveal section.title-slide.slide.level1 h1 {
+  color: #ffffff;
+  font-size: 2.1em;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+  padding-bottom: 0.4em;
+  position: relative;
+}
+
+.reveal section.title-slide.slide.level1 h1::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 84px;
+  height: 5px;
+  background-color: #5ea1f0;
+  border-radius: 3px;
+}
+
+// --- Títulos de Slides de Conteúdo (h2, h3) ----------------------------------
+.reveal h2 {
+  font-weight: 800;
+  font-size: 1.42em;
+  color: $azul-noite;
+  letter-spacing: -0.022em;
+  margin-bottom: 0.58em;
+  padding-bottom: 0.24em;
+  border-bottom: 2px solid $borda;
+  position: relative;
+}
+
+.reveal h2::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: 64px;
+  height: 3px;
+  background-color: $azul;
+  border-radius: 2px;
+}
+
+.reveal .has-dark-background h2 {
+  border-bottom: none;
+}
+
+.reveal .has-dark-background h2::after {
+  display: none;
+}
+
+.reveal h3 {
+  font-size: 1.02em;
+  font-weight: 700;
+  color: $azul-escuro;
+  letter-spacing: -0.01em;
+  margin-bottom: 0.35em;
+  padding-left: 0.45em;
+  border-left: 3.5px solid $azul;
+}
+
+// --- Listas ------------------------------------------------------------------
+.reveal ul,
+.reveal ol {
+  margin-left: 1.1em;
+}
+
+.reveal li {
+  margin-bottom: 0.34em;
+  line-height: 1.38;
+}
+
+.reveal ul li::marker {
+  color: $azul;
+}
+
+.reveal ol li::marker {
+  color: $azul-escuro;
+  font-weight: 700;
+}
+
+.reveal ul ul li::marker {
+  color: $cinza;
+}
+
+// --- Tabelas Minimalistas ----------------------------------------------------
+.reveal table {
+  font-size: 0.72em;
+  border-collapse: collapse;
+  margin: 0.6em auto;
+  border-top: 2px solid $azul-escuro;
+  border-bottom: 2px solid $azul-escuro;
+  width: 96%;
+}
+
+.reveal table thead th {
+  background-color: #eef4fc;
+  color: $azul-noite;
+  font-weight: 700;
+  padding: 0.5em 0.75em;
+  border-bottom: 1.5px solid $azul-escuro;
+}
+
+.reveal table tbody td {
+  padding: 0.42em 0.75em;
+  border-bottom: 1px solid $borda;
+  color: $tinta;
+}
+
+.reveal table tbody tr:nth-child(even) {
+  background-color: #f6f8fb;
+}
+
+// --- Citações (Blockquote) e Caixas (Callouts) -------------------------------
+.reveal blockquote {
+  width: 94%;
+  margin: 0.65em auto;
+  padding: 0.55em 0.95em;
+  border-left: 4px solid $azul;
+  background-color: $azul-fundo;
+  color: $tinta-sec;
+  font-style: normal;
+  font-size: 0.9em;
+  border-radius: 0 6px 6px 0;
+  box-shadow: none;
+}
+
+.reveal .callout {
+  border-radius: 6px !important;
+  border-top: 1px solid $borda !important;
+  border-right: 1px solid $borda !important;
+  border-bottom: 1px solid $borda !important;
+  box-shadow: 0 1px 3px rgba(15, 36, 64, 0.04);
+  margin: 0.5em 0;
+}
+
+.reveal .callout.callout-note,
+.reveal .callout.callout-tip,
+.reveal .callout.callout-important {
+  background-color: $azul-fundo !important;
+  border-color: $azul-borda !important;
+  border-left: 5px solid $azul-escuro !important;
+}
+
+.reveal .callout.callout-warning,
+.reveal .callout.callout-caution {
+  background-color: $cinza-fundo !important;
+  border-color: #cbd5e1 !important;
+  border-left: 5px solid $cinza-escuro !important;
+}
+
+.reveal .callout .callout-header {
+  background-color: transparent !important;
+  font-weight: 700;
+  color: $azul-noite;
+  padding-bottom: 0.1em;
+}
+
+// --- Blocos de Código e Realce em Azul & Cinza -------------------------------
+.reveal code {
+  font-family: $font-family-monospace;
+  font-size: 0.84em;
+  color: $azul-escuro;
+  background-color: #eef2f7;
+  padding: 0.1em 0.34em;
+  border-radius: 4px;
+}
+
+.reveal div.sourceCode {
+  background-color: $cinza-fundo !important;
+  border: 1px solid $borda !important;
+  border-left: 4px solid $azul-escuro !important;
+  border-radius: 6px;
+  margin: 0.55em 0;
+}
+
+.reveal pre {
+  box-shadow: none !important;
+  width: 100%;
+  margin: 0;
+}
+
+.reveal pre code {
+  font-size: 0.78em;
+  line-height: 1.42;
+  background-color: transparent !important;
+  padding: 0.55em 0.75em !important;
+  color: $tinta;
+}
+
+.reveal code span.kw, .reveal code span.cf, .reveal code span.op {
+  color: $azul-escuro;
+  font-weight: 600;
+}
+.reveal code span.fu, .reveal code span.bu {
+  color: $azul-medio;
+  font-weight: 500;
+}
+.reveal code span.st, .reveal code span.ch, .reveal code span.ss, .reveal code span.vs {
+  color: #2b6cb0;
+}
+.reveal code span.dv, .reveal code span.fl, .reveal code span.cn, .reveal code span.bn, .reveal code span.at {
+  color: #1e4e8c;
+}
+.reveal code span.co, .reveal code span.do, .reveal code span.an, .reveal code span.cv, .reveal code span.in {
+  color: $cinza;
+  font-style: italic;
+}
+.reveal code span.va, .reveal code span.ot, .reveal code span.sc {
+  color: $tinta;
+}
+
+// --- Figuras, Rodapé e Barra de Progresso ------------------------------------
+.reveal img {
+  border-radius: 4px;
+}
+
+.reveal .footer {
+  color: $cinza;
+  font-size: 0.46em;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.reveal .slide-number {
+  color: $cinza-escuro;
+  background-color: transparent;
+  font-family: $font-family-sans-serif;
+  font-size: 0.52em;
+  font-weight: 600;
+}
+
+.reveal .has-dark-background ~ .footer,
+.reveal .has-dark-background ~ .slide-number {
+  color: rgba(219, 231, 245, 0.65);
+}
+
+.reveal .progress {
+  height: 4px;
+  color: $azul;
+  background: rgba(203, 213, 225, 0.35);
+}

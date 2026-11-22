@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xml:lang="pt-BR">
+<head>
+
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>Capítulo 7 Inferência com rótulos imperfeitos | Inteligência Artificial como Instrumento de Medição</title>
+  <meta name="description" content="Livro do minicurso ‘IA como Instrumento de Medição’ (II DataPOL/UFPE, 2026): do dado legislativo bruto à inferência com rótulos produzidos por LLMs, em R e Python." />
+  <meta name="generator" content="bookdown 0.48 and GitBook 2.6.7" />
+
+  <meta property="og:title" content="Capítulo 7 Inferência com rótulos imperfeitos | Inteligência Artificial como Instrumento de Medição" />
+  <meta property="og:type" content="book" />
+  <meta property="og:image" content="https://jodavid.github.io/minicurso-ia-medicao/capa/capa.png" />
+  <meta property="og:description" content="Livro do minicurso ‘IA como Instrumento de Medição’ (II DataPOL/UFPE, 2026): do dado legislativo bruto à inferência com rótulos produzidos por LLMs, em R e Python." />
+  
+
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Capítulo 7 Inferência com rótulos imperfeitos | Inteligência Artificial como Instrumento de Medição" />
+  
+  <meta name="twitter:description" content="Livro do minicurso ‘IA como Instrumento de Medição’ (II DataPOL/UFPE, 2026): do dado legislativo bruto à inferência com rótulos produzidos por LLMs, em R e Python." />
+  <meta name="twitter:image" content="https://jodavid.github.io/minicurso-ia-medicao/capa/capa.png" />
+
+<meta name="author" content="Prof. Dr. Jodavid Ferreira (Departamento de Estatística, UFPE)" />
+<meta name="author" content="Coautoria: Claude Opus 5.5 (modelo de inteligência artificial da Anthropic)" />
+
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  
+  
+<link rel="prev" href="validacao.html"/>
+<link rel="next" href="reprodutibilidade.html"/>
+<script src="assets/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
+<link href="assets/gitbook-2.6.7/css/style.css" rel="stylesheet" />
+<link href="assets/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
+<link href="assets/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
+<link href="assets/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
+<link href="assets/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
+<link href="assets/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
+<link href="assets/gitbook-2.6.7/css/plugin-clipboard.css" rel="stylesheet" />
+
+
+
+
+
+
+
+
+<link href="assets/anchor-sections-1.1.0/anchor-sections.css" rel="stylesheet" />
+<link href="assets/anchor-sections-1.1.0/anchor-sections-hash.css" rel="stylesheet" />
+<script src="assets/anchor-sections-1.1.0/anchor-sections.js"></script>
+
+
+<style type="text/css">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+<style type="text/css">
+  
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+</style>
+<style type="text/css">
+/* Used with Pandoc 2.11+ new --citeproc when CSL is used */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}
+</style>
+
+<link rel="stylesheet" href="estilo.css" type="text/css" />
+</head>
+
+<body>
+
+
+
+  <div class="book without-animation with-summary font-size-2 font-family-1" data-basepath=".">
+
+    <div class="book-summary">
+      <nav role="navigation">
+
+<ul class="summary">
+<li class="toc-titulo"><a href="./">IA como Instrumento de Medição</a></li>
+<li class="toc-sub">II DataPOL · UFPE · 2026</li>
+
+<li class="divider"></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i>Apresentação</a>
+<ul>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#o-estudo-de-caso"><i class="fa fa-check"></i>O estudo de caso</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#a-quem-se-destina"><i class="fa fa-check"></i>A quem se destina</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#como-usar-este-livro"><i class="fa fa-check"></i>Como usar este livro</a>
+<ul>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#dois-formatos-para-o-minicurso"><i class="fa fa-check"></i>Dois formatos para o minicurso</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#material"><i class="fa fa-check"></i>Material</a></li>
+</ul></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#autoria-e-uso-de-intelig%C3%AAncia-artificial"><i class="fa fa-check"></i>Autoria e uso de inteligência artificial</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#como-citar"><i class="fa fa-check"></i>Como citar</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#licen%C3%A7a"><i class="fa fa-check"></i>Licença</a></li>
+</ul></li>
+<li class="chapter" data-level="1" data-path="intro.html"><a href="intro.html"><i class="fa fa-check"></i><b>1</b> Quem mede a régua?</a>
+<ul>
+<li class="chapter" data-level="1.1" data-path="intro.html"><a href="intro.html#duas-perguntas"><i class="fa fa-check"></i><b>1.1</b> Duas perguntas</a></li>
+<li class="chapter" data-level="1.2" data-path="intro.html"><a href="intro.html#por-que-agora"><i class="fa fa-check"></i><b>1.2</b> Por que agora?</a></li>
+<li class="chapter" data-level="1.3" data-path="intro.html"><a href="intro.html#a-fase-atual-da-estat%C3%ADstica"><i class="fa fa-check"></i><b>1.3</b> A “fase atual” da estatística</a></li>
+<li class="chapter" data-level="1.4" data-path="intro.html"><a href="intro.html#o-caminho-deste-livro"><i class="fa fa-check"></i><b>1.4</b> O caminho deste livro</a></li>
+</ul></li>
+<li class="chapter" data-level="2" data-path="dados.html"><a href="dados.html"><i class="fa fa-check"></i><b>2</b> Dados legislativos</a>
+<ul>
+<li class="chapter" data-level="2.1" data-path="dados.html"><a href="dados.html#as-apis-de-dados-abertos"><i class="fa fa-check"></i><b>2.1</b> As APIs de dados abertos</a></li>
+<li class="chapter" data-level="2.2" data-path="dados.html"><a href="dados.html#a-coleta-tamb%C3%A9m-%C3%A9-medi%C3%A7%C3%A3o"><i class="fa fa-check"></i><b>2.2</b> A coleta também é medição</a></li>
+<li class="chapter" data-level="2.3" data-path="dados.html"><a href="dados.html#mao-dados"><i class="fa fa-check"></i><b>2.3</b> Mão na massa: do JSON da API ao corpus</a>
+<ul>
+<li class="chapter" data-level="2.3.1" data-path="dados.html"><a href="dados.html#uma-chamada-%C3%A0-api"><i class="fa fa-check"></i><b>2.3.1</b> Uma chamada à API</a></li>
+<li class="chapter" data-level="2.3.2" data-path="dados.html"><a href="dados.html#partido-do-senado-e-limpeza-da-ementa"><i class="fa fa-check"></i><b>2.3.2</b> Partido do Senado e limpeza da ementa</a></li>
+<li class="chapter" data-level="2.3.3" data-path="dados.html"><a href="dados.html#o-corpus-congelado"><i class="fa fa-check"></i><b>2.3.3</b> O corpus congelado</a></li>
+<li class="chapter" data-level="2.3.4" data-path="dados.html"><a href="dados.html#o-campo-pol%C3%ADtico"><i class="fa fa-check"></i><b>2.3.4</b> O campo político</a></li>
+<li class="chapter" data-level="2.3.5" data-path="dados.html"><a href="dados.html#a-explos%C3%A3o-legislativa-em-gr%C3%A1fico"><i class="fa fa-check"></i><b>2.3.5</b> A explosão legislativa, em gráfico</a></li>
+<li class="chapter" data-level="2.3.6" data-path="dados.html"><a href="dados.html#a-recoleta-o-que-muda-em-um-m%C3%AAs"><i class="fa fa-check"></i><b>2.3.6</b> A recoleta: o que muda em um mês</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="3" data-path="codificacao.html"><a href="codificacao.html"><i class="fa fa-check"></i><b>3</b> Codificar é medir</a>
+<ul>
+<li class="chapter" data-level="3.1" data-path="codificacao.html"><a href="codificacao.html#o-livro-de-c%C3%B3digos"><i class="fa fa-check"></i><b>3.1</b> O livro de códigos</a>
+<ul>
+<li class="chapter" data-level="3.1.1" data-path="codificacao.html"><a href="codificacao.html#regras-de-decis%C3%A3o"><i class="fa fa-check"></i><b>3.1.1</b> Regras de decisão</a></li>
+</ul></li>
+<li class="chapter" data-level="3.2" data-path="codificacao.html"><a href="codificacao.html#referencia"><i class="fa fa-check"></i><b>3.2</b> A codificação de referência: quem fez e como</a></li>
+<li class="chapter" data-level="3.3" data-path="codificacao.html"><a href="codificacao.html#classes"><i class="fa fa-check"></i><b>3.3</b> Quantas ementas de cada classe</a>
+<ul>
+<li class="chapter" data-level="3.3.1" data-path="codificacao.html"><a href="codificacao.html#o-que-foi-classificado-como-outro"><i class="fa fa-check"></i><b>3.3.1</b> O que foi classificado como OUTRO</a></li>
+</ul></li>
+<li class="chapter" data-level="3.4" data-path="codificacao.html"><a href="codificacao.html#a-amostra-ouro"><i class="fa fa-check"></i><b>3.4</b> A amostra-ouro</a></li>
+<li class="chapter" data-level="3.5" data-path="codificacao.html"><a href="codificacao.html#quanto-n%C3%B3s-concordamos-o-teto-humano"><i class="fa fa-check"></i><b>3.5</b> Quanto nós concordamos? O teto humano</a></li>
+<li class="chapter" data-level="3.6" data-path="codificacao.html"><a href="codificacao.html#mao-codificacao"><i class="fa fa-check"></i><b>3.6</b> Mão na massa: amostra-ouro e concordância</a>
+<ul>
+<li class="chapter" data-level="3.6.1" data-path="codificacao.html"><a href="codificacao.html#o-sorteio-%C3%A9-reprodut%C3%ADvel"><i class="fa fa-check"></i><b>3.6.1</b> O sorteio é reprodutível</a></li>
+<li class="chapter" data-level="3.6.2" data-path="codificacao.html"><a href="codificacao.html#quantos-de-cada-classe-no-corpus-todo"><i class="fa fa-check"></i><b>3.6.2</b> Quantos de cada classe, no corpus todo</a></li>
+<li class="chapter" data-level="3.6.3" data-path="codificacao.html"><a href="codificacao.html#o-que-h%C3%A1-na-amostra-ouro"><i class="fa fa-check"></i><b>3.6.3</b> O que há na amostra-ouro</a></li>
+<li class="chapter" data-level="3.6.4" data-path="codificacao.html"><a href="codificacao.html#concord%C3%A2ncia-entre-codificadores"><i class="fa fa-check"></i><b>3.6.4</b> Concordância entre codificadores</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="4" data-path="baselines.html"><a href="baselines.html"><i class="fa fa-check"></i><b>4</b> Baselines: quanto se acerta sem LLM?</a>
+<ul>
+<li class="chapter" data-level="4.1" data-path="baselines.html"><a href="baselines.html#dicion%C3%A1rio"><i class="fa fa-check"></i><b>4.1</b> Dicionário</a></li>
+<li class="chapter" data-level="4.2" data-path="baselines.html"><a href="baselines.html#tf-idf-e-regress%C3%A3o-log%C3%ADstica"><i class="fa fa-check"></i><b>4.2</b> TF-IDF e regressão logística</a></li>
+<li class="chapter" data-level="4.3" data-path="baselines.html"><a href="baselines.html#resultados"><i class="fa fa-check"></i><b>4.3</b> Resultados</a></li>
+<li class="chapter" data-level="4.4" data-path="baselines.html"><a href="baselines.html#o-mesmo-m%C3%A9todo-implementa%C3%A7%C3%B5es-diferentes"><i class="fa fa-check"></i><b>4.4</b> O “mesmo” método, implementações diferentes</a></li>
+<li class="chapter" data-level="4.5" data-path="baselines.html"><a href="baselines.html#mao-baselines"><i class="fa fa-check"></i><b>4.5</b> Mão na massa: dicionário e TF-IDF</a>
+<ul>
+<li class="chapter" data-level="4.5.1" data-path="baselines.html"><a href="baselines.html#preparar-os-dados"><i class="fa fa-check"></i><b>4.5.1</b> Preparar os dados</a></li>
+<li class="chapter" data-level="4.5.2" data-path="baselines.html"><a href="baselines.html#o-dicion%C3%A1rio-em-a%C3%A7%C3%A3o"><i class="fa fa-check"></i><b>4.5.2</b> O dicionário em ação</a></li>
+<li class="chapter" data-level="4.5.3" data-path="baselines.html"><a href="baselines.html#desempenho-do-dicion%C3%A1rio-na-amostra-ouro"><i class="fa fa-check"></i><b>4.5.3</b> Desempenho do dicionário na amostra-ouro</a></li>
+<li class="chapter" data-level="4.5.4" data-path="baselines.html"><a href="baselines.html#tf-idf-e-regress%C3%A3o-log%C3%ADstica-com-valida%C3%A7%C3%A3o-cruzada"><i class="fa fa-check"></i><b>4.5.4</b> TF-IDF e regressão logística com validação cruzada</a></li>
+<li class="chapter" data-level="4.5.5" data-path="baselines.html"><a href="baselines.html#a-tabela-final"><i class="fa fa-check"></i><b>4.5.5</b> A tabela final</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="5" data-path="llm.html"><a href="llm.html"><i class="fa fa-check"></i><b>5</b> O LLM como instrumento</a>
+<ul>
+<li class="chapter" data-level="5.1" data-path="llm.html"><a href="llm.html#um-modelo-brasileiro-aberto-e-local"><i class="fa fa-check"></i><b>5.1</b> Um modelo brasileiro, aberto e local</a></li>
+<li class="chapter" data-level="5.2" data-path="llm.html"><a href="llm.html#o-prompt-%C3%A9-parte-do-instrumento"><i class="fa fa-check"></i><b>5.2</b> O prompt é parte do instrumento</a></li>
+<li class="chapter" data-level="5.3" data-path="llm.html"><a href="llm.html#cache-as-respostas-do-llm-s%C3%A3o-dados"><i class="fa fa-check"></i><b>5.3</b> Cache: as respostas do LLM são dados</a></li>
+<li class="chapter" data-level="5.4" data-path="llm.html"><a href="llm.html#falhas-de-formato"><i class="fa fa-check"></i><b>5.4</b> Falhas de formato</a></li>
+<li class="chapter" data-level="5.5" data-path="llm.html"><a href="llm.html#mao-llm"><i class="fa fa-check"></i><b>5.5</b> Mão na massa: chamar o modelo, guardar e ler o cache</a>
+<ul>
+<li class="chapter" data-level="5.5.1" data-path="llm.html"><a href="llm.html#o-instrumento-por-escrito"><i class="fa fa-check"></i><b>5.5.1</b> O instrumento, por escrito</a></li>
+<li class="chapter" data-level="5.5.2" data-path="llm.html"><a href="llm.html#o-prompt-e-sua-impress%C3%A3o-digital"><i class="fa fa-check"></i><b>5.5.2</b> O prompt e sua impressão digital</a></li>
+<li class="chapter" data-level="5.5.3" data-path="llm.html"><a href="llm.html#uma-chamada-ao-modelo"><i class="fa fa-check"></i><b>5.5.3</b> Uma chamada ao modelo</a></li>
+<li class="chapter" data-level="5.5.4" data-path="llm.html"><a href="llm.html#extrair-o-r%C3%B3tulo-de-respostas-imperfeitas"><i class="fa fa-check"></i><b>5.5.4</b> Extrair o rótulo de respostas imperfeitas</a></li>
+<li class="chapter" data-level="5.5.5" data-path="llm.html"><a href="llm.html#ler-o-cache"><i class="fa fa-check"></i><b>5.5.5</b> Ler o cache</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="6" data-path="validacao.html"><a href="validacao.html"><i class="fa fa-check"></i><b>6</b> Validação: o instrumento mede o que diz medir?</a>
+<ul>
+<li class="chapter" data-level="6.1" data-path="validacao.html"><a href="validacao.html#validade-concord%C3%A2ncia-com-a-amostra-ouro"><i class="fa fa-check"></i><b>6.1</b> Validade: concordância com a amostra-ouro</a></li>
+<li class="chapter" data-level="6.2" data-path="validacao.html"><a href="validacao.html#onde-o-instrumento-erra"><i class="fa fa-check"></i><b>6.2</b> Onde o instrumento erra</a></li>
+<li class="chapter" data-level="6.3" data-path="validacao.html"><a href="validacao.html#vi%C3%A9s-diferencial"><i class="fa fa-check"></i><b>6.3</b> Viés diferencial</a></li>
+<li class="chapter" data-level="6.4" data-path="validacao.html"><a href="validacao.html#confiabilidade"><i class="fa fa-check"></i><b>6.4</b> Confiabilidade</a></li>
+<li class="chapter" data-level="6.5" data-path="validacao.html"><a href="validacao.html#a-vari%C3%A1vel-eleitoral"><i class="fa fa-check"></i><b>6.5</b> A variável eleitoral</a></li>
+<li class="chapter" data-level="6.6" data-path="validacao.html"><a href="validacao.html#humano-humano"><i class="fa fa-check"></i><b>6.6</b> Humano × humano</a></li>
+<li class="chapter" data-level="6.7" data-path="validacao.html"><a href="validacao.html#mao-validacao"><i class="fa fa-check"></i><b>6.7</b> Mão na massa: validar o instrumento</a>
+<ul>
+<li class="chapter" data-level="6.7.1" data-path="validacao.html"><a href="validacao.html#juntar-o-llm-%C3%A0-amostra-ouro"><i class="fa fa-check"></i><b>6.7.1</b> Juntar o LLM à amostra-ouro</a></li>
+<li class="chapter" data-level="6.7.2" data-path="validacao.html"><a href="validacao.html#validade-com-intervalo-bootstrap"><i class="fa fa-check"></i><b>6.7.2</b> Validade com intervalo bootstrap</a></li>
+<li class="chapter" data-level="6.7.3" data-path="validacao.html"><a href="validacao.html#onde-o-melhor-instrumento-erra"><i class="fa fa-check"></i><b>6.7.3</b> Onde o melhor instrumento erra</a></li>
+<li class="chapter" data-level="6.7.4" data-path="validacao.html"><a href="validacao.html#vi%C3%A9s-diferencial-por-campo-pol%C3%ADtico"><i class="fa fa-check"></i><b>6.7.4</b> Viés diferencial por campo político</a></li>
+<li class="chapter" data-level="6.7.5" data-path="validacao.html"><a href="validacao.html#confiabilidade-sementes-e-prompts"><i class="fa fa-check"></i><b>6.7.5</b> Confiabilidade: sementes e prompts</a></li>
+<li class="chapter" data-level="6.7.6" data-path="validacao.html"><a href="validacao.html#a-vari%C3%A1vel-eleitoral-1"><i class="fa fa-check"></i><b>6.7.6</b> A variável eleitoral</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="7" data-path="inferencia.html"><a href="inferencia.html"><i class="fa fa-check"></i><b>7</b> Inferência com rótulos imperfeitos</a>
+<ul>
+<li class="chapter" data-level="7.1" data-path="inferencia.html"><a href="inferencia.html#duas-solu%C3%A7%C3%B5es-ruins"><i class="fa fa-check"></i><b>7.1</b> Duas soluções ruins</a></li>
+<li class="chapter" data-level="7.2" data-path="inferencia.html"><a href="inferencia.html#prediction-powered-inference"><i class="fa fa-check"></i><b>7.2</b> <em>Prediction-Powered Inference</em></a></li>
+<li class="chapter" data-level="7.3" data-path="inferencia.html"><a href="inferencia.html#ppi"><i class="fa fa-check"></i><b>7.3</b> PPI++</a></li>
+<li class="chapter" data-level="7.4" data-path="inferencia.html"><a href="inferencia.html#que-propor%C3%A7%C3%A3o-dos-projetos-quer-punir"><i class="fa fa-check"></i><b>7.4</b> Que proporção dos projetos quer PUNIR?</a></li>
+<li class="chapter" data-level="7.5" data-path="inferencia.html"><a href="inferencia.html#simula%C3%A7%C3%A3o-com-que-frequ%C3%AAncia-o-ic-acerta"><i class="fa fa-check"></i><b>7.5</b> Simulação: com que frequência o IC acerta?</a></li>
+<li class="chapter" data-level="7.6" data-path="inferencia.html"><a href="inferencia.html#e-entre-campos-pol%C3%ADticos"><i class="fa fa-check"></i><b>7.6</b> E entre campos políticos?</a></li>
+<li class="chapter" data-level="7.7" data-path="inferencia.html"><a href="inferencia.html#o-que-os-n%C3%BAmeros-dizem"><i class="fa fa-check"></i><b>7.7</b> O que os números dizem</a></li>
+<li class="chapter" data-level="7.8" data-path="inferencia.html"><a href="inferencia.html#mao-inferencia"><i class="fa fa-check"></i><b>7.8</b> Mão na massa: os quatro estimadores, passo a passo</a>
+<ul>
+<li class="chapter" data-level="7.8.1" data-path="inferencia.html"><a href="inferencia.html#montar-y-e-f"><i class="fa fa-check"></i><b>7.8.1</b> Montar <span class="math inline">\(Y\)</span> e <span class="math inline">\(f\)</span></a></li>
+<li class="chapter" data-level="7.8.2" data-path="inferencia.html"><a href="inferencia.html#cada-estimador-%C3%A0-m%C3%A3o"><i class="fa fa-check"></i><b>7.8.2</b> Cada estimador, à mão</a></li>
+<li class="chapter" data-level="7.8.3" data-path="inferencia.html"><a href="inferencia.html#com-intervalos-de-confian%C3%A7a"><i class="fa fa-check"></i><b>7.8.3</b> Com intervalos de confiança</a></li>
+<li class="chapter" data-level="7.8.4" data-path="inferencia.html"><a href="inferencia.html#a-simula%C3%A7%C3%A3o-de-cobertura"><i class="fa fa-check"></i><b>7.8.4</b> A simulação de cobertura</a></li>
+<li class="chapter" data-level="7.8.5" data-path="inferencia.html"><a href="inferencia.html#por-campo-pol%C3%ADtico"><i class="fa fa-check"></i><b>7.8.5</b> Por campo político</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="8" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html"><i class="fa fa-check"></i><b>8</b> Reprodutibilidade (MLOps)</a>
+<ul>
+<li class="chapter" data-level="8.1" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#o-que-precisa-ser-versionado"><i class="fa fa-check"></i><b>8.1</b> O que precisa ser versionado?</a></li>
+<li class="chapter" data-level="8.2" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#um-pipeline-declarativo-com-targets"><i class="fa fa-check"></i><b>8.2</b> Um pipeline declarativo com <code>targets</code></a></li>
+<li class="chapter" data-level="8.3" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#r-e-python-duas-trilhas-os-mesmos-resultados"><i class="fa fa-check"></i><b>8.3</b> R e Python: duas trilhas, os mesmos resultados</a></li>
+<li class="chapter" data-level="8.4" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#drift-quando-o-instrumento-muda-sozinho"><i class="fa fa-check"></i><b>8.4</b> <em>Drift</em>: quando o instrumento muda sozinho</a></li>
+<li class="chapter" data-level="8.5" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#c%C3%B3digo-gerado-por-ia"><i class="fa fa-check"></i><b>8.5</b> Código gerado por IA</a></li>
+<li class="chapter" data-level="8.6" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#mao-reprodutibilidade"><i class="fa fa-check"></i><b>8.6</b> Mão na massa: verificar a reprodutibilidade</a>
+<ul>
+<li class="chapter" data-level="8.6.1" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#o-pipeline-sem-execut%C3%A1-lo"><i class="fa fa-check"></i><b>8.6.1</b> O pipeline, sem executá-lo</a></li>
+<li class="chapter" data-level="8.6.2" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#o-cache-confere-com-os-prompts"><i class="fa fa-check"></i><b>8.6.2</b> O cache confere com os prompts?</a></li>
+<li class="chapter" data-level="8.6.3" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#temperatura-0-%C3%A9-determin%C3%ADstica-a-repeti%C3%A7%C3%A3o-de-12112026"><i class="fa fa-check"></i><b>8.6.3</b> Temperatura 0 é determinística? A repetição de 12/11/2026</a></li>
+<li class="chapter" data-level="8.6.4" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#r-e-python-chegam-aos-mesmos-n%C3%BAmeros"><i class="fa fa-check"></i><b>8.6.4</b> R e Python chegam aos mesmos números?</a></li>
+<li class="chapter" data-level="8.6.5" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#o-ambiente"><i class="fa fa-check"></i><b>8.6.5</b> O ambiente</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="9" data-path="etica.html"><a href="etica.html"><i class="fa fa-check"></i><b>9</b> Ética, limites e debate</a>
+<ul>
+<li class="chapter" data-level="9.1" data-path="etica.html"><a href="etica.html#elei%C3%A7%C3%B5es-de-2026-regras-do-tse"><i class="fa fa-check"></i><b>9.1</b> Eleições de 2026: regras do TSE</a></li>
+<li class="chapter" data-level="9.2" data-path="etica.html"><a href="etica.html#o-marco-legal-da-ia-pl-23382023"><i class="fa fa-check"></i><b>9.2</b> O Marco Legal da IA: PL 2338/2023</a></li>
+<li class="chapter" data-level="9.3" data-path="etica.html"><a href="etica.html#o-que-o-corpus-n%C3%A3o-pode-mostrar"><i class="fa fa-check"></i><b>9.3</b> O que o corpus não pode mostrar</a></li>
+<li class="chapter" data-level="9.4" data-path="etica.html"><a href="etica.html#quando-n%C3%A3o-usar-um-llm"><i class="fa fa-check"></i><b>9.4</b> Quando <strong>não</strong> usar um LLM</a></li>
+<li class="chapter" data-level="9.5" data-path="etica.html"><a href="etica.html#para-debater"><i class="fa fa-check"></i><b>9.5</b> Para debater</a></li>
+<li class="chapter" data-level="9.6" data-path="etica.html"><a href="etica.html#mensagem-final"><i class="fa fa-check"></i><b>9.6</b> Mensagem final</a></li>
+</ul></li>
+<li class="appendix"><span><b>Apêndices</b></span></li>
+<li class="chapter" data-level="A" data-path="ambiente.html"><a href="ambiente.html"><i class="fa fa-check"></i><b>A</b> Preparando o ambiente</a>
+<ul>
+<li class="chapter" data-level="A.1" data-path="ambiente.html"><a href="ambiente.html#o-que-voc%C3%AA-precisa"><i class="fa fa-check"></i><b>A.1</b> O que você precisa</a></li>
+<li class="chapter" data-level="A.2" data-path="ambiente.html"><a href="ambiente.html#o-material"><i class="fa fa-check"></i><b>A.2</b> O material</a></li>
+<li class="chapter" data-level="A.3" data-path="ambiente.html"><a href="ambiente.html#r"><i class="fa fa-check"></i><b>A.3</b> R</a></li>
+<li class="chapter" data-level="A.4" data-path="ambiente.html"><a href="ambiente.html#python"><i class="fa fa-check"></i><b>A.4</b> Python</a>
+<ul>
+<li class="chapter" data-level="A.4.1" data-path="ambiente.html"><a href="ambiente.html#no-seu-computador"><i class="fa fa-check"></i><b>A.4.1</b> No seu computador</a></li>
+<li class="chapter" data-level="A.4.2" data-path="ambiente.html"><a href="ambiente.html#no-google-colab"><i class="fa fa-check"></i><b>A.4.2</b> No Google Colab</a></li>
+</ul></li>
+<li class="chapter" data-level="A.5" data-path="ambiente.html"><a href="ambiente.html#ollama-e-o-s5-nano-opcional"><i class="fa fa-check"></i><b>A.5</b> Ollama e o S5-nano (opcional)</a></li>
+<li class="chapter" data-level="A.6" data-path="ambiente.html"><a href="ambiente.html#qual-arquivo-roda-cada-bloco"><i class="fa fa-check"></i><b>A.6</b> Qual arquivo roda cada bloco</a></li>
+<li class="chapter" data-level="A.7" data-path="ambiente.html"><a href="ambiente.html#problemas-comuns"><i class="fa fa-check"></i><b>A.7</b> Problemas comuns</a></li>
+</ul></li>
+<li class="chapter" data-level="B" data-path="checklist.html"><a href="checklist.html"><i class="fa fa-check"></i><b>B</b> Checklist: usar um LLM como instrumento de medição</a>
+<ul>
+<li class="chapter" data-level="B.0.1" data-path="checklist.html"><a href="checklist.html#a.-antes-de-anotar"><i class="fa fa-check"></i><b>B.0.1</b> A. Antes de anotar</a></li>
+<li class="chapter" data-level="B.0.2" data-path="checklist.html"><a href="checklist.html#b.-durante-a-anota%C3%A7%C3%A3o"><i class="fa fa-check"></i><b>B.0.2</b> B. Durante a anotação</a></li>
+<li class="chapter" data-level="B.0.3" data-path="checklist.html"><a href="checklist.html#c.-valida%C3%A7%C3%A3o"><i class="fa fa-check"></i><b>B.0.3</b> C. Validação</a></li>
+<li class="chapter" data-level="B.0.4" data-path="checklist.html"><a href="checklist.html#d.-infer%C3%AAncia"><i class="fa fa-check"></i><b>B.0.4</b> D. Inferência</a></li>
+<li class="chapter" data-level="B.0.5" data-path="checklist.html"><a href="checklist.html#e.-reprodutibilidade-mlops"><i class="fa fa-check"></i><b>B.0.5</b> E. Reprodutibilidade (MLOps)</a></li>
+<li class="chapter" data-level="B.0.6" data-path="checklist.html"><a href="checklist.html#f.-quando-n%C3%A3o-usar-um-llm"><i class="fa fa-check"></i><b>B.0.6</b> F. Quando NÃO usar um LLM</a></li>
+</ul></li>
+<li class="chapter" data-level="C" data-path="prompts.html"><a href="prompts.html"><i class="fa fa-check"></i><b>C</b> Prompts completos</a>
+<ul>
+<li class="chapter" data-level="" data-path="prompts.html"><a href="prompts.html#prompt-v1"><i class="fa fa-check"></i>Prompt v1</a></li>
+<li class="chapter" data-level="" data-path="prompts.html"><a href="prompts.html#prompt-v2"><i class="fa fa-check"></i>Prompt v2</a></li>
+<li class="chapter" data-level="" data-path="prompts.html"><a href="prompts.html#prompt-v3"><i class="fa fa-check"></i>Prompt v3</a></li>
+</ul></li>
+<li class="chapter" data-level="D" data-path="reproduzir.html"><a href="reproduzir.html"><i class="fa fa-check"></i><b>D</b> Como reproduzir</a>
+<ul>
+<li class="chapter" data-level="D.1" data-path="reproduzir.html"><a href="reproduzir.html#sem-llm-e-sem-internet-como-em-sala"><i class="fa fa-check"></i><b>D.1</b> Sem LLM e sem internet (como em sala)</a></li>
+<li class="chapter" data-level="D.2" data-path="reproduzir.html"><a href="reproduzir.html#refazendo-a-coleta-e-a-anota%C3%A7%C3%A3o"><i class="fa fa-check"></i><b>D.2</b> Refazendo a coleta e a anotação</a></li>
+<li class="chapter" data-level="D.3" data-path="reproduzir.html"><a href="reproduzir.html#este-livro-e-os-slides"><i class="fa fa-check"></i><b>D.3</b> Este livro e os slides</a></li>
+<li class="chapter" data-level="D.4" data-path="reproduzir.html"><a href="reproduzir.html#estrutura-do-material"><i class="fa fa-check"></i><b>D.4</b> Estrutura do material</a></li>
+<li class="chapter" data-level="D.5" data-path="reproduzir.html"><a href="reproduzir.html#ambiente-usado-nos-resultados"><i class="fa fa-check"></i><b>D.5</b> Ambiente usado nos resultados</a></li>
+</ul></li>
+<li class="chapter" data-level="E" data-path="declaracao-ia.html"><a href="declaracao-ia.html"><i class="fa fa-check"></i><b>E</b> Declaração de uso de inteligência artificial e responsabilidade</a>
+<ul>
+<li class="chapter" data-level="E.1" data-path="declaracao-ia.html"><a href="declaracao-ia.html#autoria"><i class="fa fa-check"></i><b>E.1</b> Autoria</a></li>
+<li class="chapter" data-level="E.2" data-path="declaracao-ia.html"><a href="declaracao-ia.html#identifica%C3%A7%C3%A3o-da-ferramenta"><i class="fa fa-check"></i><b>E.2</b> Identificação da ferramenta</a></li>
+<li class="chapter" data-level="E.3" data-path="declaracao-ia.html"><a href="declaracao-ia.html#o-que-a-ia-fez"><i class="fa fa-check"></i><b>E.3</b> O que a IA fez</a></li>
+<li class="chapter" data-level="E.4" data-path="declaracao-ia.html"><a href="declaracao-ia.html#o-que-coube-ao-autor-humano"><i class="fa fa-check"></i><b>E.4</b> O que coube ao autor humano</a></li>
+<li class="chapter" data-level="E.5" data-path="declaracao-ia.html"><a href="declaracao-ia.html#responsabilidade"><i class="fa fa-check"></i><b>E.5</b> Responsabilidade</a></li>
+<li class="chapter" data-level="E.6" data-path="declaracao-ia.html"><a href="declaracao-ia.html#dois-pap%C3%A9is-diferentes-para-a-ia"><i class="fa fa-check"></i><b>E.6</b> Dois papéis diferentes para a IA</a></li>
+<li class="chapter" data-level="E.7" data-path="declaracao-ia.html"><a href="declaracao-ia.html#por-que-esta-declara%C3%A7%C3%A3o-existe"><i class="fa fa-check"></i><b>E.7</b> Por que esta declaração existe</a></li>
+</ul></li>
+<li class="chapter" data-level="" data-path="referencias.html"><a href="referencias.html"><i class="fa fa-check"></i>Referências</a></li>
+<li class="divider"></li>
+<li class="toc-sub"><strong>Jodavid Ferreira</strong> · DE/UFPE<br>coautoria: Claude Opus 5.5 (IA)</li>
+<li class="toc-sub">Texto: <a href="https://creativecommons.org/licenses/by/4.0/deed.pt-br" target="_blank">CC BY 4.0</a> · Código: <a href="https://opensource.org/license/mit" target="_blank">MIT</a></li>
+<li class="toc-links"><a href="ia-instrumento-medicao.pdf" target="_blank">PDF</a><a href="material/minicurso_IA_medicao.zip">Material .zip</a></li>
+<li class="toc-sub"><strong>Slides</strong></li>
+<li class="toc-links"><a href="slides/parte1_conceitos.html" target="_blank">Parte 1: conceitos</a><a href="slides/slides.html" target="_blank">Versão resumida</a></li>
+<li class="toc-links"><a href="slides/completo_R.html" target="_blank">Completos · R</a><a href="slides/completo_python.html" target="_blank">Completos · Python</a></li>
+
+</ul>
+
+      </nav>
+    </div>
+
+    <div class="book-body">
+      <div class="body-inner">
+        <div class="book-header" role="navigation">
+          <h1>
+            <i class="fa fa-circle-o-notch fa-spin"></i><a href="./">Inteligência Artificial como Instrumento de Medição</a>
+          </h1>
+        </div>
+
+        <div class="page-wrapper" tabindex="-1" role="main">
+          <div class="page-inner">
+
+            <section class="normal" id="section-">
+<div id="inferencia" class="section level1 hasAnchor" number="7">
+<h1><span class="header-section-number">Capítulo 7</span> Inferência com rótulos imperfeitos<a href="inferencia.html#inferencia" class="anchor-section" aria-label="Anchor link to header"></a></h1>
+<p>Chegamos à pergunta substantiva: <strong>que proporção dos projetos sobre IA quer PUNIR?</strong> Chamemos essa proporção de <span class="math inline">\(\theta\)</span>. Temos dois tipos de informação:</p>
+<ul>
+<li>a <strong>amostra-ouro</strong>, com <span class="math inline">\(n = 120\)</span> ementas codificadas por humanos (<span class="math inline">\(Y_j\)</span>) e pelo LLM (<span class="math inline">\(f(X_j)\)</span>);</li>
+<li>as demais <span class="math inline">\(N = 184\)</span> ementas, codificadas <strong>só</strong> pelo LLM (<span class="math inline">\(f(X_i)\)</span>).</li>
+</ul>
+<div id="duas-soluções-ruins" class="section level2 hasAnchor" number="7.1">
+<h2><span class="header-section-number">7.1</span> Duas soluções ruins<a href="inferencia.html#duas-solu%C3%A7%C3%B5es-ruins" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p><strong>Só humanos.</strong> Usar apenas a amostra-ouro:</p>
+<p><span class="math display">\[\hat\theta_H = \frac{1}{n}\sum_{j=1}^{n} Y_j.\]</span></p>
+<p>É <strong>sem viés</strong> (a amostra é aleatória), mas <strong>imprecisa</strong>: desperdiça a informação das outras 184 ementas.</p>
+<p><strong>Ingênuo.</strong> Tratar o LLM como verdade no corpus inteiro:</p>
+<p><span class="math display">\[\hat\theta_{LLM} = \frac{1}{N+n}\sum_{i=1}^{N+n} f(X_i).\]</span></p>
+<p>É <strong>preciso</strong> (usa todas as ementas), mas <strong>enviesado</strong> pelo erro do LLM. E o pior: seu intervalo de confiança é estreito, o que transmite uma segurança que ele não tem.</p>
+</div>
+<div id="prediction-powered-inference" class="section level2 hasAnchor" number="7.2">
+<h2><span class="header-section-number">7.2</span> <em>Prediction-Powered Inference</em><a href="inferencia.html#prediction-powered-inference" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>A ideia de <span class="citation">Angelopoulos, Bates, et al. (<a href="#ref-angelopoulos2023ppi">2023</a>)</span> é usar a amostra-ouro para <strong>medir o viés do LLM</strong> e subtraí-lo da estimativa feita com o LLM:</p>
+<p><span class="math display">\[
+\hat\theta_{PP} = \underbrace{\frac{1}{N}\sum_{i=1}^{N} f(X_i)}_{\text{LLM nos não rotulados}} \; - \; \underbrace{\frac{1}{n}\sum_{j=1}^{n}\big(f(X_j) - Y_j\big)}_{\text{viés do LLM medido na amostra-ouro}},
+\]</span></p>
+<p>com variância estimada por</p>
+<p><span class="math display">\[
+\widehat{\text{Var}}(\hat\theta_{PP}) = \frac{\hat\sigma^2_{f}}{N} + \frac{\hat\sigma^2_{f-Y}}{n}.
+\]</span></p>
+<p>O segundo termo, chamado de <strong>retificador</strong>, é o que torna o estimador honesto. A propriedade central é que o PPI <strong>não faz nenhuma hipótese sobre a qualidade do LLM</strong>: um LLM ruim gera um retificador com variância alta e, portanto, um <strong>IC largo</strong>, nunca um <strong>IC errado</strong>. Em R, são cinco linhas:</p>
+<div class="sourceCode" id="cb238"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb238-1"><a href="inferencia.html#cb238-1" tabindex="-1"></a>est_ppi <span class="ot">&lt;-</span> <span class="cf">function</span>(y_n, f_n, f_N) {</span>
+<span id="cb238-2"><a href="inferencia.html#cb238-2" tabindex="-1"></a>  retificador <span class="ot">&lt;-</span> f_n <span class="sc">-</span> y_n</span>
+<span id="cb238-3"><a href="inferencia.html#cb238-3" tabindex="-1"></a>  est <span class="ot">&lt;-</span> <span class="fu">mean</span>(f_N) <span class="sc">-</span> <span class="fu">mean</span>(retificador)</span>
+<span id="cb238-4"><a href="inferencia.html#cb238-4" tabindex="-1"></a>  ep <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(<span class="fu">var</span>(f_N) <span class="sc">/</span> <span class="fu">length</span>(f_N) <span class="sc">+</span> <span class="fu">var</span>(retificador) <span class="sc">/</span> <span class="fu">length</span>(y_n))</span>
+<span id="cb238-5"><a href="inferencia.html#cb238-5" tabindex="-1"></a>  <span class="fu">ic_normal</span>(est, ep)</span>
+<span id="cb238-6"><a href="inferencia.html#cb238-6" tabindex="-1"></a>}</span></code></pre></div>
+</div>
+<div id="ppi" class="section level2 hasAnchor" number="7.3">
+<h2><span class="header-section-number">7.3</span> PPI++<a href="inferencia.html#ppi" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>O <strong>PPI++</strong> <span class="citation">(<a href="#ref-angelopoulos2023ppiplus">Angelopoulos, Duchi, et al. 2023</a>)</span> pondera o LLM por um peso <span class="math inline">\(\lambda \in [0, 1]\)</span> escolhido a partir dos dados para minimizar a variância:</p>
+<p><span class="math display">\[
+\hat\theta_{PP}^{\lambda} = \bar Y_n + \lambda\big(\bar f_N - \bar f_n\big), \qquad
+\hat\lambda = \frac{\widehat{\text{Cov}}(Y, f)}{(1 + n/N)\,\widehat{\text{Var}}(f)}.
+\]</span></p>
+<p>Se o LLM for inútil, <span class="math inline">\(\hat\lambda \to 0\)</span> e o estimador volta a ser o “só humanos”; se for muito bom, <span class="math inline">\(\hat\lambda \to 1\)</span> e ele se aproxima do PPI.</p>
+<div class="sourceCode" id="cb239"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb239-1"><a href="inferencia.html#cb239-1" tabindex="-1"></a>est_ppi_plus <span class="ot">&lt;-</span> <span class="cf">function</span>(y_n, f_n, f_N) {</span>
+<span id="cb239-2"><a href="inferencia.html#cb239-2" tabindex="-1"></a>  n <span class="ot">&lt;-</span> <span class="fu">length</span>(y_n); N <span class="ot">&lt;-</span> <span class="fu">length</span>(f_N)</span>
+<span id="cb239-3"><a href="inferencia.html#cb239-3" tabindex="-1"></a>  f_todos <span class="ot">&lt;-</span> <span class="fu">c</span>(f_n, f_N)</span>
+<span id="cb239-4"><a href="inferencia.html#cb239-4" tabindex="-1"></a>  lambda <span class="ot">&lt;-</span> <span class="fu">cov</span>(y_n, f_n) <span class="sc">/</span> ((<span class="dv">1</span> <span class="sc">+</span> n <span class="sc">/</span> N) <span class="sc">*</span> <span class="fu">var</span>(f_todos))</span>
+<span id="cb239-5"><a href="inferencia.html#cb239-5" tabindex="-1"></a>  lambda <span class="ot">&lt;-</span> <span class="fu">min</span>(<span class="fu">max</span>(lambda, <span class="dv">0</span>), <span class="dv">1</span>)</span>
+<span id="cb239-6"><a href="inferencia.html#cb239-6" tabindex="-1"></a>  est <span class="ot">&lt;-</span> <span class="fu">mean</span>(y_n) <span class="sc">+</span> lambda <span class="sc">*</span> (<span class="fu">mean</span>(f_N) <span class="sc">-</span> <span class="fu">mean</span>(f_n))</span>
+<span id="cb239-7"><a href="inferencia.html#cb239-7" tabindex="-1"></a>  ep <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(<span class="fu">var</span>(y_n <span class="sc">-</span> lambda <span class="sc">*</span> f_n) <span class="sc">/</span> n <span class="sc">+</span> lambda<span class="sc">^</span><span class="dv">2</span> <span class="sc">*</span> <span class="fu">var</span>(f_N) <span class="sc">/</span> N)</span>
+<span id="cb239-8"><a href="inferencia.html#cb239-8" tabindex="-1"></a>  <span class="fu">ic_normal</span>(est, ep) <span class="sc">|&gt;</span> <span class="fu">mutate</span>(<span class="at">lambda =</span> lambda)</span>
+<span id="cb239-9"><a href="inferencia.html#cb239-9" tabindex="-1"></a>}</span></code></pre></div>
+<p>Abordagens relacionadas, como o <em>Design-based Supervised Learning</em> de <span class="citation">Egami et al. (<a href="#ref-egami2023">2023</a>)</span>, seguem a mesma lógica: usar a amostra rotulada por humanos para corrigir o erro do rótulo automático na regressão de interesse.</p>
+</div>
+<div id="que-proporção-dos-projetos-quer-punir" class="section level2 hasAnchor" number="7.4">
+<h2><span class="header-section-number">7.4</span> Que proporção dos projetos quer PUNIR?<a href="inferencia.html#que-propor%C3%A7%C3%A3o-dos-projetos-quer-punir" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<div class="figure" style="text-align: center"><span style="display:block;" id="fig:fig-estimadores"></span>
+<img src="img/05_estimadores_punir.png" alt="Estimativas da proporção de projetos PUNIR com IC 95%. A linha vertical marca o valor na referência completa." width="100%" />
+<p class="caption">
+Figura 7.1: Estimativas da proporção de projetos PUNIR com IC 95%. A linha vertical marca o valor na referência completa.
+</p>
+</div>
+<table>
+<caption><span id="tab:tab-estimadores">Tabela 7.1: </span>Proporção de projetos PUNIR segundo cada estimador.</caption>
+<colgroup>
+<col width="37%" />
+<col width="17%" />
+<col width="23%" />
+<col width="13%" />
+<col width="8%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">Estimador</th>
+<th align="center">Estimativa</th>
+<th align="center">IC 95%</th>
+<th align="center">Largura</th>
+<th align="center">λ</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Só humanos (amostra-ouro)</td>
+<td align="center">18,3%</td>
+<td align="center">[11,4%; 25,3%]</td>
+<td align="center">13,9%</td>
+<td align="center"></td>
+</tr>
+<tr class="even">
+<td align="left">Ingênuo (LLM = verdade)</td>
+<td align="center">23,0%</td>
+<td align="center">[18,3%; 27,8%]</td>
+<td align="center">9,5%</td>
+<td align="center"></td>
+</tr>
+<tr class="odd">
+<td align="left">PPI</td>
+<td align="center">20,6%</td>
+<td align="center">[13,6%; 27,6%]</td>
+<td align="center">13,9%</td>
+<td align="center"></td>
+</tr>
+<tr class="even">
+<td align="left">PPI++</td>
+<td align="center">19,4%</td>
+<td align="center">[14,4%; 24,5%]</td>
+<td align="center">10,0%</td>
+<td align="center">0,49</td>
+</tr>
+</tbody>
+</table>
+<p>Como este é um corpus didático com referência para todas as 304 ementas, conhecemos o “valor verdadeiro” (17,4%) e podemos conferir quem acerta. O estimador ingênuo <strong>superestima</strong> a proporção punitiva (23,0%) e seu IC <strong>não contém</strong> o valor verdadeiro. Os demais contêm.</p>
+</div>
+<div id="simulação-com-que-frequência-o-ic-acerta" class="section level2 hasAnchor" number="7.5">
+<h2><span class="header-section-number">7.5</span> Simulação: com que frequência o IC acerta?<a href="inferencia.html#simula%C3%A7%C3%A3o-com-que-frequ%C3%AAncia-o-ic-acerta" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>Um único resultado pode ser sorte. Para avaliar os estimadores, repetimos o sorteio da amostra-ouro <strong>1.000 vezes</strong> para cada tamanho (<span class="math inline">\(n\)</span> = 30, 60 e 120) e verificamos com que frequência o IC de 95% contém o valor verdadeiro. Um bom IC de 95% deve acertar em cerca de 95% das vezes.</p>
+<div class="figure" style="text-align: center"><span style="display:block;" id="fig:fig-cobertura"></span>
+<img src="img/07_cobertura_simulacao.png" alt="Cobertura dos ICs de 95% em 1.000 sorteios da amostra-ouro." width="100%" />
+<p class="caption">
+Figura 7.2: Cobertura dos ICs de 95% em 1.000 sorteios da amostra-ouro.
+</p>
+</div>
+<div class="figure" style="text-align: center"><span style="display:block;" id="fig:fig-largura"></span>
+<img src="img/08_largura_simulacao.png" alt="Largura média dos ICs de 95%: o preço da honestidade." width="100%" />
+<p class="caption">
+Figura 7.3: Largura média dos ICs de 95%: o preço da honestidade.
+</p>
+</div>
+<table>
+<caption><span id="tab:tab-sim">Tabela 7.2: </span>Simulação: cobertura, largura e viés dos estimadores.</caption>
+<colgroup>
+<col width="34%" />
+<col width="13%" />
+<col width="14%" />
+<col width="20%" />
+<col width="17%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">Estimador</th>
+<th align="center">n (ouro)</th>
+<th align="center">Cobertura</th>
+<th align="center">Largura média</th>
+<th align="center">Viés (p.p.)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Ingênuo (LLM = verdade)</td>
+<td align="center">30</td>
+<td align="center">0,0%</td>
+<td align="center">9,5%</td>
+<td align="center">5,6</td>
+</tr>
+<tr class="even">
+<td align="left">PPI</td>
+<td align="center">30</td>
+<td align="center">84,1%</td>
+<td align="center">18,4%</td>
+<td align="center">0,3</td>
+</tr>
+<tr class="odd">
+<td align="left">PPI++</td>
+<td align="center">30</td>
+<td align="center">86,6%</td>
+<td align="center">15,6%</td>
+<td align="center">-1,3</td>
+</tr>
+<tr class="even">
+<td align="left">Só humanos (amostra-ouro)</td>
+<td align="center">30</td>
+<td align="center">89,6%</td>
+<td align="center">26,3%</td>
+<td align="center">-0,6</td>
+</tr>
+<tr class="odd">
+<td align="left">Ingênuo (LLM = verdade)</td>
+<td align="center">60</td>
+<td align="center">0,0%</td>
+<td align="center">9,5%</td>
+<td align="center">5,6</td>
+</tr>
+<tr class="even">
+<td align="left">PPI</td>
+<td align="center">60</td>
+<td align="center">97,2%</td>
+<td align="center">15,6%</td>
+<td align="center">0,2</td>
+</tr>
+<tr class="odd">
+<td align="left">PPI++</td>
+<td align="center">60</td>
+<td align="center">96,2%</td>
+<td align="center">12,4%</td>
+<td align="center">-0,5</td>
+</tr>
+<tr class="even">
+<td align="left">Só humanos (amostra-ouro)</td>
+<td align="center">60</td>
+<td align="center">96,8%</td>
+<td align="center">19,0%</td>
+<td align="center">-0,3</td>
+</tr>
+<tr class="odd">
+<td align="left">Ingênuo (LLM = verdade)</td>
+<td align="center">120</td>
+<td align="center">0,0%</td>
+<td align="center">9,5%</td>
+<td align="center">5,6</td>
+</tr>
+<tr class="even">
+<td align="left">PPI</td>
+<td align="center">120</td>
+<td align="center">99,1%</td>
+<td align="center">14,7%</td>
+<td align="center">0,1</td>
+</tr>
+<tr class="odd">
+<td align="left">PPI++</td>
+<td align="center">120</td>
+<td align="center">99,7%</td>
+<td align="center">10,2%</td>
+<td align="center">-0,2</td>
+</tr>
+<tr class="even">
+<td align="left">Só humanos (amostra-ouro)</td>
+<td align="center">120</td>
+<td align="center">98,8%</td>
+<td align="center">13,5%</td>
+<td align="center">-0,2</td>
+</tr>
+</tbody>
+</table>
+<p>O resultado é eloquente: o IC ingênuo cobriu o valor verdadeiro em <strong>0%</strong> das simulações, para qualquer tamanho de amostra-ouro. Ele é o mais estreito justamente porque <strong>ignora</strong> o erro do LLM. O PPI++ chega a 99,7% de cobertura com <span class="math inline">\(n = 120\)</span>, com um IC 24% mais estreito, em média, que o “só humanos”. Com <span class="math inline">\(n = 30\)</span>, todos os estimadores honestos ficam abaixo de 95%: amostras-ouro muito pequenas comprometem a aproximação normal.</p>
+</div>
+<div id="e-entre-campos-políticos" class="section level2 hasAnchor" number="7.6">
+<h2><span class="header-section-number">7.6</span> E entre campos políticos?<a href="inferencia.html#e-entre-campos-pol%C3%ADticos" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<div class="figure" style="text-align: center"><span style="display:block;" id="fig:fig-campo"></span>
+<img src="img/06_punir_por_campo.png" alt="Proporção de projetos PUNIR por campo político do autor, segundo três estimadores." width="100%" />
+<p class="caption">
+Figura 7.4: Proporção de projetos PUNIR por campo político do autor, segundo três estimadores.
+</p>
+</div>
+<p>Por campo, a amostra-ouro tem entre 31 e 52 ementas, e os intervalos ficam largos. Os estimadores discordam entre si quanto à ordem dos campos, e todos os intervalos se sobrepõem amplamente. <strong>Não há evidência</strong>, com estes dados, de que um campo político legisle de forma mais punitiva que outro. Relatar o tamanho da amostra-ouro em cada grupo é obrigatório.</p>
+</div>
+<div id="o-que-os-números-dizem" class="section level2 hasAnchor" number="7.7">
+<h2><span class="header-section-number">7.7</span> O que os números dizem<a href="inferencia.html#o-que-os-n%C3%BAmeros-dizem" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<ul>
+<li><strong>O prompt importa mais que o acaso:</strong> trocar a semente muda 0% dos rótulos; trocar o prompt muda 23%.</li>
+<li><strong>O ingênuo engana:</strong> superestima a proporção punitiva e seu IC <strong>nunca</strong> cobriu a verdade na simulação.</li>
+<li><strong>O PPI++ corrige o viés</strong> e entrega um IC mais estreito que o “só humanos”, aproveitando o LLM sem esconder seu erro.</li>
+<li><strong>Resposta substantiva (ilustrativa, enquanto a referência for preliminar):</strong> pelo PPI++, cerca de <strong>19%</strong> dos projetos sobre IA no Congresso querem <strong>punir</strong> (IC 95% de 14% a 24%), algo entre 1 em cada 7 e 1 em cada 4; na referência, cerca de metade <strong>regula</strong> (49%).</li>
+</ul>
+</div>
+<div id="mao-inferencia" class="section level2 hasAnchor" number="7.8">
+<h2><span class="header-section-number">7.8</span> Mão na massa: os quatro estimadores, passo a passo<a href="inferencia.html#mao-inferencia" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<div class="caixa executar">
+<p><span class="titulo-caixa">Como executar</span></p>
+<ul>
+<li><strong>Em R</strong>: <code>Rscript R/06_inferencia.R</code> (menos de 1 minuto). Lê o melhor prompt em <code>resultados/tabelas/validade_instrumentos.csv</code> (por isso depende de <code>R/05_validacao.R</code>), grava as tabelas <code>estimativas_punir*.csv</code> e <code>simulacao_cobertura.csv</code> e as figuras 00 e 05 a 08.</li>
+<li><strong>Em Python</strong>: notebook <code>python/05_inferencia.ipynb</code> (grava em <code>resultados/python/</code>).</li>
+<li>Os blocos abaixo refazem as contas sem gravar nada.</li>
+</ul>
+</div>
+<div id="montar-y-e-f" class="section level3 hasAnchor" number="7.8.1">
+<h3><span class="header-section-number">7.8.1</span> Montar <span class="math inline">\(Y\)</span> e <span class="math inline">\(f\)</span><a href="inferencia.html#montar-y-e-f" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>Tudo começa com uma tabela de uma linha por ementa, com o rótulo do LLM transformado em 0/1 (<span class="math inline">\(f\)</span> = “o LLM disse PUNIR?”) e, só na amostra-ouro, o rótulo humano em 0/1 (<span class="math inline">\(Y\)</span>).</p>
+<div class="abas">
+<div class="aba" data-nome="R">
+<div class="sourceCode" id="cb240"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb240-1"><a href="inferencia.html#cb240-1" tabindex="-1"></a><span class="fu">source</span>(<span class="st">&quot;R/funcoes_medicao.R&quot;</span>)</span>
+<span id="cb240-2"><a href="inferencia.html#cb240-2" tabindex="-1"></a>corpus <span class="ot">&lt;-</span> <span class="fu">carrega_corpus</span>()</span>
+<span id="cb240-3"><a href="inferencia.html#cb240-3" tabindex="-1"></a>ouro   <span class="ot">&lt;-</span> <span class="fu">carrega_ouro</span>()</span>
+<span id="cb240-4"><a href="inferencia.html#cb240-4" tabindex="-1"></a>ref    <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">&quot;dados/anotacoes/referencia_completa.csv&quot;</span>, <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb240-5"><a href="inferencia.html#cb240-5" tabindex="-1"></a>llm    <span class="ot">&lt;-</span> <span class="fu">carrega_llm</span>()</span>
+<span id="cb240-6"><a href="inferencia.html#cb240-6" tabindex="-1"></a></span>
+<span id="cb240-7"><a href="inferencia.html#cb240-7" tabindex="-1"></a>dados <span class="ot">&lt;-</span> corpus <span class="sc">|&gt;</span></span>
+<span id="cb240-8"><a href="inferencia.html#cb240-8" tabindex="-1"></a>  <span class="fu">select</span>(doc_id, campo) <span class="sc">|&gt;</span></span>
+<span id="cb240-9"><a href="inferencia.html#cb240-9" tabindex="-1"></a>  <span class="fu">left_join</span>(llm <span class="sc">|&gt;</span> <span class="fu">filter</span>(prompt_id <span class="sc">==</span> <span class="st">&quot;v2&quot;</span>, temperatura <span class="sc">==</span> <span class="dv">0</span>, semente <span class="sc">==</span> <span class="dv">42</span>) <span class="sc">|&gt;</span></span>
+<span id="cb240-10"><a href="inferencia.html#cb240-10" tabindex="-1"></a>              <span class="fu">select</span>(doc_id, categoria_llm), <span class="at">by =</span> <span class="st">&quot;doc_id&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb240-11"><a href="inferencia.html#cb240-11" tabindex="-1"></a>  <span class="fu">left_join</span>(<span class="fu">select</span>(ref, doc_id, <span class="at">categoria_ref =</span> categoria), <span class="at">by =</span> <span class="st">&quot;doc_id&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb240-12"><a href="inferencia.html#cb240-12" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">na_ouro =</span> doc_id <span class="sc">%in%</span> ouro<span class="sc">$</span>doc_id,</span>
+<span id="cb240-13"><a href="inferencia.html#cb240-13" tabindex="-1"></a>         <span class="at">f =</span> <span class="fu">as.integer</span>(categoria_llm <span class="sc">%in%</span> <span class="st">&quot;PUNIR&quot;</span>),</span>
+<span id="cb240-14"><a href="inferencia.html#cb240-14" tabindex="-1"></a>         <span class="at">y =</span> <span class="fu">if_else</span>(na_ouro, <span class="fu">as.integer</span>(categoria_ref <span class="sc">==</span> <span class="st">&quot;PUNIR&quot;</span>), <span class="cn">NA_integer_</span>))</span>
+<span id="cb240-15"><a href="inferencia.html#cb240-15" tabindex="-1"></a><span class="fu">head</span>(dados, <span class="dv">4</span>)</span></code></pre></div>
+<pre><code># A tibble: 4 × 7
+  doc_id  campo   categoria_llm categoria_ref na_ouro     f     y
+  &lt;chr&gt;   &lt;chr&gt;   &lt;fct&gt;         &lt;chr&gt;         &lt;lgl&gt;   &lt;int&gt; &lt;int&gt;
+1 doc0001 Direita REGULAR       REGULAR       TRUE        0     0
+2 doc0002 Direita REGULAR       PROMOVER      FALSE       0    NA
+3 doc0003 Direita REGULAR       REGULAR       TRUE        0     0
+4 doc0004 Centro  REGULAR       REGULAR       TRUE        0     0</code></pre>
+<div class="sourceCode" id="cb242"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb242-1"><a href="inferencia.html#cb242-1" tabindex="-1"></a>lab <span class="ot">&lt;-</span> <span class="fu">filter</span>(dados, na_ouro)    <span class="co"># n: amostra-ouro (tem Y e f)</span></span>
+<span id="cb242-2"><a href="inferencia.html#cb242-2" tabindex="-1"></a>unl <span class="ot">&lt;-</span> <span class="fu">filter</span>(dados, <span class="sc">!</span>na_ouro)   <span class="co"># N: só f</span></span>
+<span id="cb242-3"><a href="inferencia.html#cb242-3" tabindex="-1"></a><span class="fu">c</span>(<span class="at">n =</span> <span class="fu">nrow</span>(lab), <span class="at">N =</span> <span class="fu">nrow</span>(unl))</span></code></pre></div>
+<pre><code>  n   N 
+120 184 </code></pre>
+</div>
+<div class="aba" data-nome="Python">
+<div class="sourceCode" id="cb244"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb244-1"><a href="inferencia.html#cb244-1" tabindex="-1"></a><span class="im">from</span> medicao <span class="im">import</span> (est_humano, est_ingenuo, est_ppi, est_ppi_plus, compara_estimadores)</span>
+<span id="cb244-2"><a href="inferencia.html#cb244-2" tabindex="-1"></a>ref <span class="op">=</span> pd.read_csv(<span class="st">&quot;dados/anotacoes/referencia_completa.csv&quot;</span>)</span>
+<span id="cb244-3"><a href="inferencia.html#cb244-3" tabindex="-1"></a>v2 <span class="op">=</span> llm[(llm[<span class="st">&quot;prompt_id&quot;</span>] <span class="op">==</span> <span class="st">&quot;v2&quot;</span>) <span class="op">&amp;</span> (llm[<span class="st">&quot;temperatura&quot;</span>] <span class="op">==</span> <span class="dv">0</span>) <span class="op">&amp;</span> (llm[<span class="st">&quot;semente&quot;</span>] <span class="op">==</span> <span class="dv">42</span>)]</span>
+<span id="cb244-4"><a href="inferencia.html#cb244-4" tabindex="-1"></a>dados <span class="op">=</span> (corpus[[<span class="st">&quot;doc_id&quot;</span>, <span class="st">&quot;campo&quot;</span>]]</span>
+<span id="cb244-5"><a href="inferencia.html#cb244-5" tabindex="-1"></a>         .merge(v2[[<span class="st">&quot;doc_id&quot;</span>, <span class="st">&quot;categoria_llm&quot;</span>]], on<span class="op">=</span><span class="st">&quot;doc_id&quot;</span>, how<span class="op">=</span><span class="st">&quot;left&quot;</span>)</span>
+<span id="cb244-6"><a href="inferencia.html#cb244-6" tabindex="-1"></a>         .merge(ref[[<span class="st">&quot;doc_id&quot;</span>, <span class="st">&quot;categoria&quot;</span>]]</span>
+<span id="cb244-7"><a href="inferencia.html#cb244-7" tabindex="-1"></a>                .rename(columns<span class="op">=</span>{<span class="st">&quot;categoria&quot;</span>: <span class="st">&quot;categoria_ref&quot;</span>}), on<span class="op">=</span><span class="st">&quot;doc_id&quot;</span>, how<span class="op">=</span><span class="st">&quot;left&quot;</span>))</span>
+<span id="cb244-8"><a href="inferencia.html#cb244-8" tabindex="-1"></a>dados[<span class="st">&quot;na_ouro&quot;</span>] <span class="op">=</span> dados[<span class="st">&quot;doc_id&quot;</span>].isin(ouro[<span class="st">&quot;doc_id&quot;</span>])</span>
+<span id="cb244-9"><a href="inferencia.html#cb244-9" tabindex="-1"></a>dados[<span class="st">&quot;f&quot;</span>] <span class="op">=</span> (dados[<span class="st">&quot;categoria_llm&quot;</span>] <span class="op">==</span> <span class="st">&quot;PUNIR&quot;</span>).astype(<span class="bu">int</span>)</span>
+<span id="cb244-10"><a href="inferencia.html#cb244-10" tabindex="-1"></a>punir_ref <span class="op">=</span> (dados[<span class="st">&quot;categoria_ref&quot;</span>] <span class="op">==</span> <span class="st">&quot;PUNIR&quot;</span>).astype(<span class="bu">int</span>)</span>
+<span id="cb244-11"><a href="inferencia.html#cb244-11" tabindex="-1"></a>dados[<span class="st">&quot;y&quot;</span>] <span class="op">=</span> np.where(dados[<span class="st">&quot;na_ouro&quot;</span>], punir_ref, np.nan)</span>
+<span id="cb244-12"><a href="inferencia.html#cb244-12" tabindex="-1"></a><span class="bu">print</span>(dados.head(<span class="dv">4</span>))</span></code></pre></div>
+<pre><code>    doc_id    campo categoria_llm categoria_ref  na_ouro  f    y
+0  doc0001  Direita       REGULAR       REGULAR     True  0  0.0
+1  doc0002  Direita       REGULAR      PROMOVER    False  0  NaN
+2  doc0003  Direita       REGULAR       REGULAR     True  0  0.0
+3  doc0004   Centro       REGULAR       REGULAR     True  0  0.0</code></pre>
+<div class="sourceCode" id="cb246"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb246-1"><a href="inferencia.html#cb246-1" tabindex="-1"></a>lab, unl <span class="op">=</span> dados[dados[<span class="st">&quot;na_ouro&quot;</span>]], dados[<span class="op">~</span>dados[<span class="st">&quot;na_ouro&quot;</span>]]</span>
+<span id="cb246-2"><a href="inferencia.html#cb246-2" tabindex="-1"></a><span class="bu">print</span>({<span class="st">&quot;n&quot;</span>: <span class="bu">len</span>(lab), <span class="st">&quot;N&quot;</span>: <span class="bu">len</span>(unl)})</span></code></pre></div>
+<pre><code>{&#39;n&#39;: 120, &#39;N&#39;: 184}</code></pre>
+</div>
+</div>
+<p><strong>O que está sendo executado.</strong> Usamos o prompt v2 com temperatura 0, o melhor instrumento do capítulo anterior (o script escolhe automaticamente pela tabela de validade). Uma falha de formato do LLM contaria como “não PUNIR” (<code>%in%</code> devolve <code>FALSE</code> para <code>NA</code>); neste material não há falhas. Fora da amostra-ouro, <code>y</code> fica vazio de propósito: num estudo real, <strong>não conhecemos</strong> o rótulo humano dessas ementas. A coluna <code>categoria_ref</code> só existe aqui porque este é um corpus didático com referência completa.</p>
+</div>
+<div id="cada-estimador-à-mão" class="section level3 hasAnchor" number="7.8.2">
+<h3><span class="header-section-number">7.8.2</span> Cada estimador, à mão<a href="inferencia.html#cada-estimador-%C3%A0-m%C3%A3o" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<div class="abas">
+<div class="aba" data-nome="R">
+<div class="sourceCode" id="cb248"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb248-1"><a href="inferencia.html#cb248-1" tabindex="-1"></a>y_n <span class="ot">&lt;-</span> lab<span class="sc">$</span>y; f_n <span class="ot">&lt;-</span> lab<span class="sc">$</span>f; f_N <span class="ot">&lt;-</span> unl<span class="sc">$</span>f</span>
+<span id="cb248-2"><a href="inferencia.html#cb248-2" tabindex="-1"></a></span>
+<span id="cb248-3"><a href="inferencia.html#cb248-3" tabindex="-1"></a><span class="co"># (a) Só humanos</span></span>
+<span id="cb248-4"><a href="inferencia.html#cb248-4" tabindex="-1"></a><span class="fu">mean</span>(y_n)</span></code></pre></div>
+<pre><code>[1] 0.1833333</code></pre>
+<div class="sourceCode" id="cb250"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb250-1"><a href="inferencia.html#cb250-1" tabindex="-1"></a><span class="co"># (b) Ingênuo: o LLM no corpus inteiro</span></span>
+<span id="cb250-2"><a href="inferencia.html#cb250-2" tabindex="-1"></a><span class="fu">mean</span>(<span class="fu">c</span>(f_n, f_N))</span></code></pre></div>
+<pre><code>[1] 0.2302632</code></pre>
+<div class="sourceCode" id="cb252"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb252-1"><a href="inferencia.html#cb252-1" tabindex="-1"></a><span class="co"># (c) PPI: LLM nos não rotulados, menos o viés medido na amostra-ouro</span></span>
+<span id="cb252-2"><a href="inferencia.html#cb252-2" tabindex="-1"></a>vies_llm <span class="ot">&lt;-</span> <span class="fu">mean</span>(f_n <span class="sc">-</span> y_n)            <span class="co"># o retificador</span></span>
+<span id="cb252-3"><a href="inferencia.html#cb252-3" tabindex="-1"></a><span class="fu">c</span>(<span class="at">media_llm_N =</span> <span class="fu">mean</span>(f_N), <span class="at">vies =</span> vies_llm, <span class="at">ppi =</span> <span class="fu">mean</span>(f_N) <span class="sc">-</span> vies_llm)</span></code></pre></div>
+<pre><code>media_llm_N        vies         ppi 
+ 0.23913043  0.03333333  0.20579710 </code></pre>
+<div class="sourceCode" id="cb254"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb254-1"><a href="inferencia.html#cb254-1" tabindex="-1"></a><span class="co"># (d) PPI++: o peso lambda que minimiza a variância</span></span>
+<span id="cb254-2"><a href="inferencia.html#cb254-2" tabindex="-1"></a>lambda <span class="ot">&lt;-</span> <span class="fu">cov</span>(y_n, f_n) <span class="sc">/</span> ((<span class="dv">1</span> <span class="sc">+</span> <span class="fu">length</span>(y_n) <span class="sc">/</span> <span class="fu">length</span>(f_N)) <span class="sc">*</span> <span class="fu">var</span>(<span class="fu">c</span>(f_n, f_N)))</span>
+<span id="cb254-3"><a href="inferencia.html#cb254-3" tabindex="-1"></a><span class="fu">c</span>(<span class="at">lambda =</span> lambda, <span class="at">ppi_plus =</span> <span class="fu">mean</span>(y_n) <span class="sc">+</span> lambda <span class="sc">*</span> (<span class="fu">mean</span>(f_N) <span class="sc">-</span> <span class="fu">mean</span>(f_n)))</span></code></pre></div>
+<pre><code>   lambda  ppi_plus 
+0.4929114 0.1944060 </code></pre>
+</div>
+<div class="aba" data-nome="Python">
+<div class="sourceCode" id="cb256"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb256-1"><a href="inferencia.html#cb256-1" tabindex="-1"></a>y_n, f_n, f_N <span class="op">=</span> lab[<span class="st">&quot;y&quot;</span>].to_numpy(), lab[<span class="st">&quot;f&quot;</span>].to_numpy(), unl[<span class="st">&quot;f&quot;</span>].to_numpy()</span>
+<span id="cb256-2"><a href="inferencia.html#cb256-2" tabindex="-1"></a></span>
+<span id="cb256-3"><a href="inferencia.html#cb256-3" tabindex="-1"></a><span class="bu">print</span>(<span class="st">&quot;(a) só humanos:&quot;</span>, <span class="bu">round</span>(y_n.mean(), <span class="dv">4</span>))</span></code></pre></div>
+<pre><code>(a) só humanos: 0.1833</code></pre>
+<div class="sourceCode" id="cb258"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb258-1"><a href="inferencia.html#cb258-1" tabindex="-1"></a><span class="bu">print</span>(<span class="st">&quot;(b) ingênuo:   &quot;</span>, <span class="bu">round</span>(np.concatenate([f_n, f_N]).mean(), <span class="dv">4</span>))</span></code></pre></div>
+<pre><code>(b) ingênuo:    0.2303</code></pre>
+<div class="sourceCode" id="cb260"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb260-1"><a href="inferencia.html#cb260-1" tabindex="-1"></a>vies_llm <span class="op">=</span> (f_n <span class="op">-</span> y_n).mean()          <span class="co"># o retificador</span></span>
+<span id="cb260-2"><a href="inferencia.html#cb260-2" tabindex="-1"></a><span class="bu">print</span>(<span class="st">&quot;(c) PPI:       &quot;</span>, <span class="bu">round</span>(f_N.mean(), <span class="dv">4</span>), <span class="st">&quot;-&quot;</span>, <span class="bu">round</span>(vies_llm, <span class="dv">4</span>), <span class="st">&quot;=&quot;</span>,</span>
+<span id="cb260-3"><a href="inferencia.html#cb260-3" tabindex="-1"></a>      <span class="bu">round</span>(f_N.mean() <span class="op">-</span> vies_llm, <span class="dv">4</span>))</span></code></pre></div>
+<pre><code>(c) PPI:        0.2391 - 0.0333 = 0.2058</code></pre>
+<div class="sourceCode" id="cb262"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb262-1"><a href="inferencia.html#cb262-1" tabindex="-1"></a>lam <span class="op">=</span> np.cov(y_n, f_n, ddof<span class="op">=</span><span class="dv">1</span>)[<span class="dv">0</span>, <span class="dv">1</span>] <span class="op">/</span> ((<span class="dv">1</span> <span class="op">+</span> <span class="bu">len</span>(y_n) <span class="op">/</span> <span class="bu">len</span>(f_N)) <span class="op">*</span></span>
+<span id="cb262-2"><a href="inferencia.html#cb262-2" tabindex="-1"></a>                                        np.concatenate([f_n, f_N]).var(ddof<span class="op">=</span><span class="dv">1</span>))</span>
+<span id="cb262-3"><a href="inferencia.html#cb262-3" tabindex="-1"></a><span class="bu">print</span>(<span class="st">&quot;(d) PPI++:      lambda =&quot;</span>, <span class="bu">round</span>(lam, <span class="dv">4</span>), <span class="st">&quot; estimativa =&quot;</span>,</span>
+<span id="cb262-4"><a href="inferencia.html#cb262-4" tabindex="-1"></a>      <span class="bu">round</span>(y_n.mean() <span class="op">+</span> lam <span class="op">*</span> (f_N.mean() <span class="op">-</span> f_n.mean()), <span class="dv">4</span>))</span></code></pre></div>
+<pre><code>(d) PPI++:      lambda = 0.4929  estimativa = 0.1944</code></pre>
+</div>
+</div>
+<p><strong>O que está sendo executado.</strong> O “só humanos” é a proporção de PUNIR na amostra-ouro. O ingênuo é a proporção de PUNIR segundo o LLM em todas as ementas. O PPI parte da média do LLM nas ementas não rotuladas e subtrai o <strong>retificador</strong>: a média de <span class="math inline">\(f - Y\)</span> na amostra-ouro, isto é, quanto o LLM superestima (se positivo) a proporção de PUNIR. O PPI++ começa do “só humanos” e soma a informação do LLM ponderada por <span class="math inline">\(\lambda\)</span>; aqui, <span class="math inline">\(\hat\lambda\)</span> = 0,49: o LLM traz informação, mas o estimador ainda dá peso considerável à amostra-ouro. Com <span class="math inline">\(\lambda = 1\)</span>, a fórmula do PPI++ vira exatamente a do PPI; com <span class="math inline">\(\lambda = 0\)</span>, a do “só humanos”.</p>
+</div>
+<div id="com-intervalos-de-confiança" class="section level3 hasAnchor" number="7.8.3">
+<h3><span class="header-section-number">7.8.3</span> Com intervalos de confiança<a href="inferencia.html#com-intervalos-de-confian%C3%A7a" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>As funções do material fazem as mesmas contas e acrescentam o erro-padrão e o IC 95% normal:</p>
+<div class="abas">
+<div class="aba" data-nome="R">
+<div class="sourceCode" id="cb264"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb264-1"><a href="inferencia.html#cb264-1" tabindex="-1"></a>estimativas <span class="ot">&lt;-</span> <span class="fu">compara_estimadores</span>(y_n, f_n, f_N)</span>
+<span id="cb264-2"><a href="inferencia.html#cb264-2" tabindex="-1"></a>theta <span class="ot">&lt;-</span> <span class="fu">mean</span>(ref<span class="sc">$</span>categoria <span class="sc">==</span> <span class="st">&quot;PUNIR&quot;</span>)     <span class="co"># valor na referência completa (didático)</span></span>
+<span id="cb264-3"><a href="inferencia.html#cb264-3" tabindex="-1"></a>estimativas <span class="sc">|&gt;</span></span>
+<span id="cb264-4"><a href="inferencia.html#cb264-4" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">largura =</span> ls <span class="sc">-</span> li, <span class="at">cobre =</span> li <span class="sc">&lt;=</span> theta <span class="sc">&amp;</span> theta <span class="sc">&lt;=</span> ls) <span class="sc">|&gt;</span></span>
+<span id="cb264-5"><a href="inferencia.html#cb264-5" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">where</span>(is.double), \(x) <span class="fu">round</span>(x, <span class="dv">4</span>)))</span></code></pre></div>
+<pre><code># A tibble: 4 × 8
+  estimador                 estimativa     ep    li    ls lambda largura cobre
+  &lt;chr&gt;                          &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt;   &lt;dbl&gt; &lt;lgl&gt;
+1 Só humanos (amostra-ouro)      0.183 0.0355 0.114 0.253 NA      0.139  TRUE 
+2 Ingênuo (LLM = verdade)        0.230 0.0242 0.183 0.278 NA      0.0948 FALSE
+3 PPI                            0.206 0.0356 0.136 0.276 NA      0.139  TRUE 
+4 PPI++                          0.194 0.0256 0.144 0.245  0.493  0.100  TRUE </code></pre>
+</div>
+<div class="aba" data-nome="Python">
+<div class="sourceCode" id="cb266"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb266-1"><a href="inferencia.html#cb266-1" tabindex="-1"></a>estimativas <span class="op">=</span> compara_estimadores(y_n, f_n, f_N)</span>
+<span id="cb266-2"><a href="inferencia.html#cb266-2" tabindex="-1"></a>theta <span class="op">=</span> (ref[<span class="st">&quot;categoria&quot;</span>] <span class="op">==</span> <span class="st">&quot;PUNIR&quot;</span>).mean()  <span class="co"># valor na referência completa (didático)</span></span>
+<span id="cb266-3"><a href="inferencia.html#cb266-3" tabindex="-1"></a>estimativas.assign(largura<span class="op">=</span><span class="kw">lambda</span> d: d[<span class="st">&quot;ls&quot;</span>] <span class="op">-</span> d[<span class="st">&quot;li&quot;</span>],</span>
+<span id="cb266-4"><a href="inferencia.html#cb266-4" tabindex="-1"></a>                   cobre<span class="op">=</span><span class="kw">lambda</span> d: (d[<span class="st">&quot;li&quot;</span>] <span class="op">&lt;=</span> theta) <span class="op">&amp;</span> (theta <span class="op">&lt;=</span> d[<span class="st">&quot;ls&quot;</span>])).<span class="bu">round</span>(<span class="dv">4</span>)</span></code></pre></div>
+<pre><code>                   estimador  estimativa      ep      li      ls  lambda  largura  cobre
+0  Só humanos (amostra-ouro)      0.1833  0.0355  0.1138  0.2529     NaN   0.1390   True
+1    Ingênuo (LLM = verdade)      0.2303  0.0242  0.1829  0.2777     NaN   0.0948  False
+2                        PPI      0.2058  0.0356  0.1361  0.2755     NaN   0.1394   True
+3                      PPI++      0.1944  0.0256  0.1442  0.2446  0.4929   0.1004   True</code></pre>
+</div>
+</div>
+</div>
+<div id="a-simulação-de-cobertura" class="section level3 hasAnchor" number="7.8.4">
+<h3><span class="header-section-number">7.8.4</span> A simulação de cobertura<a href="inferencia.html#a-simula%C3%A7%C3%A3o-de-cobertura" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>Este bloco repete o sorteio da amostra-ouro 1.000 vezes para cada tamanho (30, 60 e 120) e conta com que frequência cada IC contém o valor da referência. Leva alguns segundos.</p>
+<div class="abas">
+<div class="aba" data-nome="R">
+<div class="sourceCode" id="cb268"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb268-1"><a href="inferencia.html#cb268-1" tabindex="-1"></a>simula <span class="ot">&lt;-</span> <span class="cf">function</span>(n_ouro, <span class="at">B =</span> <span class="dv">1000</span>, <span class="at">semente =</span> <span class="dv">1</span>) {</span>
+<span id="cb268-2"><a href="inferencia.html#cb268-2" tabindex="-1"></a>  <span class="fu">set.seed</span>(semente)</span>
+<span id="cb268-3"><a href="inferencia.html#cb268-3" tabindex="-1"></a>  purrr<span class="sc">::</span><span class="fu">map</span>(<span class="fu">seq_len</span>(B), \(b) {</span>
+<span id="cb268-4"><a href="inferencia.html#cb268-4" tabindex="-1"></a>    idx <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="fu">nrow</span>(dados), n_ouro)               <span class="co"># uma nova amostra-ouro</span></span>
+<span id="cb268-5"><a href="inferencia.html#cb268-5" tabindex="-1"></a>    y_n <span class="ot">&lt;-</span> <span class="fu">as.integer</span>(dados<span class="sc">$</span>categoria_ref[idx] <span class="sc">==</span> <span class="st">&quot;PUNIR&quot;</span>)</span>
+<span id="cb268-6"><a href="inferencia.html#cb268-6" tabindex="-1"></a>    <span class="fu">compara_estimadores</span>(y_n, dados<span class="sc">$</span>f[idx], dados<span class="sc">$</span>f[<span class="sc">-</span>idx])</span>
+<span id="cb268-7"><a href="inferencia.html#cb268-7" tabindex="-1"></a>  }) <span class="sc">|&gt;</span></span>
+<span id="cb268-8"><a href="inferencia.html#cb268-8" tabindex="-1"></a>    purrr<span class="sc">::</span><span class="fu">list_rbind</span>() <span class="sc">|&gt;</span></span>
+<span id="cb268-9"><a href="inferencia.html#cb268-9" tabindex="-1"></a>    <span class="fu">group_by</span>(estimador) <span class="sc">|&gt;</span></span>
+<span id="cb268-10"><a href="inferencia.html#cb268-10" tabindex="-1"></a>    <span class="fu">summarise</span>(<span class="at">cobertura =</span> <span class="fu">mean</span>(li <span class="sc">&lt;=</span> theta <span class="sc">&amp;</span> theta <span class="sc">&lt;=</span> ls),</span>
+<span id="cb268-11"><a href="inferencia.html#cb268-11" tabindex="-1"></a>              <span class="at">largura_media =</span> <span class="fu">mean</span>(ls <span class="sc">-</span> li), <span class="at">.groups =</span> <span class="st">&quot;drop&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb268-12"><a href="inferencia.html#cb268-12" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">n_ouro =</span> n_ouro)</span>
+<span id="cb268-13"><a href="inferencia.html#cb268-13" tabindex="-1"></a>}</span>
+<span id="cb268-14"><a href="inferencia.html#cb268-14" tabindex="-1"></a>simulacao <span class="ot">&lt;-</span> purrr<span class="sc">::</span><span class="fu">map</span>(<span class="fu">c</span>(<span class="dv">30</span>, <span class="dv">60</span>, <span class="dv">120</span>), simula) <span class="sc">|&gt;</span> purrr<span class="sc">::</span><span class="fu">list_rbind</span>()</span>
+<span id="cb268-15"><a href="inferencia.html#cb268-15" tabindex="-1"></a>simulacao <span class="sc">|&gt;</span></span>
+<span id="cb268-16"><a href="inferencia.html#cb268-16" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">where</span>(is.double), \(x) <span class="fu">round</span>(x, <span class="dv">3</span>))) <span class="sc">|&gt;</span></span>
+<span id="cb268-17"><a href="inferencia.html#cb268-17" tabindex="-1"></a>  <span class="fu">arrange</span>(n_ouro) <span class="sc">|&gt;</span></span>
+<span id="cb268-18"><a href="inferencia.html#cb268-18" tabindex="-1"></a>  <span class="fu">print</span>(<span class="at">n =</span> <span class="dv">12</span>)</span></code></pre></div>
+<pre><code># A tibble: 12 × 4
+   estimador                 cobertura largura_media n_ouro
+   &lt;chr&gt;                         &lt;dbl&gt;         &lt;dbl&gt;  &lt;dbl&gt;
+ 1 Ingênuo (LLM = verdade)       0             0.095     30
+ 2 PPI                           0.841         0.184     30
+ 3 PPI++                         0.866         0.156     30
+ 4 Só humanos (amostra-ouro)     0.896         0.263     30
+ 5 Ingênuo (LLM = verdade)       0             0.095     60
+ 6 PPI                           0.972         0.156     60
+ 7 PPI++                         0.962         0.124     60
+ 8 Só humanos (amostra-ouro)     0.968         0.19      60
+ 9 Ingênuo (LLM = verdade)       0             0.095    120
+10 PPI                           0.991         0.147    120
+11 PPI++                         0.997         0.102    120
+12 Só humanos (amostra-ouro)     0.988         0.135    120</code></pre>
+</div>
+<div class="aba" data-nome="Python">
+<div class="sourceCode" id="cb270"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb270-1"><a href="inferencia.html#cb270-1" tabindex="-1"></a><span class="kw">def</span> simula(n_ouro, B<span class="op">=</span><span class="dv">1000</span>, semente<span class="op">=</span><span class="dv">1</span>):</span>
+<span id="cb270-2"><a href="inferencia.html#cb270-2" tabindex="-1"></a>    rng <span class="op">=</span> np.random.default_rng(semente)</span>
+<span id="cb270-3"><a href="inferencia.html#cb270-3" tabindex="-1"></a>    ref_bin <span class="op">=</span> (dados[<span class="st">&quot;categoria_ref&quot;</span>] <span class="op">==</span> <span class="st">&quot;PUNIR&quot;</span>).astype(<span class="bu">int</span>).to_numpy()</span>
+<span id="cb270-4"><a href="inferencia.html#cb270-4" tabindex="-1"></a>    f <span class="op">=</span> dados[<span class="st">&quot;f&quot;</span>].to_numpy()</span>
+<span id="cb270-5"><a href="inferencia.html#cb270-5" tabindex="-1"></a>    res <span class="op">=</span> []</span>
+<span id="cb270-6"><a href="inferencia.html#cb270-6" tabindex="-1"></a>    <span class="cf">for</span> _ <span class="kw">in</span> <span class="bu">range</span>(B):</span>
+<span id="cb270-7"><a href="inferencia.html#cb270-7" tabindex="-1"></a>        idx <span class="op">=</span> rng.choice(<span class="bu">len</span>(dados), n_ouro, replace<span class="op">=</span><span class="va">False</span>)   <span class="co"># uma nova amostra-ouro</span></span>
+<span id="cb270-8"><a href="inferencia.html#cb270-8" tabindex="-1"></a>        resto <span class="op">=</span> np.setdiff1d(np.arange(<span class="bu">len</span>(dados)), idx)</span>
+<span id="cb270-9"><a href="inferencia.html#cb270-9" tabindex="-1"></a>        res.append(compara_estimadores(ref_bin[idx], f[idx], f[resto]))</span>
+<span id="cb270-10"><a href="inferencia.html#cb270-10" tabindex="-1"></a>    r <span class="op">=</span> pd.concat(res)</span>
+<span id="cb270-11"><a href="inferencia.html#cb270-11" tabindex="-1"></a>    r[<span class="st">&quot;cobre&quot;</span>] <span class="op">=</span> (r[<span class="st">&quot;li&quot;</span>] <span class="op">&lt;=</span> theta) <span class="op">&amp;</span> (theta <span class="op">&lt;=</span> r[<span class="st">&quot;ls&quot;</span>])</span>
+<span id="cb270-12"><a href="inferencia.html#cb270-12" tabindex="-1"></a>    r[<span class="st">&quot;largura&quot;</span>] <span class="op">=</span> r[<span class="st">&quot;ls&quot;</span>] <span class="op">-</span> r[<span class="st">&quot;li&quot;</span>]</span>
+<span id="cb270-13"><a href="inferencia.html#cb270-13" tabindex="-1"></a>    <span class="cf">return</span> (r.groupby(<span class="st">&quot;estimador&quot;</span>, sort<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb270-14"><a href="inferencia.html#cb270-14" tabindex="-1"></a>             .agg(cobertura<span class="op">=</span>(<span class="st">&quot;cobre&quot;</span>, <span class="st">&quot;mean&quot;</span>), largura_media<span class="op">=</span>(<span class="st">&quot;largura&quot;</span>, <span class="st">&quot;mean&quot;</span>))</span>
+<span id="cb270-15"><a href="inferencia.html#cb270-15" tabindex="-1"></a>             .assign(n_ouro<span class="op">=</span>n_ouro))</span>
+<span id="cb270-16"><a href="inferencia.html#cb270-16" tabindex="-1"></a>simulacao <span class="op">=</span> pd.concat([simula(n) <span class="cf">for</span> n <span class="kw">in</span> (<span class="dv">30</span>, <span class="dv">60</span>, <span class="dv">120</span>)])</span>
+<span id="cb270-17"><a href="inferencia.html#cb270-17" tabindex="-1"></a>simulacao.<span class="bu">round</span>(<span class="dv">3</span>)</span></code></pre></div>
+<pre><code>                           cobertura  largura_media  n_ouro
+estimador                                                  
+Só humanos (amostra-ouro)      0.897          0.267      30
+Ingênuo (LLM = verdade)        0.000          0.095      30
+PPI                            0.846          0.188      30
+PPI++                          0.869          0.160      30
+Só humanos (amostra-ouro)      0.971          0.192      60
+Ingênuo (LLM = verdade)        0.000          0.095      60
+PPI                            0.974          0.157      60
+PPI++                          0.970          0.125      60
+Só humanos (amostra-ouro)      0.989          0.136     120
+Ingênuo (LLM = verdade)        0.000          0.095     120
+PPI                            0.988          0.147     120
+PPI++                          1.000          0.103     120</code></pre>
+</div>
+</div>
+<p><strong>O que está sendo executado.</strong> Cada repetição sorteia uma nova amostra-ouro de tamanho <span class="math inline">\(n\)</span>, usa a referência como se fosse a codificação humana dessas ementas, aplica os quatro estimadores e verifica se cada IC contém o valor da referência completa. A cobertura é a proporção de repetições em que isso acontece; um IC de 95% honesto deveria ficar perto de 95%. O ingênuo não usa a amostra-ouro, por isso sua cobertura não melhora com <span class="math inline">\(n\)</span>: o viés do LLM não diminui com mais dados.</p>
+</div>
+<div id="por-campo-político" class="section level3 hasAnchor" number="7.8.5">
+<h3><span class="header-section-number">7.8.5</span> Por campo político<a href="inferencia.html#por-campo-pol%C3%ADtico" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<div class="abas">
+<div class="aba" data-nome="R">
+<div class="sourceCode" id="cb272"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb272-1"><a href="inferencia.html#cb272-1" tabindex="-1"></a>dados <span class="sc">|&gt;</span></span>
+<span id="cb272-2"><a href="inferencia.html#cb272-2" tabindex="-1"></a>  <span class="fu">filter</span>(campo <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;Esquerda&quot;</span>, <span class="st">&quot;Centro&quot;</span>, <span class="st">&quot;Direita&quot;</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb272-3"><a href="inferencia.html#cb272-3" tabindex="-1"></a>  <span class="fu">group_by</span>(campo) <span class="sc">|&gt;</span></span>
+<span id="cb272-4"><a href="inferencia.html#cb272-4" tabindex="-1"></a>  <span class="fu">group_modify</span>(\(d, ...) {</span>
+<span id="cb272-5"><a href="inferencia.html#cb272-5" tabindex="-1"></a>    l <span class="ot">&lt;-</span> <span class="fu">filter</span>(d, na_ouro); u <span class="ot">&lt;-</span> <span class="fu">filter</span>(d, <span class="sc">!</span>na_ouro)</span>
+<span id="cb272-6"><a href="inferencia.html#cb272-6" tabindex="-1"></a>    <span class="fu">compara_estimadores</span>(l<span class="sc">$</span>y, l<span class="sc">$</span>f, u<span class="sc">$</span>f) <span class="sc">|&gt;</span> <span class="fu">mutate</span>(<span class="at">n_ouro =</span> <span class="fu">nrow</span>(l))</span>
+<span id="cb272-7"><a href="inferencia.html#cb272-7" tabindex="-1"></a>  }) <span class="sc">|&gt;</span></span>
+<span id="cb272-8"><a href="inferencia.html#cb272-8" tabindex="-1"></a>  <span class="fu">ungroup</span>() <span class="sc">|&gt;</span></span>
+<span id="cb272-9"><a href="inferencia.html#cb272-9" tabindex="-1"></a>  <span class="fu">filter</span>(estimador <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;Só humanos (amostra-ouro)&quot;</span>, <span class="st">&quot;PPI++&quot;</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb272-10"><a href="inferencia.html#cb272-10" tabindex="-1"></a>  <span class="fu">select</span>(campo, estimador, n_ouro, estimativa, li, ls) <span class="sc">|&gt;</span></span>
+<span id="cb272-11"><a href="inferencia.html#cb272-11" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">where</span>(is.double), \(x) <span class="fu">round</span>(x, <span class="dv">3</span>)))</span></code></pre></div>
+<pre><code># A tibble: 6 × 6
+  campo    estimador                 n_ouro estimativa    li    ls
+  &lt;chr&gt;    &lt;chr&gt;                      &lt;int&gt;      &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
+1 Centro   Só humanos (amostra-ouro)     31      0.161 0.03  0.293
+2 Centro   PPI++                         31      0.188 0.082 0.294
+3 Direita  Só humanos (amostra-ouro)     52      0.154 0.055 0.253
+4 Direita  PPI++                         52      0.174 0.103 0.245
+5 Esquerda Só humanos (amostra-ouro)     33      0.182 0.048 0.315
+6 Esquerda PPI++                         33      0.193 0.096 0.29 </code></pre>
+</div>
+<div class="aba" data-nome="Python">
+<div class="sourceCode" id="cb274"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb274-1"><a href="inferencia.html#cb274-1" tabindex="-1"></a>linhas <span class="op">=</span> []</span>
+<span id="cb274-2"><a href="inferencia.html#cb274-2" tabindex="-1"></a>tres <span class="op">=</span> dados[dados[<span class="st">&quot;campo&quot;</span>].isin([<span class="st">&quot;Esquerda&quot;</span>, <span class="st">&quot;Centro&quot;</span>, <span class="st">&quot;Direita&quot;</span>])]</span>
+<span id="cb274-3"><a href="inferencia.html#cb274-3" tabindex="-1"></a><span class="cf">for</span> campo, d <span class="kw">in</span> tres.groupby(<span class="st">&quot;campo&quot;</span>):</span>
+<span id="cb274-4"><a href="inferencia.html#cb274-4" tabindex="-1"></a>    l, u <span class="op">=</span> d[d[<span class="st">&quot;na_ouro&quot;</span>]], d[<span class="op">~</span>d[<span class="st">&quot;na_ouro&quot;</span>]]</span>
+<span id="cb274-5"><a href="inferencia.html#cb274-5" tabindex="-1"></a>    est <span class="op">=</span> compara_estimadores(l[<span class="st">&quot;y&quot;</span>], l[<span class="st">&quot;f&quot;</span>], u[<span class="st">&quot;f&quot;</span>])</span>
+<span id="cb274-6"><a href="inferencia.html#cb274-6" tabindex="-1"></a>    linhas.append(est.assign(campo<span class="op">=</span>campo, n_ouro<span class="op">=</span><span class="bu">len</span>(l)))</span>
+<span id="cb274-7"><a href="inferencia.html#cb274-7" tabindex="-1"></a>(pd.concat(linhas)</span>
+<span id="cb274-8"><a href="inferencia.html#cb274-8" tabindex="-1"></a>   .query(<span class="st">&quot;estimador in [&#39;Só humanos (amostra-ouro)&#39;, &#39;PPI++&#39;]&quot;</span>)</span>
+<span id="cb274-9"><a href="inferencia.html#cb274-9" tabindex="-1"></a>   [[<span class="st">&quot;campo&quot;</span>, <span class="st">&quot;estimador&quot;</span>, <span class="st">&quot;n_ouro&quot;</span>, <span class="st">&quot;estimativa&quot;</span>, <span class="st">&quot;li&quot;</span>, <span class="st">&quot;ls&quot;</span>]].<span class="bu">round</span>(<span class="dv">3</span>))</span></code></pre></div>
+<pre><code>      campo                  estimador  n_ouro  estimativa     li     ls
+0    Centro  Só humanos (amostra-ouro)      31       0.161  0.030  0.293
+3    Centro                      PPI++      31       0.188  0.082  0.294
+0   Direita  Só humanos (amostra-ouro)      52       0.154  0.055  0.253
+3   Direita                      PPI++      52       0.174  0.103  0.245
+0  Esquerda  Só humanos (amostra-ouro)      33       0.182  0.048  0.315
+3  Esquerda                      PPI++      33       0.193  0.096  0.290</code></pre>
+</div>
+</div>
+<p><strong>O que está sendo executado.</strong> É o mesmo cálculo, repetido dentro de cada campo: a amostra-ouro de cada campo corrige o LLM <strong>naquele campo</strong>. É isso que protege a comparação entre campos do viés diferencial visto no capítulo anterior, ao preço de intervalos bem mais largos, porque cada campo tem só algumas dezenas de ementas na amostra-ouro.</p>
+
+</div>
+</div>
+</div>
+<h3>Referências<a href="referencias.html#referencias" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<div id="refs" class="references csl-bib-body hanging-indent">
+<div id="ref-angelopoulos2023ppi" class="csl-entry">
+Angelopoulos, Anastasios N., Stephen Bates, Clara Fannjiang, Michael I. Jordan, e Tijana Zrnic. 2023. <span>“Prediction-powered inference”</span>. <em>Science</em> 382 (6671): 669–74.
+</div>
+<div id="ref-angelopoulos2023ppiplus" class="csl-entry">
+Angelopoulos, Anastasios N., John C. Duchi, e Tijana Zrnic. 2023. <em><span>PPI++</span>: Efficient prediction-powered inference</em>.
+</div>
+<div id="ref-egami2023" class="csl-entry">
+Egami, Naoki, Musashi Hinck, Brandon M. Stewart, e Hanying Wei. 2023. <span>“Using imperfect surrogates for downstream inference: Design-based supervised learning for social science applications of large language models”</span>. <em>Advances in Neural Information Processing Systems (NeurIPS)</em>.
+</div>
+</div>
+<!-- Abas R | Python do livro: transforma ::: {.abas} / ::: {.aba data-nome="R"} em abas.
+     A escolha vale para todas as abas da página e fica lembrada entre os capítulos. -->
+<script>
+(function () {
+  var CHAVE = "livro-linguagem";
+  function lerPref() { try { return localStorage.getItem(CHAVE); } catch (e) { return null; } }
+  function salvarPref(v) { try { localStorage.setItem(CHAVE, v); } catch (e) {} }
+  function filhas(box) {
+    return Array.prototype.filter.call(box.children, function (el) { return el.classList.contains("aba"); });
+  }
+  function escolhe(nome) {
+    document.querySelectorAll(".abas").forEach(function (box) {
+      var abas = filhas(box);
+      if (!abas.length) return;
+      var alvo = abas.some(function (a) { return a.getAttribute("data-nome") === nome; }) ? nome : abas[0].getAttribute("data-nome");
+      abas.forEach(function (a) { a.hidden = a.getAttribute("data-nome") !== alvo; });
+      box.querySelectorAll(":scope > .abas-barra > button").forEach(function (b) {
+        var ativo = b.textContent === alvo;
+        b.classList.toggle("ativo", ativo);
+        b.setAttribute("aria-selected", ativo ? "true" : "false");
+      });
+    });
+  }
+  function monta() {
+    document.querySelectorAll(".abas").forEach(function (box) {
+      if (box.getAttribute("data-pronto")) return;
+      box.setAttribute("data-pronto", "1");
+      var barra = document.createElement("div");
+      barra.className = "abas-barra";
+      barra.setAttribute("role", "tablist");
+      filhas(box).forEach(function (aba) {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.setAttribute("role", "tab");
+        b.textContent = aba.getAttribute("data-nome");
+        b.addEventListener("click", function () { salvarPref(b.textContent); escolhe(b.textContent); });
+        barra.appendChild(b);
+      });
+      box.insertBefore(barra, box.firstChild);
+    });
+    escolhe(lerPref() || "R");
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", monta); else monta();
+  if (window.gitbook && gitbook.events) gitbook.events.bind("page.change", monta);
+})();
+</script>
+            </section>
+
+          </div>
+        </div>
+      </div>
+<a href="validacao.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+<a href="reprodutibilidade.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
+    </div>
+  </div>
+<script src="assets/gitbook-2.6.7/js/app.min.js"></script>
+<script src="assets/gitbook-2.6.7/js/clipboard.min.js"></script>
+<script src="assets/gitbook-2.6.7/js/plugin-search.js"></script>
+<script src="assets/gitbook-2.6.7/js/plugin-sharing.js"></script>
+<script src="assets/gitbook-2.6.7/js/plugin-fontsettings.js"></script>
+<script src="assets/gitbook-2.6.7/js/plugin-bookdown.js"></script>
+<script src="assets/gitbook-2.6.7/js/jquery.highlight.js"></script>
+<script src="assets/gitbook-2.6.7/js/plugin-clipboard.js"></script>
+<script>
+gitbook.require(["gitbook"], function(gitbook) {
+gitbook.start({
+  "sharing": null,
+  "fontsettings": {
+    "theme": "white",
+    "family": "sans",
+    "size": 2
+  },
+  "edit": null,
+  "history": {
+    "link": null,
+    "text": null
+  },
+  "view": {
+    "link": null,
+    "text": null
+  },
+  "download": ["ia-instrumento-medicao.pdf"],
+  "search": {
+    "engine": "fuse",
+    "options": null
+  },
+  "toc": {
+    "collapse": "section"
+  },
+  "info": false
+});
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    var src = "true";
+    if (src === "" || src === "true") src = "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/latest.js?config=TeX-MML-AM_CHTML";
+    if (location.protocol !== "file:")
+      if (/^https?:/.test(src))
+        src = src.replace(/^https?:/, '');
+    script.src = src;
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+</body>
+
+</html>

@@ -1,0 +1,265 @@
+# Reprodutibilidade (MLOps) {#reprodutibilidade}
+
+Um resultado obtido com um LLM só é científico se outra pessoa conseguir refazê-lo. Isso exige versionar não apenas o código, mas também o **instrumento** e as **respostas** que ele produziu.
+
+## O que precisa ser versionado?
+
+```{r tab-versionar}
+tibble::tribble(
+  ~Componente, ~`Como versionar`, ~`Neste material`,
+  "Código", "Git", "`R/`, `python/`",
+  "Ambiente", "`renv` / `requirements.txt` / Docker", "`R/00_pacotes.R`, `requirements.txt`, `resultados/sessionInfo.txt`",
+  "Dados brutos", "Congelados, com data de coleta", "`dados/bruto/`, `dados/processado/corpus.csv` (06/11/2026; a coleta anterior fica em `historico/`)",
+  "Instrumento", "Modelo (digest dos pesos) + prompt (hash) + parâmetros", "`modelos/Modelfile.s5-nano-instruct`, `prompts/` + `CHANGELOG.md`; digest, hash, temperatura e semente em cada registro",
+  "Respostas do LLM", "Cache (é dado, não lixo)", "`dados/cache_llm/*.jsonl`",
+  "Referência humana", "Arquivo com codificador e status de revisão", "`dados/anotacoes/referencia_completa.csv`"
+) |> knitr::kable(caption = "O que versionar numa pesquisa que usa LLMs.") |> larguras(c(16, 28, 56))
+```
+
+## Um pipeline declarativo com `targets`
+
+O pacote `targets` [@landau2021] descreve a análise como um **grafo de dependências**: cada etapa declara de quais arquivos depende e quais arquivos produz. Ao rodar `targets::tar_make()`, só é refeito o que ficou desatualizado. Se você editar o prompt v2, o `targets` sabe que a validação e a inferência precisam ser refeitas, mas a amostra-ouro e os baselines não.
+
+```r
+targets::tar_make()        # roda só o que mudou
+targets::tar_outdated()    # o que ficou desatualizado?
+targets::tar_visnetwork()  # desenha o grafo de dependências
+```
+
+A coleta e a anotação com o LLM **não** são refeitas automaticamente: dependem de APIs externas e são caras. Elas entram no pipeline como **arquivos versionados**, que é o que garante a replicação. Este é o trecho de `_targets.R` que declara essas entradas:
+
+```{r, echo=TRUE, eval=FALSE, code=grep("tar_target\\(arq_|^\\s+cue = ", readLines(file.path(RAIZ, "_targets.R")), value = TRUE)}
+```
+
+::: {.caixa .aviso}
+[Uma armadilha encontrada na verificação deste material]{.titulo-caixa}
+Na primeira versão do pipeline, as entradas `arq_prompts` e `arq_cache_llm` eram declaradas apenas com `format = "file"`. Isso detecta **edições** em arquivos já conhecidos, mas **não detecta arquivos novos**: o comando `list.files()` não é reexecutado, porque o código dele não mudou. Na prática, se alguém criasse um prompt v4 ou uma nova execução do LLM, o `targets` diria que estava tudo atualizado e as tabelas ficariam velhas, em silêncio.
+
+A correção foi acrescentar `cue = tar_cue(mode = "always")` a essas duas entradas: a lista de arquivos é refeita a cada execução, mas as etapas seguintes só rodam se o conteúdo tiver mudado. O episódio ilustra o ponto deste capítulo: **ferramentas de reprodutibilidade também precisam ser testadas**.
+:::
+
+## R e Python: duas trilhas, os mesmos resultados
+
+O material tem uma trilha completa em Python (notebooks prontos para o Google Colab em `python/`), que reproduz as mesmas tabelas e figuras. As duas trilhas dão **os mesmos resultados**, com duas ressalvas: o baseline TF-IDF, já discutido (Capítulo \@ref(baselines)), e os números que dependem do gerador aleatório (ICs bootstrap e simulação de cobertura), que diferem em até 0,01 porque R e Python sorteiam de forma diferente mesmo com a mesma semente. Para garantir essa correspondência, até o hash do prompt é calculado da mesma forma nas duas linguagens (leitura byte a byte do arquivo).
+
+## *Drift*: quando o instrumento muda sozinho
+
+Um questionário impresso não muda entre uma aplicação e outra. Uma API comercial de LLM pode mudar: o provedor atualiza o modelo e **o mesmo prompt passa a produzir outra medida**. As defesas são:
+
+- usar um **modelo local com versão fixa**, como neste material, **ou** registrar o identificador exato do modelo, a data e as respostas brutas;
+- **monitorar**: re-anotar periodicamente a amostra-ouro e acompanhar o kappa ao longo do tempo.
+
+```{r drift}
+le_j <- function(...) jsonlite::stream_in(file(file.path(RAIZ, ...)), verbose = FALSE)
+repet <- purrr::map_dfr(c("v1", "v2", "v3"), \(p) {
+  arq <- paste0("s5-nano-instruct__", p, "__t0.0__s42.jsonl")
+  a <- le_j("dados/cache_llm", arq); b <- le_j("dados/repeticao", arq)
+  m <- inner_join(select(a, doc_id, a = categoria_llm, dg_a = modelo_digest, ov_a = ollama_versao),
+                  select(b, doc_id, d = categoria_llm, dg_d = modelo_digest, ov_d = ollama_versao), by = "doc_id")
+  tibble(prompt = p, n = nrow(m), mudaram = sum(m$a != m$d),
+         mesmo_instrumento = all(m$dg_a == m$dg_d & m$ov_a == m$ov_d))
+})
+stopifnot(all(repet$mesmo_instrumento))
+```
+
+Mesmo um modelo local, com versão fixa, não é perfeitamente determinístico. Para medir isso, repetimos em 12/11/2026 as três anotações com temperatura 0, nas mesmas condições: os mesmos pesos (mesmo *digest*), a mesma versão do Ollama, o mesmo prompt e a mesma semente (`python python/anotar_llm.py --todas-t0 --pasta dados/repeticao`). Mudaram de rótulo `r repet$mudaram[1]`, `r repet$mudaram[2]` e `r repet$mudaram[3]` das `r repet$n[1]` ementas com os prompts v1, v2 e v3. A causa são pequenas diferenças numéricas nos cálculos da GPU: quando duas respostas estão quase empatadas, essas diferenças bastam para trocar a mais provável. Não por acaso, uma das ementas que mudaram (doc0233) está entre os casos marcados como ambíguos durante a construção do livro de códigos.
+
+Duas lições. Primeiro, **temperatura 0 não garante a mesma resposta**: a replicação exata vem do **cache** das respostas brutas, não de reexecutar o modelo. Segundo, o modelo é só uma parte do instrumento, que inclui também o **software que o executa**. Atualizar o Ollama pode mudar as respostas, mesmo com os mesmos pesos. Por isso cada registro do cache guarda a versão do Ollama e o *digest* dos pesos.
+
+## Código gerado por IA
+
+Agentes de programação (Claude Code, Codex e similares) também produzem análises, e cada vez mais. A regra proposta aqui é simples: **trate o código gerado por IA como o de um coautor**. Ele precisa de revisão, testes e versionamento, e quem o publica responde por ele.
+
+Este livro segue essa regra: foi produzido com o auxílio do Claude Opus 5.5, e o uso está declarado no Apêndice \@ref(declaracao-ia). Antes da publicação, o material foi verificado de ponta a ponta, com o resultado abaixo.
+
+```{r tab-verificacao}
+tibble::tribble(
+  ~Verificação, ~Resultado,
+  "Pipeline R (`targets::tar_make()`) a partir de um diretório limpo", "10 etapas concluídas; as 8 tabelas idênticas, byte a byte, às do material",
+  "Notebooks Python 01 a 05 executados do início ao fim", "Nenhum erro; 9 de 10 tabelas idênticas às do material",
+  "Tabela de validade em Python", "Linha extra esperada: a demonstração ao vivo do notebook 03 (semente 7) aparece como instrumento à parte",
+  "Detecção de arquivos novos pelo `targets`", "Falhava; corrigida com `tar_cue(mode = \"always\")`",
+  "Slides (`quarto render slides/slides.qmd`)", "Renderizados sem erro",
+  "Aviso de referência preliminar", "Emitido corretamente pelos scripts",
+  "**06/11/2026:** nova coleta (Capítulo \\@ref(dados)) e novo sorteio da amostra-ouro; pipeline R e notebooks 01 a 05 refeitos", "Sem erros; R e Python coincidem, exceto no TF-IDF (já discutido) e nos números que dependem do gerador aleatório (ICs bootstrap e simulação, diferenças de até 0,01)",
+  "**11/11/2026:** anotação do corpus com o `s5-nano-instruct` no Ollama 0.40.15 (6 execuções)", "1.824 respostas, nenhuma falha de formato (Capítulo \\@ref(llm))",
+  "**11/11/2026:** pipeline R e notebooks 03 a 05 refeitos com o cache", "Sem erros; R e Python coincidem, exceto no TF-IDF e nos ICs bootstrap (diferenças de até 0,01)",
+  "**12/11/2026:** repetição das três anotações a temperatura 0 (`dados/repeticao/`)", paste0(sum(repet$mudaram), " mudanças de rótulo em ", sum(repet$n), " pares de respostas (seção anterior)"),
+  "**18/11/2026:** revisão final antes da publicação", "`tar_make()` falhava: caches antigos de outro modelo (`gemma4-e2b`) em `dados/cache_llm/` eram lidos junto com os do S5-nano e duplicavam as linhas. Corrigido: a leitura filtra pelo instrumento (`INSTRUMENTO` em R e Python) e os caches antigos foram para `historico_gemma4-e2b/`. Pipeline R e notebooks 02, 04 e 05 refeitos: tabelas idênticas às anteriores"
+) |> knitr::kable(caption = "Verificações de reprodutibilidade realizadas em 23/10/2026, 06/11/2026, 11 e 12/11/2026 e 18/11/2026 (R 4.6, Python 3.11, Ollama 0.40.15).")
+```
+
+O checklist completo para usar um LLM como instrumento de medição está no Apêndice \@ref(checklist).
+
+## Mão na massa: verificar a reprodutibilidade {#mao-reprodutibilidade}
+
+::: {.caixa .executar}
+[Como executar]{.titulo-caixa}
+
+- **Pipeline completo em R**, na raiz do projeto: `targets::tar_make()` refaz amostra-ouro, baselines, validação, inferência e figuras (cerca de 2 minutos), mas só o que estiver desatualizado. `targets::tar_outdated()` lista o que seria refeito; `targets::tar_visnetwork()` desenha o grafo (requer o pacote `visNetwork`).
+- **Em Python**: rode os notebooks `python/01` a `05` em ordem (no Jupyter: *Run All*; no terminal: `jupyter nbconvert --to notebook --execute --inplace python/0*.ipynb`). As tabelas vão para `resultados/python/tabelas/`.
+- **Repetir a anotação a temperatura 0** sem misturá-la ao cache: `python python/anotar_llm.py --todas-t0 --pasta dados/repeticao` (precisa do Ollama).
+- Os blocos abaixo só **leem** arquivos: nenhum deles refaz o pipeline ou grava resultados.
+:::
+
+### O pipeline, sem executá-lo
+
+`tar_manifest()` lê `_targets.R` e lista as etapas e o comando de cada uma, sem rodar nada:
+
+::: {.abas}
+::: {.aba data-nome="R"}
+```{r, echo=TRUE}
+library(targets)
+tar_manifest() |>
+  mutate(command = stringr::str_trunc(command, 60)) |>
+  print(n = 20)
+```
+```{r, echo=TRUE, eval=FALSE}
+tar_make()        # refaz só o que mudou (grava em resultados/)
+tar_outdated()    # o que ficou desatualizado?
+tar_visnetwork()  # o grafo de dependências, interativo
+```
+:::
+::: {.aba data-nome="Python"}
+A trilha Python não usa um gerenciador de pipeline: a ordem é a dos notebooks, e cada um lê o que o anterior gravou. Para o equivalente ao `targets` em Python, veja ferramentas como `snakemake` ou `DVC`. O que podemos fazer aqui é listar as etapas e o que cada uma produz:
+
+```{python, echo=TRUE}
+import json, re
+from pathlib import Path
+for nb in sorted(Path("python").glob("0*.ipynb")):
+    celulas = json.loads(nb.read_text(encoding="utf-8"))["cells"]
+    codigo = "".join("".join(c["source"]) for c in celulas if c["cell_type"] == "code")
+    grava = sorted(set(re.findall(r'"(tabelas/[\w.]+|figuras/[\w.]+)"', codigo)))
+    print(f"{nb.name:24} {len(celulas):3} células  grava: {', '.join(grava[:3]) or '-'}"
+          + (" ..." if len(grava) > 3 else ""))
+```
+:::
+:::
+
+### O cache confere com os prompts?
+
+Uma verificação de integridade simples e poderosa: recalcular o hash de cada prompt e conferir com o `prompt_sha` gravado em **cada** resposta do cache. Se alguém editou um prompt depois da anotação, aparece aqui.
+
+::: {.abas}
+::: {.aba data-nome="R"}
+```{r, echo=TRUE, message=FALSE}
+source("R/funcoes_medicao.R")
+sha_arquivo <- function(arq) {
+  txt <- readChar(arq, file.size(arq), useBytes = TRUE); Encoding(txt) <- "UTF-8"
+  substr(digest::digest(txt, algo = "sha256", serialize = FALSE), 1, 12)
+}
+atuais <- tibble(arq = list.files("prompts", "\\.txt$", full.names = TRUE)) |>
+  mutate(prompt_id = str_extract(arq, "v\\d"),
+         sha_atual = purrr::map_chr(arq, sha_arquivo))
+carrega_llm() |>
+  left_join(atuais, by = "prompt_id") |>
+  count(prompt_id, prompt_sha, sha_atual, confere = prompt_sha == sha_atual,
+        digest = modelo_digest, ollama = ollama_versao)
+```
+:::
+::: {.aba data-nome="Python"}
+```{python, echo=TRUE}
+import hashlib
+atuais = {arq.stem.split("_")[1]: hashlib.sha256(arq.read_bytes()).hexdigest()[:12]
+          for arq in Path("prompts").glob("prompt_v*.txt")}
+cache = carrega_llm(".")
+cache["sha_atual"] = cache["prompt_id"].map(atuais)
+cache["confere"] = cache["prompt_sha"] == cache["sha_atual"]
+cache.groupby(["prompt_id", "prompt_sha", "sha_atual", "confere",
+               "modelo_digest", "ollama_versao"]).size()
+```
+:::
+:::
+
+**O que está sendo executado.** Para cada arquivo de prompt, calculamos o SHA-256 do conteúdo (os 12 primeiros caracteres bastam para identificá-lo) e juntamos ao cache pelo `prompt_id`. Todas as `r 6 * nrow(corpus)` respostas conferem com os prompts atuais, vieram dos mesmos pesos (mesmo *digest*) e da mesma versão do Ollama. Note que a versão Python lê os **bytes** do arquivo; a versão R lê o arquivo byte a byte (`useBytes = TRUE`) pelo mesmo motivo: o hash precisa ser idêntico nas duas linguagens.
+
+### Temperatura 0 é determinística? A repetição de 12/11/2026
+
+[Saída registrada: comparação entre `dados/cache_llm/` (11/11/2026) e `dados/repeticao/` (12/11/2026)]{.saida-registrada}
+
+::: {.abas}
+::: {.aba data-nome="R"}
+```{r, echo=TRUE}
+compara <- function(p) {
+  arq <- paste0("s5-nano-instruct__", p, "__t0.0__s42.jsonl")
+  a <- stream_in(file(file.path("dados/cache_llm", arq)), verbose = FALSE)
+  b <- stream_in(file(file.path("dados/repeticao", arq)), verbose = FALSE)
+  inner_join(select(a, doc_id, antes = categoria_llm),
+             select(b, doc_id, depois = categoria_llm), by = "doc_id") |>
+    mutate(prompt = p)
+}
+rep0 <- purrr::map(c("v1", "v2", "v3"), compara) |> purrr::list_rbind()
+rep0 |> group_by(prompt) |> summarise(n = n(), mudaram = sum(antes != depois))
+rep0 |> filter(antes != depois)
+```
+:::
+::: {.aba data-nome="Python"}
+```{python, echo=TRUE}
+def compara(p):
+    arq = f"s5-nano-instruct__{p}__t0.0__s42.jsonl"
+    a = pd.read_json(Path("dados/cache_llm") / arq, lines=True)
+    b = pd.read_json(Path("dados/repeticao") / arq, lines=True)
+    return (a[["doc_id", "categoria_llm"]].rename(columns={"categoria_llm": "antes"})
+            .merge(b[["doc_id", "categoria_llm"]]
+                   .rename(columns={"categoria_llm": "depois"}), on="doc_id")
+            .assign(prompt=p))
+rep0 = pd.concat([compara(p) for p in ["v1", "v2", "v3"]])
+print(rep0.assign(mudou=rep0["antes"] != rep0["depois"])
+      .groupby("prompt").agg(n=("doc_id", "size"), mudaram=("mudou", "sum")))
+rep0[rep0["antes"] != rep0["depois"]]
+```
+:::
+:::
+
+**O que está sendo executado.** Para cada prompt, juntamos a anotação original e a repetição pelo `doc_id` e contamos as ementas cujo rótulo mudou. Mesmo modelo, mesmos pesos, mesmo Ollama, mesmo prompt, mesma semente, temperatura 0, e ainda assim alguns rótulos mudam. É por isso que a replicação exata deste material parte do **cache**, não de uma nova execução do modelo.
+
+### R e Python chegam aos mesmos números?
+
+Se as duas trilhas já tiverem rodado, as tabelas de resultados podem ser comparadas diretamente:
+
+::: {.abas}
+::: {.aba data-nome="R"}
+```{r, echo=TRUE}
+r_tab  <- read_csv("resultados/tabelas/estimativas_punir.csv", show_col_types = FALSE)
+py_tab <- read_csv("resultados/python/tabelas/estimativas_punir.csv",
+                   show_col_types = FALSE)
+inner_join(select(r_tab, estimador, r = estimativa, r_li = li),
+           select(py_tab, estimador, py = estimativa, py_li = li), by = "estimador") |>
+  mutate(dif_estimativa = r - py, dif_li = r_li - py_li)
+```
+:::
+::: {.aba data-nome="Python"}
+```{python, echo=TRUE}
+r_tab = pd.read_csv("resultados/tabelas/estimativas_punir.csv")
+py_tab = pd.read_csv("resultados/python/tabelas/estimativas_punir.csv")
+comp = r_tab[["estimador", "estimativa", "li"]].merge(
+    py_tab[["estimador", "estimativa", "li"]], on="estimador", suffixes=("_r", "_py"))
+comp.assign(dif_estimativa=comp["estimativa_r"] - comp["estimativa_py"],
+            dif_li=comp["li_r"] - comp["li_py"])
+```
+:::
+:::
+
+**O que está sendo executado.** As estimativas pontuais e os ICs normais não dependem de sorteio, e por isso as diferenças entre as linguagens são zero (ou da ordem de $10^{-16}$, o erro de arredondamento do computador). As diferenças de até 0,01 aparecem só nas tabelas que dependem do gerador aleatório (ICs bootstrap da validação e simulação de cobertura).
+
+### O ambiente
+
+::: {.abas}
+::: {.aba data-nome="R"}
+```{r, echo=TRUE}
+R.version.string
+pacotes <- c("dplyr", "glmnet", "tm", "targets", "httr2")
+sapply(pacotes, \(p) as.character(packageVersion(p)))
+```
+:::
+::: {.aba data-nome="Python"}
+```{python, echo=TRUE}
+import sys, sklearn, matplotlib
+print(sys.version.split()[0])
+print({"pandas": pd.__version__, "numpy": np.__version__,
+       "scikit-learn": sklearn.__version__, "matplotlib": matplotlib.__version__})
+```
+:::
+:::
+
+O registro completo do ambiente usado nos resultados publicados está em `resultados/sessionInfo.txt`, gravado pelo próprio pipeline. Ao reproduzir, compare as versões: diferenças grandes (por exemplo, uma versão nova do `glmnet` ou do `scikit-learn`) podem mudar o baseline TF-IDF.

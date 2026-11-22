@@ -1,0 +1,224 @@
+# 7 · Reprodutibilidade (MLOps) {background-color="#1c3f6e"}
+
+::: {style="color:#c9d7ec"}
+`_targets.R` · `CHECKLIST.md` · `dados/repeticao/`
+:::
+
+## O que vamos executar neste bloco
+
+<br/>
+
+1. Listar **o que precisa ser versionado** numa pesquisa com LLM
+2. Ler o pipeline declarativo em `_targets.R` e inspecioná-lo com `tar_manifest()`
+3. Conferir, no cache, **a identidade do instrumento**: digest dos pesos, versão do Ollama, hash do prompt
+4. Medir o *drift* de um modelo local: **repetir** as anotações a temperatura 0
+5. Comparar as trilhas **R e Python**
+
+## O que precisa ser versionado?
+
+<br/>
+
+| Componente | Como versionar | Neste material |
+|---|---|---|
+| Código | Git | `R/`, `python/` |
+| Ambiente | `renv` / `requirements.txt` / Docker | `R/00_pacotes.R`, `requirements.txt`, `sessionInfo.txt` |
+| Dados brutos | congelados, com data | `dados/bruto/`, `corpus.csv` (06/11/2026) |
+| Instrumento | modelo (digest) + prompt (hash) + parâmetros | `modelos/`, `prompts/` + CHANGELOG |
+| Respostas do LLM | cache (é dado, não lixo) | `dados/cache_llm/*.jsonl` |
+| Referência humana | arquivo com codificador e revisão | `referencia_completa.csv` |
+
+## Um pipeline declarativo: `_targets.R`
+
+```{r}
+#| eval: false
+list(
+  tar_target(arq_corpus, "dados/processado/corpus.csv", format = "file"),
+  tar_target(arq_prompts, list.files("prompts", "\\.txt$", full.names = TRUE), format = "file",
+             cue = tar_cue(mode = "always")),
+  tar_target(arq_cache_llm, list.files("dados/cache_llm", "\\.jsonl$", full.names = TRUE),
+             format = "file", cue = tar_cue(mode = "always")),
+  tar_target(amostra_ouro, roda_script("R/02_amostra_ouro.R", ..., arq_corpus, arq_referencia)),
+  tar_target(baselines,    roda_script("R/03_baselines.R", ..., amostra_ouro)),
+  tar_target(validacao,    roda_script("R/05_validacao.R", ..., baselines, arq_cache_llm, arq_prompts)),
+  tar_target(inferencia,   roda_script("R/06_inferencia.R", ..., validacao))
+)
+```
+
+::: {.pequeno}
+Cada etapa declara **de que depende**. Coleta e anotação **não** entram como etapas (são caras e externas): entram como **arquivos versionados**.
+:::
+
+## O grafo, lido pelo `targets`
+
+```{r}
+targets::tar_manifest(fields = c(name, command)) |>
+  mutate(command = str_trunc(command, 80))
+```
+
+## Rodando o pipeline
+
+```{r}
+#| eval: false
+targets::tar_make()        # roda só o que está desatualizado
+targets::tar_outdated()    # editei o prompt v2... o que precisa ser refeito?
+targets::tar_visnetwork()  # desenha o grafo (precisa do pacote visNetwork)
+```
+
+```{mermaid}
+%%| fig-width: 11
+%%| echo: false
+%%{init: {"theme": "base", "themeVariables": {"lineColor": "#8f8d88", "primaryColor": "#eef4fc", "primaryBorderColor": "#7ba4de", "primaryTextColor": "#0b0b0b"}}}%%
+flowchart LR
+  P[prompts/*.txt] --> V[validacao]
+  C[cache_llm/*.jsonl] --> V
+  K[corpus.csv] --> O[amostra_ouro] --> B[baselines] --> V --> I[inferencia] --> S[sessao]
+  R[referencia_completa.csv] --> O
+  classDef mudou fill:#1c3f6e,stroke:#1c3f6e,color:#ffffff
+  class P mudou
+```
+
+::: {.pequeno}
+Editou um prompt? `validacao` e `inferencia` ficam desatualizadas; `amostra_ouro` e `baselines`, não.
+:::
+
+## Uma armadilha do próprio `targets`
+
+<br/>
+
+::: {.callout-warning title="Encontrada na verificação deste material"}
+Com `format = "file"` apenas, o `targets` detecta **edições** em arquivos conhecidos, mas **não detecta arquivos novos**: `list.files()` não é reexecutado, porque seu código não mudou. Um prompt v4 ou uma nova execução do LLM passariam **em silêncio**.
+:::
+
+<br/>
+
+**Correção:** `cue = tar_cue(mode = "always")` nas entradas que listam pastas. A lista é refeita sempre; as etapas seguintes só rodam se o conteúdo mudou.
+
+**Lição:** ferramentas de reprodutibilidade **também precisam ser testadas**.
+
+## A identidade do instrumento, no cache
+
+```{r}
+llm |>
+  distinct(modelo, modelo_digest, ollama_versao, prompt_id, prompt_sha, temperatura, semente) |>
+  arrange(prompt_id, temperatura, semente)
+range(llm$timestamp)
+```
+
+::: {.pequeno}
+`s5-nano-instruct` é só um **apelido local**: o *digest* identifica os pesos. A versão do Ollama entra porque **o software que executa o modelo também é parte do instrumento**.
+:::
+
+## *Drift*: quando o instrumento muda sozinho
+
+<br/>
+
+- **API comercial** atualiza o modelo → mesmo prompt, **outra medida**
+- Defesa: **modelo local com versão fixa**, ou registrar `model_id` + data + respostas brutas
+- **Monitorar:** re-anotar periodicamente a amostra-ouro e acompanhar o kappa
+
+. . .
+
+E um modelo **local**, com os mesmos pesos, o mesmo prompt e temperatura 0... dá sempre a mesma resposta?
+
+Em 12/11/2026 repetimos as três anotações a t = 0, nas mesmas condições:
+
+```bash
+python python/anotar_llm.py --todas-t0 --pasta dados/repeticao
+```
+
+## Repetindo a medição
+
+```{r}
+le_jsonl <- \(a) jsonlite::stream_in(file(a), verbose = FALSE)
+repet <- map(c("v1", "v2", "v3"), \(p) {
+  arq <- paste0("s5-nano-instruct__", p, "__t0.0__s42.jsonl")
+  a <- le_jsonl(file.path("dados/cache_llm", arq)); b <- le_jsonl(file.path("dados/repeticao", arq))
+  inner_join(select(a, doc_id, antes = categoria_llm, dg_a = modelo_digest, ov_a = ollama_versao),
+             select(b, doc_id, depois = categoria_llm, dg_b = modelo_digest, ov_b = ollama_versao),
+             by = "doc_id") |> mutate(prompt = p)
+}) |> list_rbind()
+repet |>
+  group_by(prompt) |>
+  summarise(n = n(), mesmo_instrumento = all(dg_a == dg_b & ov_a == ov_b), mudaram = sum(antes != depois))
+```
+
+## Quais mudaram?
+
+```{r}
+repet |>
+  filter(antes != depois) |>
+  left_join(select(corpus, doc_id, ementa), by = "doc_id") |>
+  transmute(prompt, doc_id, antes, depois, ementa = str_trunc(ementa, 80)) |>
+  knitr::kable()
+```
+
+::: {.callout-important}
+**Temperatura 0 não garante a mesma resposta**: pequenas diferenças numéricas na GPU trocam a resposta mais provável quando há quase empate. A replicação exata vem do **cache**, não de reexecutar o modelo.
+:::
+
+## O ambiente
+
+```{r}
+cat(readLines("resultados/sessionInfo.txt")[1:3], sep = "\n")
+c(R = R.version.string, targets = as.character(packageVersion("targets")),
+  glmnet = as.character(packageVersion("glmnet")), httr2 = as.character(packageVersion("httr2")))
+cat(readLines("requirements.txt"), sep = "\n")
+```
+
+## R e Python: os mesmos números?
+
+```{r}
+comp <- inner_join(
+  read_csv("resultados/tabelas/estimativas_punir.csv") |> select(estimador, R = estimativa, R_li = li),
+  read_csv("resultados/python/tabelas/estimativas_punir.csv") |> select(estimador, Python = estimativa, Py_li = li),
+  by = "estimador")
+comp |> mutate(dif = Python - R, dif_li = Py_li - R_li) |> mutate(across(where(is.double), \(x) round(x, 4)))
+```
+
+::: {.pequeno}
+Mesmas estimativas. Diferenças só no que depende do gerador aleatório (ICs bootstrap, simulação) e no TF-IDF (bloco 3). Até o hash do prompt é calculado igual nas duas linguagens.
+:::
+
+## Código gerado por IA
+
+<br/>
+
+Agentes de programação (Claude Code, Codex e similares) também produzem análises.
+
+::: {.callout-tip title="Regra proposta"}
+**Trate o código gerado por IA como o de um coautor**: revisão, testes, versionamento. Quem publica responde por ele.
+:::
+
+- Este material foi produzido com o auxílio do **Claude Opus 5.5** (Anthropic), declarado no livro
+- A verificação de ponta a ponta encontrou e corrigiu falhas reais: o `tar_cue`, caches de outro modelo sendo lidos junto, o erro 504 sem *retry*
+- Os dois papéis não se confundem: o **S5-nano** é o instrumento estudado; o **Claude** foi o auxiliar na produção
+
+## Checklist para o seu próximo artigo
+
+```{r}
+#| class-output: menor
+chk <- readLines("CHECKLIST.md")
+cat(str_trunc(grep("^## |^- \\[ \\]", chk, value = TRUE)[c(1:6, 13:17)], 110), sep = "\n")
+```
+
+## Resumo do bloco 7
+
+<br/>
+
+::: {.columns}
+::: {.column width="50%"}
+**Executamos**
+
+- leitura do pipeline com `tar_manifest()`
+- identidade do instrumento no cache
+- repetição a t = 0 (*drift* local)
+- comparação R × Python
+:::
+::: {.column width="50%"}
+**A lição**
+
+- versionar **instrumento** e **respostas**, não só código
+- o cache é o que permite replicar
+- ferramentas de reprodutibilidade também falham: **teste-as**
+:::
+:::

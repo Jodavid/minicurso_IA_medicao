@@ -1,0 +1,94 @@
+/*-- scss:defaults --*/
+// Complemento de estilo para os decks com código executado
+// (parte1_conceitos.qmd, completo_R.qmd, completo_python.qmd).
+// Use depois de estilo.scss:  theme: [default, estilo.scss, estilo_codigo.scss]
+
+$saida-fundo: #ffffff;
+$saida-borda: #c9dcf5;
+
+/*-- scss:rules --*/
+
+// Código um pouco menor: slides com código precisam caber sem rolagem
+.reveal div.sourceCode pre code {
+  font-size: 1.12em;
+  line-height: 1.32;
+}
+
+// Saídas (print, tabelas de console, mensagens)
+.reveal .cell-output pre,
+.reveal .cell-output-stdout pre,
+.reveal .cell-output-stderr pre {
+  background-color: $saida-fundo;
+  border: 1px dashed $saida-borda;
+  border-left: 4px solid #7ba4de;
+  border-radius: 6px;
+  margin: 0.35em 0;
+}
+
+.reveal .cell-output pre code,
+.reveal .cell-output-stdout pre code,
+.reveal .cell-output-stderr pre code {
+  font-size: 1.02em;
+  line-height: 1.25;
+  color: #334155;
+  padding: 0.45em 0.7em !important;
+}
+
+.reveal .cell-output-stderr pre code {
+  color: #8a4b0f;
+}
+
+// Rótulo "Saída" antes de cada bloco de saída
+.reveal .cell-output-stdout::before,
+.reveal .cell-output-display::before {
+  content: none;
+}
+
+// Tabelas geradas por kable em slides de código: mais compactas
+.reveal .cell-output-display table {
+  font-size: 0.6em;
+}
+
+// Classes utilitárias
+.reveal .pequeno { font-size: 0.75em; }
+.reveal .menor   { font-size: 0.62em; }
+.reveal .centro  { text-align: center; }
+.reveal .destaque {
+  background-color: #f2f7fd;
+  border-left: 4px solid #1c3f6e;
+  padding: 0.4em 0.8em;
+  border-radius: 0 6px 6px 0;
+}
+
+// Etiqueta de tempo/arquivo no canto do slide
+.reveal .etiqueta {
+  display: inline-block;
+  font-size: 0.55em;
+  font-weight: 600;
+  color: #1c3f6e;
+  background: #eef4fc;
+  border: 1px solid #c9dcf5;
+  border-radius: 999px;
+  padding: 0.1em 0.7em;
+  margin-right: 0.3em;
+}
+
+// Saída registrada (de cache ou de execução anterior), não executada no render
+.reveal .registrada pre {
+  border-left-color: #94a3b8 !important;
+}
+.reveal .registrada::before {
+  content: "Saída registrada (não executada ao compilar os slides)";
+  display: block;
+  font-size: 0.45em;
+  color: #64748b;
+  margin-bottom: 0.15em;
+}
+
+// Blocos marcados como .menor: fonte menor e sem limite de altura interno
+.reveal pre.menor code, .reveal .menor pre code, .reveal div.menor pre code {
+  max-height: 600px;
+}
+.reveal div.sourceCode.menor pre code, .reveal pre.menor code {
+  font-size: 0.82em;
+}

@@ -1,0 +1,247 @@
+# 3 · Baselines: quanto se acerta **sem** LLM? {background-color="#1c3f6e"}
+
+::: {style="color:#c9d7ec"}
+`R/03_baselines.R` · `R/funcoes_medicao.R`
+:::
+
+## O que vamos executar neste bloco
+
+<br/>
+
+1. Um **dicionário**: expressões regulares que traduzem o livro de códigos em regras
+2. As **métricas** de acerto, implementadas "na mão": acurácia, F1 macro, **kappa**
+3. Um modelo clássico: **TF-IDF + regressão logística**, com **validação cruzada**
+4. A comparação com o **piso**: chutar sempre a classe mais frequente
+
+::: {.callout-note title="Por que baselines"}
+Um LLM só "vale a pena" se superar instrumentos mais baratos e mais transparentes **de forma estatisticamente consistente**. Isso é uma afirmação a testar, não uma impressão.
+:::
+
+## O dicionário: regras explícitas
+
+```{r}
+names(REGEX)
+REGEX$punir
+strwrap(REGEX$ia, 100)
+strwrap(REGEX$promover, 100)
+```
+
+## `classifica_dicionario()`
+
+```{r}
+#| eval: false
+#| code: !expr trecho("R/funcoes_medicao.R", "classifica_dicionario")
+```
+
+<br/>
+
+- `case_when()` avalia as regras **em ordem**: a primeira verdadeira vence
+- A ordem implementa a **precedência** do livro de códigos (PUNIR > ... )
+- Sem termo de IA → **OUTRO** (falso positivo da busca)
+- Barato, transparente, **100% auditável**
+
+## Testando o dicionário
+
+```{r}
+exemplos <- c(
+  "Altera o Código Penal para tipificar a criação de deepfake de nudez.",
+  "Dispõe sobre a rotulagem de conteúdo gerado por inteligência artificial.",
+  "Institui programa de formação em inteligência artificial nas escolas.",
+  "Altera a Lei nº 9.503 para dispor sobre a carteira de habilitação.",
+  "Prevê penalidades administrativas para plataformas que não removam deepfakes.",
+  "Cria o crime de fraude eletrônica com uso de algoritmos.")
+tibble(ementa = exemplos, dicionario = classifica_dicionario(exemplos),
+       eleitoral = eleitoral_dicionario(exemplos))
+```
+
+::: {.pequeno}
+A 5ª ementa: "penalidades" sem crime, REGULAR pelo livro de códigos. O dicionário acertou porque `\bpenas?\b` não casa com "penalidades".
+:::
+
+## Aplicando à amostra-ouro
+
+```{r}
+ouro <- carrega_ouro() |>
+  left_join(select(corpus, doc_id, ementa), by = "doc_id") |>
+  mutate(pred_dic = classifica_dicionario(ementa))
+
+ouro |> transmute(doc_id, humano = categoria, dicionario = pred_dic,
+                  ementa = str_trunc(ementa, 70)) |> head(8)
+```
+
+## Como medir o acerto?
+
+<br/>
+
+::: {.columns}
+::: {.column width="50%"}
+**Acurácia**: proporção de acertos
+
+**F1 macro**: média do F1 de cada categoria
+$$F1_c = \frac{2\,TP_c}{2\,TP_c + FP_c + FN_c}$$
+dá o mesmo peso às categorias raras
+:::
+::: {.column width="50%"}
+**Kappa de Cohen**: acerto **além do acaso**
+$$\kappa = \frac{p_o - p_e}{1 - p_e}$$
+
+- $p_o$: concordância observada
+- $p_e$: concordância esperada se os dois rotulassem ao acaso, mantendo suas proporções
+- 0,4 moderada · 0,6 substancial · 0,8 quase perfeita (Landis & Koch)
+:::
+:::
+
+## O kappa "na mão"
+
+```{r}
+#| eval: false
+#| code: !expr trecho("R/funcoes_medicao.R", "kappa_cohen")
+```
+
+## O kappa do dicionário, passo a passo
+
+```{r}
+tab <- table(humano = factor(ouro$categoria, levels = CATEGORIAS),
+             dic    = ouro$pred_dic)
+n  <- sum(tab)
+po <- sum(diag(tab)) / n
+pe <- sum(rowSums(tab) * colSums(tab)) / n^2
+c(po = po, pe = pe, kappa = (po - pe) / (1 - pe))
+kappa_cohen(ouro$categoria, ouro$pred_dic)
+```
+
+## O dicionário na amostra-ouro
+
+```{r}
+met_dic <- resumo_metricas(ouro$categoria, ouro$pred_dic)
+met_dic
+tab
+```
+
+::: {.pequeno}
+Linhas: humano. Colunas: dicionário. A diagonal são os acertos.
+:::
+
+## TF-IDF: texto vira número
+
+<br/>
+
+Cada ementa vira um vetor com um peso por palavra (após limpeza e *stemming*):
+
+$$\text{tf-idf}(t, d) = \underbrace{\text{tf}(t, d)}_{\text{frequência na ementa}} \times \underbrace{\log\frac{D}{\text{df}(t)}}_{\text{raridade no corpus}}$$
+
+- Palavras comuns a todas as ementas ("dispõe", "lei") pesam pouco
+- Palavras raras e específicas ("tipifica", "currículo") pesam muito
+- Sobre esses vetores, ajustamos uma **regressão logística multinomial** com penalização *elastic-net* (`glmnet`)
+
+## Preparando a matriz documento-termo
+
+```{r}
+library(tm)
+prepara_dtm <- function(textos) {
+  vc <- VCorpus(VectorSource(str_to_lower(textos)))
+  vc <- tm_map(vc, removePunctuation)
+  vc <- tm_map(vc, removeNumbers)
+  vc <- tm_map(vc, removeWords, stopwords("portuguese"))
+  vc <- tm_map(vc, stemDocument, language = "portuguese")
+  vc <- tm_map(vc, stripWhitespace)
+  DocumentTermMatrix(vc, control = list(weighting = weightTfIdf, bounds = list(global = c(2, Inf))))
+}
+dtm <- prepara_dtm(ouro$ementa)
+X <- as.matrix(dtm); y <- factor(ouro$categoria, levels = CATEGORIAS)
+dim(X)
+sort(colSums(X), decreasing = TRUE)[1:12] |> round(2)
+```
+
+## Validação cruzada com 10 dobras
+
+```{r}
+#| cache: true
+library(glmnet)
+set.seed(2026)
+dobras  <- sample(rep(1:10, length.out = nrow(X)))
+pred_ml <- factor(rep(NA, nrow(X)), levels = CATEGORIAS)
+for (k in 1:10) {
+  treino <- dobras != k
+  fit <- cv.glmnet(X[treino, ], y[treino], family = "multinomial", alpha = 0.5,
+                   nfolds = 5, type.measure = "class")
+  pred_ml[!treino] <- predict(fit, X[!treino, , drop = FALSE], s = "lambda.min", type = "class")
+}
+table(dobras)
+```
+
+::: {.pequeno}
+Cada ementa é classificada por um modelo que **não a viu** no treino. Com $n$ = 120, é a única forma honesta de medir o acerto.
+:::
+
+## TF-IDF na amostra-ouro
+
+```{r}
+met_ml <- resumo_metricas(ouro$categoria, pred_ml)
+met_ml
+table(humano = y, tfidf = pred_ml)
+```
+
+## Comparando os baselines
+
+```{r}
+maj <- factor(rep("REGULAR", nrow(ouro)), levels = CATEGORIAS)
+baselines <- bind_rows(
+  "Dicionário (regex)"           = met_dic,
+  "TF-IDF + logística (CV 10)"   = met_ml,
+  "Classe majoritária (REGULAR)" = resumo_metricas(ouro$categoria, maj),
+  .id = "metodo")
+baselines
+```
+
+::: {.callout-note}
+A classe majoritária acerta `r pc(baselines$acuracia[3])`, mas tem **kappa zero**: não acerta nada além do acaso. Com classes desbalanceadas, a acurácia sozinha engana.
+:::
+
+## O dicionário "viu a prova"
+
+<br/>
+
+::: {.callout-warning title="Data leakage"}
+As regras do dicionário foram escritas **depois de ler as ementas do corpus**. Seu kappa (`r nf(met_dic$kappa)`) é **otimista**.
+:::
+
+<br/>
+
+- Num estudo real: regras definidas **antes**, ou validadas em **dados novos** (projetos apresentados depois da coleta)
+- O mesmo vale para o LLM: os exemplos do prompt v3 são **fictícios** por esse motivo
+- E vale para a **escolha do modelo**: se a amostra-ouro foi usada para escolher, o kappa do vencedor também é otimista
+
+## O "mesmo" método, duas implementações
+
+```{r}
+base_py <- read_csv("resultados/python/tabelas/baselines.csv")
+bind_rows(R = baselines, Python = base_py, .id = "trilha") |>
+  select(trilha, metodo, acuracia, f1_macro, kappa) |>
+  arrange(metodo, trilha)
+```
+
+::: {.pequeno}
+R: `glmnet` (elastic-net + *stemming*). Python: `scikit-learn` (L2, sem *stemming*). "TF-IDF + logística" é uma **família** de escolhas, e cada escolha precisa ser relatada.
+:::
+
+## Resumo do bloco 3
+
+<br/>
+
+::: {.columns}
+::: {.column width="50%"}
+**Executamos**
+
+- dicionário em ementas de teste e na amostra-ouro
+- acurácia, F1 macro e kappa "na mão"
+- TF-IDF + logística com validação cruzada
+:::
+::: {.column width="50%"}
+**Levamos para os próximos blocos**
+
+- a régua: kappa do dicionário `r nf(met_dic$kappa)`, do TF-IDF `r nf(met_ml$kappa)`
+- `kappa_cohen()` e `resumo_metricas()`
+- a desconfiança saudável: **quem viu a prova?**
+:::
+:::

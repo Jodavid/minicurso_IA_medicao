@@ -1,0 +1,339 @@
+# 4 · O LLM como instrumento {background-color="#1c3f6e"}
+
+::: {style="color:#c9d7ec"}
+`R/04_anotacao_llm.R` · `python/anotar_llm.py` · `prompts/` · `modelos/`
+:::
+
+## O que vamos executar neste bloco
+
+<br/>
+
+1. Conhecer o instrumento: **S5-nano** (Maritaca AI), local, via **Ollama**
+2. Montar a **chamada** ao modelo: esquema JSON, temperatura, semente, modo *instruct*
+3. Ler os **três prompts** e calcular o **hash** de cada um
+4. Testar a **extração do rótulo** em respostas "sujas"
+5. Entender o laço de anotação com **cache e retomada**
+6. Abrir o **cache**: `r 6 * nrow(corpus)` respostas do modelo, com todos os metadados
+
+::: {.callout-tip title="Em sala"}
+Demonstração ao vivo com 5 ementas (se o Ollama estiver rodando). Todo o resto vem do **cache**, que é o que garante a replicação.
+:::
+
+## Um modelo brasileiro, aberto e local
+
+<br/>
+
+- **Brasileiro:** desenvolvido pela Maritaca AI, com pré-treinamento adicional em **português**, a língua (e o vocabulário jurídico-legislativo) das ementas
+- **Vem do Qwen:** parte do **Qwen3.5-4B** (Alibaba) e herda a arquitetura, o tokenizador e boa parte do que "sabe"
+- **Aberto e pequeno:** Apache-2.0, pesos públicos (todos baixam **a mesma versão**), roda numa GPU de notebook
+- **Local:** os dados não saem da máquina, custo zero, e **a versão não muda sem aviso**
+
+::: {.callout-warning}
+"Brasileiro" **não garante validade**: é uma característica do treinamento. A validade se mede na amostra-ouro (bloco 5).
+:::
+
+## Instalando o instrumento
+
+```bash
+# 1. instalar o Ollama: https://ollama.com
+ollama pull hf.co/maritaca-ai/S5-nano-GGUF:Q4_K_M                       # ~3,5 GB
+ollama create s5-nano-instruct -f modelos/Modelfile.s5-nano-instruct    # nome local
+ollama list
+```
+
+O `Modelfile` também é versionado:
+
+```{r}
+mf <- readLines("modelos/Modelfile.s5-nano-instruct")
+cat(mf[c(1:3, 10:14, length(mf))], sep = "\n")
+```
+
+## Quantização: outro instrumento
+
+<br/>
+
+::: {.columns}
+::: {.column width="55%"}
+- Pesos originais: 16 bits por parâmetro (BF16)
+- **Q4_K_M**: ~4 bits por parâmetro → cabe em 6 GB de GPU
+- O modelo quantizado **é outro instrumento**: os resultados publicados pela Maritaca (BF16) não valem automaticamente para ele
+- O que vale é a validação feita **aqui**, com o modelo que de fato usamos
+:::
+::: {.column width="45%"}
+::: {.callout-note title="O que registrar"}
+- nome **e digest** dos pesos
+- versão do **Ollama**
+- prompt (**hash**)
+- temperatura e semente
+- **resposta bruta**
+:::
+:::
+:::
+
+## A chamada: o que vai para o modelo
+
+```{r}
+#| output-location: column
+#| class-output: menor
+corpo <- list(
+  model = "s5-nano-instruct",
+  stream = FALSE,
+  think = FALSE,     # modo instruct
+  format = ESQUEMA,  # saída estruturada
+  options = list(temperature = 0,
+                 seed = 42),  # registrar!
+  messages = list(list(
+    role = "user",
+    content = "<prompt com a ementa>")))
+jsonlite::toJSON(corpo, auto_unbox = TRUE, pretty = TRUE)
+```
+
+## `chama_ollama()`
+
+```{r}
+#| eval: false
+#| code: !expr trecho("R/04_anotacao_llm.R", "chama_ollama")
+```
+
+<br/>
+
+- `req_body_json()` envia o corpo do slide anterior para `http://localhost:11434/api/chat`
+- `req_timeout(120)`: uma ementa que trava não trava a anotação inteira
+- Se vier **raciocínio** (`thinking`), a função **para com erro**: seria outro instrumento
+
+## O prompt é parte do instrumento
+
+<br/>
+
+| Versão | Arquivo | Conteúdo |
+|---|---|---|
+| **v1** | `prompt_v1_simples.txt` | só os nomes das categorias |
+| **v2** | `prompt_v2_codebook.txt` | + definições e regras do livro de códigos |
+| **v3** | `prompt_v3_fewshot.txt` | + 6 exemplos **fictícios** (*few-shot*) |
+
+<br/>
+
+```{r}
+arq_prompts <- list.files("prompts", "^prompt_v\\d_.*\\.txt$", full.names = TRUE)
+tibble(arquivo = basename(arq_prompts), linhas = map_int(arq_prompts, \(a) length(readLines(a))),
+       caracteres = file.size(arq_prompts))
+```
+
+## Prompt v1: só as categorias
+
+```{r}
+cat(readLines("prompts/prompt_v1_simples.txt"), sep = "\n")
+```
+
+<br/>
+
+::: {.pequeno}
+**Pergunta para a turma:** o que o modelo "entende" sozinho por PUNIR, REGULAR e PROMOVER? `{{ementa}}` é substituído pelo texto de cada ementa.
+:::
+
+## Prompt v2: o livro de códigos no prompt
+
+```{r}
+#| class-output: menor
+cat(strwrap(readLines("prompts/prompt_v2_codebook.txt"), 140), sep = "\n")
+```
+
+## Prompt v3: + exemplos fictícios
+
+```{r}
+v3 <- readLines("prompts/prompt_v3_fewshot.txt")
+ini <- grep("^EXEMPLOS", v3)
+cat(strwrap(v3[ini:length(v3)], 130), sep = "\n")
+```
+
+## O hash do prompt: uma impressão digital
+
+```{r}
+hash_prompt <- function(arq) {
+  txt <- readChar(arq, file.size(arq), useBytes = TRUE)   # byte a byte: mesmo hash do Python
+  Encoding(txt) <- "UTF-8"
+  substr(digest::digest(txt, algo = "sha256", serialize = FALSE), 1, 12)
+}
+hashes <- tibble(prompt_id = str_extract(basename(arq_prompts), "v\\d"),
+                 sha_arquivo = map_chr(arq_prompts, hash_prompt))
+llm <- carrega_llm()
+hashes |> left_join(distinct(llm, prompt_id, sha_no_cache = prompt_sha), by = "prompt_id")
+```
+
+::: {.pequeno}
+Mudou uma vírgula no prompt → muda o hash → as respostas antigas no cache **não** correspondem ao prompt atual. É assim que se descobre.
+:::
+
+## Extraindo o rótulo da resposta
+
+```{r}
+#| eval: false
+#| code: !expr trecho("R/04_anotacao_llm.R", "extrai_rotulo")
+```
+
+<br/>
+
+- Procura o **primeiro objeto JSON** na resposta, mesmo com texto em volta
+- Aceita um nome alternativo de campo (`classificacao`)
+- Categoria fora da lista → `NA`: uma **falha de formato**, que será **contada**
+
+## Testando com respostas "sujas"
+
+```{r}
+respostas <- c(
+  limpa      = '{"categoria": "PUNIR", "eleitoral": false}',
+  markdown   = '```json\n{"categoria": "REGULAR", "eleitoral": true}\n```',
+  texto      = 'Claro! A classificação é {"categoria": "promover", "eleitoral": false}.',
+  outro_nome = '{"classificacao": "OUTRO", "eleitoral": false}',
+  invalida   = '{"categoria": "PUNIÇÃO", "eleitoral": false}',
+  sem_json   = 'A ementa trata de inteligência artificial.')
+map(respostas, extrai_rotulo) |>
+  map_dfr(\(r) tibble(categoria = r$categoria %||% NA, eleitoral = r$eleitoral %||% NA), .id = "caso")
+```
+
+## O laço de anotação com cache
+
+```{r}
+#| eval: false
+# trecho de anota_corpus() em R/04_anotacao_llm.R
+run_id  <- sprintf("%s__%s__t%s__s%d", modelo, prompt_id, format(temperatura, nsmall = 1), semente)
+destino <- file.path("dados/cache_llm", paste0(run_id, ".jsonl"))
+feitos  <- if (file.exists(destino)) stream_in(file(destino))$doc_id else character()
+pendentes <- filter(corpus, !doc_id %in% feitos)           # retomada: só o que falta
+
+for (i in seq_len(nrow(pendentes))) {
+  prompt <- str_replace(modelo_prompt, fixed("{{ementa}}"), pendentes$ementa[i])
+  bruto  <- tryCatch(chama_ollama(prompt, modelo, temperatura, semente),
+                     error = \(e) paste("ERRO:", conditionMessage(e)))  # registra a falha
+  r <- extrai_rotulo(bruto)
+  registro <- list(doc_id = ..., modelo_digest = digest, ollama_versao = versao,
+                   prompt_id = prompt_id, prompt_sha = prompt_sha, temperatura = temperatura,
+                   semente = semente, resposta_bruta = bruto, categoria_llm = r$categoria, ...)
+  writeLines(toJSON(registro, auto_unbox = TRUE), con)     # uma linha JSON por ementa
+}
+```
+
+## Demonstração ao vivo: 5 ementas
+
+```{r}
+#| eval: false
+corpus <- carrega_corpus()
+anota_corpus(head(corpus, 5), prompt_id = "v2", modelo = "s5-nano-instruct",
+             temperatura = 0, semente = 7)
+```
+
+::: {.registrada}
+```{r}
+#| echo: false
+cat("s5-nano-instruct__v2__t0.0__s7: 0 em cache, 5 pendentes\n")
+llm |> filter(run_id == "s5-nano-instruct__v2__t0.0__s42") |> head(5) |>
+  select(doc_id, resposta_bruta, categoria_llm, eleitoral_llm, segundos) |> print()
+```
+:::
+
+::: {.pequeno}
+A saída acima vem do cache com semente 42 (as mesmas 5 ementas). Ao vivo, com semente 7, o arquivo novo seria `dados/cache_llm/s5-nano-instruct__v2__t0.0__s7.jsonl`.
+:::
+
+## Um registro do cache, completo
+
+```{r}
+primeiro <- readLines("dados/cache_llm/s5-nano-instruct__v2__t0.0__s42.jsonl", n = 1)
+jsonlite::prettify(primeiro, indent = 2)
+```
+
+## O cache inteiro
+
+```{r}
+list.files("dados/cache_llm", "\\.jsonl$")
+llm |> count(run_id, prompt_id, temperatura, semente)
+```
+
+::: {.pequeno}
+Seis execuções: três prompts a temperatura 0 (semente 42) e o prompt v2 a temperatura 0,8 com três sementes (para o teste-reteste).
+:::
+
+## Quanto custa medir?
+
+```{r}
+llm |>
+  group_by(prompt_id, temperatura) |>
+  summarise(ementas = n(), seg_media = mean(segundos), seg_max = max(segundos),
+            minutos_total = sum(segundos) / 60, .groups = "drop") |>
+  mutate(across(where(is.double), \(x) round(x, 2)))
+```
+
+::: {.pequeno}
+Numa GPU de notebook (RTX 4050, 6 GB): menos de um segundo por ementa. O prompt v3 é maior (exemplos), e por isso um pouco mais lento.
+:::
+
+## Falhas de formato
+
+```{r}
+llm |>
+  group_by(run_id) |>
+  summarise(n = n(), falhas = sum(is.na(categoria_llm)),
+            json_puro = mean(str_detect(resposta_bruta, "^\\{.*\\}$")), .groups = "drop")
+llm |> count(resposta_bruta, sort = TRUE) |> head(3)
+```
+
+::: {.pequeno}
+Com saída estruturada (`format = ESQUEMA`), zero falhas aqui. Com outro prompt, modelo ou versão do Ollama, pode não ser zero, e a taxa de falhas é **uma propriedade do instrumento**.
+:::
+
+## O mesmo modelo, três prompts
+
+```{r}
+llm |>
+  filter(temperatura == 0) |>
+  count(prompt_id, categoria_llm) |>
+  group_by(prompt_id) |> mutate(prop = round(n / sum(n), 3)) |> ungroup() |>
+  select(-n) |>
+  tidyr::pivot_wider(names_from = prompt_id, values_from = prop) |>
+  left_join(ref |> count(categoria_llm = factor(categoria, levels = CATEGORIAS)) |>
+              transmute(categoria_llm, referencia = round(n / sum(n), 3)), by = "categoria_llm")
+```
+
+::: {.pequeno}
+Antes de qualquer métrica, a **distribuição** já mostra: o prompt muda a medida. O bloco 5 diz quanto.
+:::
+
+## E com uma API comercial?
+
+```{r}
+#| eval: false
+library(ellmer)
+# a chave NUNCA vai no código: use ~/.Renviron (OPENAI_API_KEY=...)
+tipo <- type_object(categoria = type_enum(CATEGORIAS), eleitoral = type_boolean())
+chat <- chat_openai(model = "gpt-4.1-mini", params = params(temperature = 0, seed = 42))
+prompt <- str_replace(readLines("prompts/prompt_v2_codebook.txt") |> paste(collapse = "\n"),
+                      fixed("{{ementa}}"), corpus$ementa[1])
+chat$chat_structured(prompt, type = tipo)
+```
+
+<br/>
+
+- Mesma lógica: esquema, temperatura, semente, **cache**
+- APIs comerciais **trocam a versão do modelo sem aviso**: registre o identificador exato e a **data**, e guarde as respostas brutas
+
+## Resumo do bloco 4
+
+<br/>
+
+::: {.columns}
+::: {.column width="50%"}
+**Executamos**
+
+- o corpo da chamada e o esquema JSON
+- leitura dos prompts e cálculo dos hashes
+- extração de rótulos em respostas "sujas"
+- leitura e descrição do cache
+:::
+::: {.column width="50%"}
+**Levamos para os próximos blocos**
+
+- `llm`: `r nrow(llm)` respostas, 6 execuções
+- instrumento = **modelo + prompt + parâmetros + software**
+- o cache **é dado**: auditoria, retomada e replicação sem GPU
+:::
+:::

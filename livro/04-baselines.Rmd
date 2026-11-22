@@ -1,0 +1,213 @@
+# Baselines: quanto se acerta sem LLM? {#baselines}
+
+Antes de usar um LLM, precisamos saber **quanto se acerta sem ele**. Um LLM só "vale a pena" se superar instrumentos mais baratos e mais transparentes **de forma estatisticamente consistente**, e isso é uma afirmação a ser testada, não uma impressão.
+
+## Dicionário
+
+O primeiro baseline é um **dicionário**: um conjunto de expressões regulares que traduzem o livro de códigos em regras explícitas. É barato, transparente e totalmente auditável.
+
+```{r, echo=TRUE, eval=FALSE, code=trecho("R/funcoes_medicao.R", "classifica_dicionario")}
+```
+
+As expressões `REGEX$punir`, `REGEX$ia` e `REGEX$promover` estão em `R/funcoes_medicao.R`. A ordem das regras implementa a precedência do livro de códigos.
+
+## TF-IDF e regressão logística
+
+O segundo baseline é um modelo de aprendizado supervisionado clássico: as ementas viram vetores TF-IDF (após remover pontuação, números e *stopwords* e aplicar *stemming*), e uma **regressão logística multinomial com penalização elastic-net** (`glmnet`) é ajustada. Como a amostra-ouro é pequena, o desempenho é estimado por **validação cruzada com 10 dobras**: cada ementa é classificada por um modelo que não a viu no treino.
+
+## Resultados
+
+```{r tab-baselines}
+base |>
+  transmute(Método = metodo, Acurácia = pc(acuracia), `F1 macro` = nf(f1_macro), Kappa = nf(kappa)) |>
+  knitr::kable(align = "lccc", caption = "Desempenho dos baselines na amostra-ouro (n = 120).")
+```
+
+A linha **classe majoritária** é o piso: chutar sempre REGULAR acerta `r pc(base$acuracia[3])` das ementas, mas tem kappa zero, porque não acerta nada além do que o acaso já acertaria. É por isso que a acurácia sozinha engana quando as classes são desbalanceadas.
+
+::: {.caixa .aviso}
+[O dicionário "viu a prova"]{.titulo-caixa}
+As regras do dicionário foram escritas **depois de ler as ementas do corpus**. Seu desempenho aqui (kappa `r nf(k("Dicionário (regex)"))`) é, portanto, **otimista**: é um caso clássico de *data leakage*. Num estudo real, as regras seriam definidas antes, ou validadas em dados novos (por exemplo, proposições apresentadas depois da data de coleta).
+:::
+
+## O "mesmo" método, implementações diferentes
+
+As trilhas em R e Python do minicurso produzem os **mesmos números em todas as análises** (a menos de diferenças de até 0,01 nos resultados que dependem de sorteios), com uma exceção instrutiva: o baseline TF-IDF. Em R, com `glmnet` (elastic-net e *stemming*), o kappa é `r nf(base$kappa[2])`; em Python, com `scikit-learn` (penalização L2, sem *stemming*), é `r nf(base_py$kappa[base_py$metodo == base$metodo[2]])`. "TF-IDF + logística" não é um método, é uma família de escolhas, e cada escolha precisa ser relatada.
+
+## Mão na massa: dicionário e TF-IDF {#mao-baselines}
+
+::: {.caixa .executar}
+[Como executar]{.titulo-caixa}
+
+- **Em R**: `Rscript R/03_baselines.R` (menos de 1 minuto). O script grava `resultados/tabelas/baselines.csv`, `dados/anotacoes/predicoes_baselines.csv` e `dados/anotacoes/dicionario_corpus.csv`; os blocos abaixo fazem as mesmas contas sem gravar.
+- **Em Python**: notebook `python/02_baselines.ipynb` (grava em `resultados/python/`).
+- Pelo pipeline: `targets::tar_make()` refaz este bloco se a amostra-ouro, as funções ou o script mudarem.
+:::
+
+### Preparar os dados
+
+::: {.abas}
+::: {.aba data-nome="R"}
+```{r, echo=TRUE, message=FALSE}
+source("R/funcoes_medicao.R")
+corpus <- carrega_corpus()
+ouro   <- carrega_ouro() |> left_join(select(corpus, doc_id, ementa), by = "doc_id")
+dim(ouro)
+```
+:::
+::: {.aba data-nome="Python"}
+```{python, echo=TRUE}
+from medicao import (CATEGORIAS, STOPWORDS_PT, carrega_corpus, carrega_ouro,
+                     classifica_dicionario, resumo_metricas)
+corpus = carrega_corpus(".")
+ouro = carrega_ouro(".").merge(corpus[["doc_id", "ementa"]], on="doc_id")
+ouro.shape
+```
+:::
+:::
+
+`carrega_ouro()` avisa que a referência ainda não foi revisada por humanos (em R, o aviso aparece como *warning*; em Python, como mensagem). Ele é proposital: enquanto a coluna `revisado` estiver toda `FALSE`, os números são ilustrativos.
+
+### O dicionário em ação
+
+Antes de medir o desempenho, vale ver o dicionário decidir, ementa a ementa:
+
+::: {.abas}
+::: {.aba data-nome="R"}
+```{r, echo=TRUE}
+exemplos <- c(
+  "Tipifica o crime de divulgação de deepfake de conteúdo sexual.",
+  "Dispõe sobre a rotulagem de conteúdo gerado por inteligência artificial.",
+  "Institui programa de capacitação em inteligência artificial nas escolas.",
+  "Altera o Código Penal para aumentar a pena do crime de estelionato.")
+tibble(ementa = exemplos, dicionario = classifica_dicionario(exemplos))
+```
+:::
+::: {.aba data-nome="Python"}
+```{python, echo=TRUE}
+exemplos = [
+    "Tipifica o crime de divulgação de deepfake de conteúdo sexual.",
+    "Dispõe sobre a rotulagem de conteúdo gerado por inteligência artificial.",
+    "Institui programa de capacitação em inteligência artificial nas escolas.",
+    "Altera o Código Penal para aumentar a pena do crime de estelionato."]
+for e in exemplos:
+    print(f"{classifica_dicionario(e):9} {e}")
+```
+:::
+:::
+
+**O que está sendo executado.** A função testa as regras **na ordem da precedência**: primeiro, "tem termo penal **e** termo de IA?" (PUNIR); depois, "não tem termo de IA?" (OUTRO); depois, "tem termo de fomento?" (PROMOVER); o que sobra é REGULAR. A quarta ementa mostra a importância da ordem: ela é penal, mas não fala de IA, e por isso vai para OUTRO, como manda a regra 7 do livro de códigos.
+
+### Desempenho do dicionário na amostra-ouro
+
+::: {.abas}
+::: {.aba data-nome="R"}
+```{r, echo=TRUE}
+ouro <- ouro |> mutate(pred_dic = classifica_dicionario(ementa))
+resumo_metricas(ouro$categoria, ouro$pred_dic)
+table(humano = ouro$categoria, dicionario = ouro$pred_dic)
+```
+:::
+::: {.aba data-nome="Python"}
+```{python, echo=TRUE}
+ouro["pred_dic"] = ouro["ementa"].map(classifica_dicionario)
+print(resumo_metricas(ouro["categoria"], ouro["pred_dic"]))
+pd.crosstab(ouro["categoria"], ouro["pred_dic"],
+            rownames=["humano"], colnames=["dicionário"])
+```
+:::
+:::
+
+**O que está sendo executado.** `resumo_metricas()` compara o rótulo humano (`categoria`) com o do instrumento e devolve o tamanho da amostra, a taxa de falhas de formato (zero para o dicionário, que sempre responde), a acurácia, o F1 macro e o kappa. A tabela cruzada é a matriz de confusão: as linhas são a referência humana, as colunas, o dicionário; tudo fora da diagonal é erro.
+
+### TF-IDF e regressão logística com validação cruzada
+
+Este é o bloco mais demorado do capítulo (alguns segundos em R): são 10 ajustes do modelo, cada um com sua própria validação cruzada interna para escolher a penalização.
+
+::: {.abas}
+::: {.aba data-nome="R"}
+```{r mao-tfidf-r, echo=TRUE, message=FALSE, cache=TRUE}
+library(tm); library(glmnet)
+prepara_dtm <- function(textos) {
+  vc <- VCorpus(VectorSource(str_to_lower(textos)))
+  vc <- tm_map(vc, removePunctuation)
+  vc <- tm_map(vc, removeNumbers)
+  vc <- tm_map(vc, removeWords, stopwords("portuguese"))
+  vc <- tm_map(vc, stemDocument, language = "portuguese")
+  vc <- tm_map(vc, stripWhitespace)
+  DocumentTermMatrix(vc, control = list(weighting = weightTfIdf,
+                                        bounds = list(global = c(2, Inf))))
+}
+X <- as.matrix(prepara_dtm(ouro$ementa))
+y <- factor(ouro$categoria, levels = CATEGORIAS)
+dim(X)                                   # ementas × termos
+head(sort(colSums(X), decreasing = TRUE), 8)
+
+set.seed(2026)
+dobras  <- sample(rep(1:10, length.out = nrow(X)))
+pred_ml <- factor(rep(NA, nrow(X)), levels = CATEGORIAS)
+for (d in 1:10) {                       # d = dobra deixada de fora
+  treino <- dobras != d
+  fit <- cv.glmnet(X[treino, ], y[treino], family = "multinomial", alpha = 0.5,
+                   nfolds = 5, type.measure = "class")
+  pred_ml[!treino] <- predict(fit, X[!treino, , drop = FALSE],
+                              s = "lambda.min", type = "class")
+}
+resumo_metricas(ouro$categoria, pred_ml)
+```
+:::
+::: {.aba data-nome="Python"}
+```{python mao-tfidf-py, echo=TRUE}
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegressionCV
+from sklearn.model_selection import StratifiedKFold, cross_val_predict
+from sklearn.pipeline import make_pipeline
+
+vetorizador = TfidfVectorizer(lowercase=True, stop_words=STOPWORDS_PT, min_df=2,
+                              token_pattern=r"(?u)\b[^\W\d_]{2,}\b")
+X = vetorizador.fit_transform(ouro["ementa"])
+print(X.shape)                                # ementas × termos
+peso = pd.Series(X.sum(axis=0).A1, index=vetorizador.get_feature_names_out())
+print(peso.sort_values(ascending=False).head(8).round(2))
+
+modelo = make_pipeline(
+    TfidfVectorizer(lowercase=True, stop_words=STOPWORDS_PT, min_df=2,
+                    token_pattern=r"(?u)\b[^\W\d_]{2,}\b"),
+    LogisticRegressionCV(Cs=10, cv=5, max_iter=5000, scoring="accuracy"))
+dobras = StratifiedKFold(n_splits=10, shuffle=True, random_state=2026)
+ouro["pred_ml"] = cross_val_predict(modelo, ouro["ementa"], ouro["categoria"], cv=dobras)
+resumo_metricas(ouro["categoria"], ouro["pred_ml"])
+```
+:::
+:::
+
+**O que está sendo executado.** Primeiro, cada ementa vira um vetor: uma coluna por termo que aparece em pelo menos duas ementas, com peso TF-IDF (frequência do termo na ementa, descontada pela frequência do termo no corpus). Em R, antes disso, removemos pontuação, números e *stopwords* e reduzimos as palavras ao radical (*stemming*: "criminaliza" e "criminalização" viram o mesmo termo); em Python, só removemos as *stopwords*. Depois, as 120 ementas são divididas em 10 dobras. Para cada dobra, o modelo é treinado nas outras nove e prevê a dobra deixada de fora; assim, **toda previsão é feita por um modelo que não viu aquela ementa**. Repare nos termos de maior peso total: são palavras da redação legislativa ("lei", "uso", "dispõe", "sobre"), que nada dizem sobre punir, regular ou promover. Com 120 exemplos, sobra pouca informação para o modelo aprender a fronteira entre as categorias. Repare também que o R encontra 303 termos e o Python, 313: o *stemming* junta palavras que o Python mantém separadas.
+
+### A tabela final
+
+::: {.abas}
+::: {.aba data-nome="R"}
+```{r, echo=TRUE}
+bind_rows(
+  "Dicionário (regex)"           = resumo_metricas(ouro$categoria, ouro$pred_dic),
+  "TF-IDF + logística (CV 10)"   = resumo_metricas(ouro$categoria, pred_ml),
+  "Classe majoritária (REGULAR)" = resumo_metricas(ouro$categoria,
+                                                   rep("REGULAR", nrow(ouro))),
+  .id = "metodo"
+) |> mutate(across(where(is.double), \(x) round(x, 3)))
+```
+:::
+::: {.aba data-nome="Python"}
+```{python, echo=TRUE}
+maj = pd.Series(["REGULAR"] * len(ouro))
+h = ouro["categoria"]
+pd.DataFrame([
+    {"metodo": "Dicionário (regex)", **resumo_metricas(h, ouro["pred_dic"])},
+    {"metodo": "TF-IDF + logística (CV 10)", **resumo_metricas(h, ouro["pred_ml"])},
+    {"metodo": "Classe majoritária (REGULAR)", **resumo_metricas(h, maj)},
+]).round(3)
+```
+:::
+:::
+
+Compare as duas abas: o dicionário e a classe majoritária dão **exatamente** os mesmos números nas duas linguagens (são regras determinísticas); o TF-IDF, não, pelas razões discutidas na seção anterior. A terceira linha mostra por que a acurácia sozinha engana: chutar sempre REGULAR acerta mais da metade das ementas, com kappa zero.

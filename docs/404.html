@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xml:lang="pt-BR">
+<head>
+
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>Page not found | Inteligência Artificial como Instrumento de Medição</title>
+  <meta name="description" content="Livro do minicurso ‘IA como Instrumento de Medição’ (II DataPOL/UFPE, 2026): do dado legislativo bruto à inferência com rótulos produzidos por LLMs, em R e Python." />
+  <meta name="generator" content="bookdown 0.48 and GitBook 2.6.7" />
+
+  <meta property="og:title" content="Page not found | Inteligência Artificial como Instrumento de Medição" />
+  <meta property="og:type" content="book" />
+  <meta property="og:image" content="https://jodavid.github.io/minicurso-ia-medicao/capa/capa.png" />
+  <meta property="og:description" content="Livro do minicurso ‘IA como Instrumento de Medição’ (II DataPOL/UFPE, 2026): do dado legislativo bruto à inferência com rótulos produzidos por LLMs, em R e Python." />
+  
+
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Page not found | Inteligência Artificial como Instrumento de Medição" />
+  
+  <meta name="twitter:description" content="Livro do minicurso ‘IA como Instrumento de Medição’ (II DataPOL/UFPE, 2026): do dado legislativo bruto à inferência com rótulos produzidos por LLMs, em R e Python." />
+  <meta name="twitter:image" content="https://jodavid.github.io/minicurso-ia-medicao/capa/capa.png" />
+
+<meta name="author" content="Prof. Dr. Jodavid Ferreira (Departamento de Estatística, UFPE)" />
+<meta name="author" content="Coautoria: Claude Opus 5.5 (modelo de inteligência artificial da Anthropic)" />
+
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  
+  
+
+
+<script src="assets/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
+<link href="assets/gitbook-2.6.7/css/style.css" rel="stylesheet" />
+<link href="assets/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
+<link href="assets/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
+<link href="assets/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
+<link href="assets/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
+<link href="assets/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
+<link href="assets/gitbook-2.6.7/css/plugin-clipboard.css" rel="stylesheet" />
+
+
+
+
+
+
+
+
+<link href="assets/anchor-sections-1.1.0/anchor-sections.css" rel="stylesheet" />
+<link href="assets/anchor-sections-1.1.0/anchor-sections-hash.css" rel="stylesheet" />
+<script src="assets/anchor-sections-1.1.0/anchor-sections.js"></script>
+
+
+<style type="text/css">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+<style type="text/css">
+  
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+</style>
+<style type="text/css">
+/* Used with Pandoc 2.11+ new --citeproc when CSL is used */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}
+</style>
+
+<link rel="stylesheet" href="estilo.css" type="text/css" />
+</head>
+
+<body>
+
+
+
+  <div class="book without-animation with-summary font-size-2 font-family-1" data-basepath=".">
+
+    <div class="book-summary">
+      <nav role="navigation">
+
+<ul class="summary">
+<li class="toc-titulo"><a href="./">IA como Instrumento de Medição</a></li>
+<li class="toc-sub">II DataPOL · UFPE · 2026</li>
+
+<li class="divider"></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i>Apresentação</a>
+<ul>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#o-estudo-de-caso"><i class="fa fa-check"></i>O estudo de caso</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#a-quem-se-destina"><i class="fa fa-check"></i>A quem se destina</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#como-usar-este-livro"><i class="fa fa-check"></i>Como usar este livro</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#autoria-e-uso-de-intelig%C3%AAncia-artificial"><i class="fa fa-check"></i>Autoria e uso de inteligência artificial</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#como-citar"><i class="fa fa-check"></i>Como citar</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#licen%C3%A7a"><i class="fa fa-check"></i>Licença</a></li>
+</ul></li>
+<li class="chapter" data-level="1" data-path="intro.html"><a href="intro.html"><i class="fa fa-check"></i><b>1</b> Quem mede a régua?</a>
+<ul>
+<li class="chapter" data-level="1.1" data-path="intro.html"><a href="intro.html#duas-perguntas"><i class="fa fa-check"></i><b>1.1</b> Duas perguntas</a></li>
+<li class="chapter" data-level="1.2" data-path="intro.html"><a href="intro.html#por-que-agora"><i class="fa fa-check"></i><b>1.2</b> Por que agora?</a></li>
+<li class="chapter" data-level="1.3" data-path="intro.html"><a href="intro.html#a-fase-atual-da-estat%C3%ADstica"><i class="fa fa-check"></i><b>1.3</b> A “fase atual” da estatística</a></li>
+<li class="chapter" data-level="1.4" data-path="intro.html"><a href="intro.html#o-caminho-deste-livro"><i class="fa fa-check"></i><b>1.4</b> O caminho deste livro</a></li>
+</ul></li>
+<li class="chapter" data-level="2" data-path="dados.html"><a href="dados.html"><i class="fa fa-check"></i><b>2</b> Dados legislativos</a>
+<ul>
+<li class="chapter" data-level="2.1" data-path="dados.html"><a href="dados.html#as-apis-de-dados-abertos"><i class="fa fa-check"></i><b>2.1</b> As APIs de dados abertos</a></li>
+<li class="chapter" data-level="2.2" data-path="dados.html"><a href="dados.html#a-coleta-tamb%C3%A9m-%C3%A9-medi%C3%A7%C3%A3o"><i class="fa fa-check"></i><b>2.2</b> A coleta também é medição</a></li>
+</ul></li>
+<li class="chapter" data-level="3" data-path="codificacao.html"><a href="codificacao.html"><i class="fa fa-check"></i><b>3</b> Codificar é medir</a>
+<ul>
+<li class="chapter" data-level="3.1" data-path="codificacao.html"><a href="codificacao.html#o-livro-de-c%C3%B3digos"><i class="fa fa-check"></i><b>3.1</b> O livro de códigos</a>
+<ul>
+<li class="chapter" data-level="3.1.1" data-path="codificacao.html"><a href="codificacao.html#regras-de-decis%C3%A3o"><i class="fa fa-check"></i><b>3.1.1</b> Regras de decisão</a></li>
+</ul></li>
+<li class="chapter" data-level="3.2" data-path="codificacao.html"><a href="codificacao.html#a-amostra-ouro"><i class="fa fa-check"></i><b>3.2</b> A amostra-ouro</a></li>
+<li class="chapter" data-level="3.3" data-path="codificacao.html"><a href="codificacao.html#exerc%C3%ADcio-quanto-n%C3%B3s-concordamos"><i class="fa fa-check"></i><b>3.3</b> Exercício: quanto nós concordamos?</a></li>
+</ul></li>
+<li class="chapter" data-level="4" data-path="baselines.html"><a href="baselines.html"><i class="fa fa-check"></i><b>4</b> Baselines: quanto se acerta sem LLM?</a>
+<ul>
+<li class="chapter" data-level="4.1" data-path="baselines.html"><a href="baselines.html#dicion%C3%A1rio"><i class="fa fa-check"></i><b>4.1</b> Dicionário</a></li>
+<li class="chapter" data-level="4.2" data-path="baselines.html"><a href="baselines.html#tf-idf-e-regress%C3%A3o-log%C3%ADstica"><i class="fa fa-check"></i><b>4.2</b> TF-IDF e regressão logística</a></li>
+<li class="chapter" data-level="4.3" data-path="baselines.html"><a href="baselines.html#resultados"><i class="fa fa-check"></i><b>4.3</b> Resultados</a></li>
+<li class="chapter" data-level="4.4" data-path="baselines.html"><a href="baselines.html#o-mesmo-m%C3%A9todo-implementa%C3%A7%C3%B5es-diferentes"><i class="fa fa-check"></i><b>4.4</b> O “mesmo” método, implementações diferentes</a></li>
+</ul></li>
+<li class="chapter" data-level="5" data-path="llm.html"><a href="llm.html"><i class="fa fa-check"></i><b>5</b> O LLM como instrumento</a>
+<ul>
+<li class="chapter" data-level="5.1" data-path="llm.html"><a href="llm.html#um-modelo-brasileiro-aberto-e-local"><i class="fa fa-check"></i><b>5.1</b> Um modelo brasileiro, aberto e local</a></li>
+<li class="chapter" data-level="5.2" data-path="llm.html"><a href="llm.html#o-prompt-%C3%A9-parte-do-instrumento"><i class="fa fa-check"></i><b>5.2</b> O prompt é parte do instrumento</a></li>
+<li class="chapter" data-level="5.3" data-path="llm.html"><a href="llm.html#cache-as-respostas-do-llm-s%C3%A3o-dados"><i class="fa fa-check"></i><b>5.3</b> Cache: as respostas do LLM são dados</a></li>
+<li class="chapter" data-level="5.4" data-path="llm.html"><a href="llm.html#falhas-de-formato"><i class="fa fa-check"></i><b>5.4</b> Falhas de formato</a></li>
+</ul></li>
+<li class="chapter" data-level="6" data-path="validacao.html"><a href="validacao.html"><i class="fa fa-check"></i><b>6</b> Validação: o instrumento mede o que diz medir?</a>
+<ul>
+<li class="chapter" data-level="6.1" data-path="validacao.html"><a href="validacao.html#validade-concord%C3%A2ncia-com-a-amostra-ouro"><i class="fa fa-check"></i><b>6.1</b> Validade: concordância com a amostra-ouro</a></li>
+<li class="chapter" data-level="6.2" data-path="validacao.html"><a href="validacao.html#onde-o-instrumento-erra"><i class="fa fa-check"></i><b>6.2</b> Onde o instrumento erra</a></li>
+<li class="chapter" data-level="6.3" data-path="validacao.html"><a href="validacao.html#vi%C3%A9s-diferencial"><i class="fa fa-check"></i><b>6.3</b> Viés diferencial</a></li>
+<li class="chapter" data-level="6.4" data-path="validacao.html"><a href="validacao.html#confiabilidade"><i class="fa fa-check"></i><b>6.4</b> Confiabilidade</a></li>
+<li class="chapter" data-level="6.5" data-path="validacao.html"><a href="validacao.html#a-vari%C3%A1vel-eleitoral"><i class="fa fa-check"></i><b>6.5</b> A variável eleitoral</a></li>
+<li class="chapter" data-level="6.6" data-path="validacao.html"><a href="validacao.html#humano-humano"><i class="fa fa-check"></i><b>6.6</b> Humano × humano</a></li>
+</ul></li>
+<li class="chapter" data-level="7" data-path="inferencia.html"><a href="inferencia.html"><i class="fa fa-check"></i><b>7</b> Inferência com rótulos imperfeitos</a>
+<ul>
+<li class="chapter" data-level="7.1" data-path="inferencia.html"><a href="inferencia.html#duas-solu%C3%A7%C3%B5es-ruins"><i class="fa fa-check"></i><b>7.1</b> Duas soluções ruins</a></li>
+<li class="chapter" data-level="7.2" data-path="inferencia.html"><a href="inferencia.html#prediction-powered-inference"><i class="fa fa-check"></i><b>7.2</b> <em>Prediction-Powered Inference</em></a></li>
+<li class="chapter" data-level="7.3" data-path="inferencia.html"><a href="inferencia.html#ppi"><i class="fa fa-check"></i><b>7.3</b> PPI++</a></li>
+<li class="chapter" data-level="7.4" data-path="inferencia.html"><a href="inferencia.html#que-propor%C3%A7%C3%A3o-dos-projetos-quer-punir"><i class="fa fa-check"></i><b>7.4</b> Que proporção dos projetos quer PUNIR?</a></li>
+<li class="chapter" data-level="7.5" data-path="inferencia.html"><a href="inferencia.html#simula%C3%A7%C3%A3o-com-que-frequ%C3%AAncia-o-ic-acerta"><i class="fa fa-check"></i><b>7.5</b> Simulação: com que frequência o IC acerta?</a></li>
+<li class="chapter" data-level="7.6" data-path="inferencia.html"><a href="inferencia.html#e-entre-campos-pol%C3%ADticos"><i class="fa fa-check"></i><b>7.6</b> E entre campos políticos?</a></li>
+<li class="chapter" data-level="7.7" data-path="inferencia.html"><a href="inferencia.html#o-que-os-n%C3%BAmeros-dizem"><i class="fa fa-check"></i><b>7.7</b> O que os números dizem</a></li>
+</ul></li>
+<li class="chapter" data-level="8" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html"><i class="fa fa-check"></i><b>8</b> Reprodutibilidade (MLOps)</a>
+<ul>
+<li class="chapter" data-level="8.1" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#o-que-precisa-ser-versionado"><i class="fa fa-check"></i><b>8.1</b> O que precisa ser versionado?</a></li>
+<li class="chapter" data-level="8.2" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#um-pipeline-declarativo-com-targets"><i class="fa fa-check"></i><b>8.2</b> Um pipeline declarativo com <code>targets</code></a></li>
+<li class="chapter" data-level="8.3" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#r-e-python-duas-trilhas-os-mesmos-resultados"><i class="fa fa-check"></i><b>8.3</b> R e Python: duas trilhas, os mesmos resultados</a></li>
+<li class="chapter" data-level="8.4" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#drift-quando-o-instrumento-muda-sozinho"><i class="fa fa-check"></i><b>8.4</b> <em>Drift</em>: quando o instrumento muda sozinho</a></li>
+<li class="chapter" data-level="8.5" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#c%C3%B3digo-gerado-por-ia"><i class="fa fa-check"></i><b>8.5</b> Código gerado por IA</a></li>
+</ul></li>
+<li class="chapter" data-level="9" data-path="etica.html"><a href="etica.html"><i class="fa fa-check"></i><b>9</b> Ética, limites e debate</a>
+<ul>
+<li class="chapter" data-level="9.1" data-path="etica.html"><a href="etica.html#elei%C3%A7%C3%B5es-de-2026-regras-do-tse"><i class="fa fa-check"></i><b>9.1</b> Eleições de 2026: regras do TSE</a></li>
+<li class="chapter" data-level="9.2" data-path="etica.html"><a href="etica.html#o-marco-legal-da-ia-pl-23382023"><i class="fa fa-check"></i><b>9.2</b> O Marco Legal da IA: PL 2338/2023</a></li>
+<li class="chapter" data-level="9.3" data-path="etica.html"><a href="etica.html#o-que-o-corpus-n%C3%A3o-pode-mostrar"><i class="fa fa-check"></i><b>9.3</b> O que o corpus não pode mostrar</a></li>
+<li class="chapter" data-level="9.4" data-path="etica.html"><a href="etica.html#quando-n%C3%A3o-usar-um-llm"><i class="fa fa-check"></i><b>9.4</b> Quando <strong>não</strong> usar um LLM</a></li>
+<li class="chapter" data-level="9.5" data-path="etica.html"><a href="etica.html#para-debater"><i class="fa fa-check"></i><b>9.5</b> Para debater</a></li>
+<li class="chapter" data-level="9.6" data-path="etica.html"><a href="etica.html#mensagem-final"><i class="fa fa-check"></i><b>9.6</b> Mensagem final</a></li>
+</ul></li>
+<li class="appendix"><span><b>Apêndices</b></span></li>
+<li class="chapter" data-level="A" data-path="checklist.html"><a href="checklist.html"><i class="fa fa-check"></i><b>A</b> Checklist: usar um LLM como instrumento de medição</a>
+<ul>
+<li class="chapter" data-level="A.0.1" data-path="checklist.html"><a href="checklist.html#a.-antes-de-anotar"><i class="fa fa-check"></i><b>A.0.1</b> A. Antes de anotar</a></li>
+<li class="chapter" data-level="A.0.2" data-path="checklist.html"><a href="checklist.html#b.-durante-a-anota%C3%A7%C3%A3o"><i class="fa fa-check"></i><b>A.0.2</b> B. Durante a anotação</a></li>
+<li class="chapter" data-level="A.0.3" data-path="checklist.html"><a href="checklist.html#c.-valida%C3%A7%C3%A3o"><i class="fa fa-check"></i><b>A.0.3</b> C. Validação</a></li>
+<li class="chapter" data-level="A.0.4" data-path="checklist.html"><a href="checklist.html#d.-infer%C3%AAncia"><i class="fa fa-check"></i><b>A.0.4</b> D. Inferência</a></li>
+<li class="chapter" data-level="A.0.5" data-path="checklist.html"><a href="checklist.html#e.-reprodutibilidade-mlops"><i class="fa fa-check"></i><b>A.0.5</b> E. Reprodutibilidade (MLOps)</a></li>
+<li class="chapter" data-level="A.0.6" data-path="checklist.html"><a href="checklist.html#f.-quando-n%C3%A3o-usar-um-llm"><i class="fa fa-check"></i><b>A.0.6</b> F. Quando NÃO usar um LLM</a></li>
+</ul></li>
+<li class="chapter" data-level="B" data-path="prompts.html"><a href="prompts.html"><i class="fa fa-check"></i><b>B</b> Prompts completos</a>
+<ul>
+<li class="chapter" data-level="" data-path="prompts.html"><a href="prompts.html#prompt-v1"><i class="fa fa-check"></i>Prompt v1</a></li>
+<li class="chapter" data-level="" data-path="prompts.html"><a href="prompts.html#prompt-v2"><i class="fa fa-check"></i>Prompt v2</a></li>
+<li class="chapter" data-level="" data-path="prompts.html"><a href="prompts.html#prompt-v3"><i class="fa fa-check"></i>Prompt v3</a></li>
+</ul></li>
+<li class="chapter" data-level="C" data-path="reproduzir.html"><a href="reproduzir.html"><i class="fa fa-check"></i><b>C</b> Como reproduzir</a>
+<ul>
+<li class="chapter" data-level="C.1" data-path="reproduzir.html"><a href="reproduzir.html#sem-llm-e-sem-internet-como-em-sala"><i class="fa fa-check"></i><b>C.1</b> Sem LLM e sem internet (como em sala)</a></li>
+<li class="chapter" data-level="C.2" data-path="reproduzir.html"><a href="reproduzir.html#refazendo-a-coleta-e-a-anota%C3%A7%C3%A3o"><i class="fa fa-check"></i><b>C.2</b> Refazendo a coleta e a anotação</a></li>
+<li class="chapter" data-level="C.3" data-path="reproduzir.html"><a href="reproduzir.html#este-livro-e-os-slides"><i class="fa fa-check"></i><b>C.3</b> Este livro e os slides</a></li>
+<li class="chapter" data-level="C.4" data-path="reproduzir.html"><a href="reproduzir.html#estrutura-do-material"><i class="fa fa-check"></i><b>C.4</b> Estrutura do material</a></li>
+<li class="chapter" data-level="C.5" data-path="reproduzir.html"><a href="reproduzir.html#ambiente-usado-nos-resultados"><i class="fa fa-check"></i><b>C.5</b> Ambiente usado nos resultados</a></li>
+</ul></li>
+<li class="chapter" data-level="D" data-path="declaracao-ia.html"><a href="declaracao-ia.html"><i class="fa fa-check"></i><b>D</b> Declaração de uso de inteligência artificial e responsabilidade</a>
+<ul>
+<li class="chapter" data-level="D.1" data-path="declaracao-ia.html"><a href="declaracao-ia.html#autoria"><i class="fa fa-check"></i><b>D.1</b> Autoria</a></li>
+<li class="chapter" data-level="D.2" data-path="declaracao-ia.html"><a href="declaracao-ia.html#identifica%C3%A7%C3%A3o-da-ferramenta"><i class="fa fa-check"></i><b>D.2</b> Identificação da ferramenta</a></li>
+<li class="chapter" data-level="D.3" data-path="declaracao-ia.html"><a href="declaracao-ia.html#o-que-a-ia-fez"><i class="fa fa-check"></i><b>D.3</b> O que a IA fez</a></li>
+<li class="chapter" data-level="D.4" data-path="declaracao-ia.html"><a href="declaracao-ia.html#o-que-coube-ao-autor-humano"><i class="fa fa-check"></i><b>D.4</b> O que coube ao autor humano</a></li>
+<li class="chapter" data-level="D.5" data-path="declaracao-ia.html"><a href="declaracao-ia.html#responsabilidade"><i class="fa fa-check"></i><b>D.5</b> Responsabilidade</a></li>
+<li class="chapter" data-level="D.6" data-path="declaracao-ia.html"><a href="declaracao-ia.html#dois-pap%C3%A9is-diferentes-para-a-ia"><i class="fa fa-check"></i><b>D.6</b> Dois papéis diferentes para a IA</a></li>
+<li class="chapter" data-level="D.7" data-path="declaracao-ia.html"><a href="declaracao-ia.html#por-que-esta-declara%C3%A7%C3%A3o-existe"><i class="fa fa-check"></i><b>D.7</b> Por que esta declaração existe</a></li>
+</ul></li>
+<li class="chapter" data-level="" data-path="referencias.html"><a href="referencias.html"><i class="fa fa-check"></i>Referências</a></li>
+<li class="divider"></li>
+<li class="toc-sub"><strong>Jodavid Ferreira</strong> · DE/UFPE<br>coautoria: Claude Opus 5.5 (IA)</li>
+<li class="toc-sub">Texto: <a href="https://creativecommons.org/licenses/by/4.0/deed.pt-br" target="_blank">CC BY 4.0</a> · Código: <a href="https://opensource.org/license/mit" target="_blank">MIT</a></li>
+<li class="toc-links"><a href="ia-instrumento-medicao.pdf" target="_blank">PDF</a><a href="slides/slides.html" target="_blank">Slides</a><a href="material/minicurso_IA_medicao.zip">Material .zip</a></li>
+
+</ul>
+
+      </nav>
+    </div>
+
+    <div class="book-body">
+      <div class="body-inner">
+        <div class="book-header" role="navigation">
+          <h1>
+            <i class="fa fa-circle-o-notch fa-spin"></i><a href="./">Inteligência Artificial como Instrumento de Medição</a>
+          </h1>
+        </div>
+
+        <div class="page-wrapper" tabindex="-1" role="main">
+          <div class="page-inner">
+
+            <section class="normal" id="section-">
+<div id="page-not-found" class="section level1">
+<h1>Page not found</h1>
+<p>The page you requested cannot be found (perhaps it was moved or renamed).</p>
+<p>You may want to try searching to find the page's new location, or use
+the table of contents to find the page you are looking for.</p>
+</div>
+            </section>
+
+          </div>
+        </div>
+      </div>
+
+
+    </div>
+  </div>
+<script src="assets/gitbook-2.6.7/js/app.min.js"></script>
+<script src="assets/gitbook-2.6.7/js/clipboard.min.js"></script>
+<script src="assets/gitbook-2.6.7/js/plugin-search.js"></script>
+<script src="assets/gitbook-2.6.7/js/plugin-sharing.js"></script>
+<script src="assets/gitbook-2.6.7/js/plugin-fontsettings.js"></script>
+<script src="assets/gitbook-2.6.7/js/plugin-bookdown.js"></script>
+<script src="assets/gitbook-2.6.7/js/jquery.highlight.js"></script>
+<script src="assets/gitbook-2.6.7/js/plugin-clipboard.js"></script>
+<script>
+gitbook.require(["gitbook"], function(gitbook) {
+gitbook.start({
+  "sharing": null,
+  "fontsettings": {
+    "theme": "white",
+    "family": "sans",
+    "size": 2
+  },
+  "edit": null,
+  "history": {
+    "link": null,
+    "text": null
+  },
+  "view": {
+    "link": null,
+    "text": null
+  },
+  "download": ["ia-instrumento-medicao.pdf"],
+  "search": {
+    "engine": "fuse",
+    "options": null
+  },
+  "toc": {
+    "collapse": "section"
+  },
+  "info": false
+});
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    var src = "true";
+    if (src === "" || src === "true") src = "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/latest.js?config=TeX-MML-AM_CHTML";
+    if (location.protocol !== "file:")
+      if (/^https?:/.test(src))
+        src = src.replace(/^https?:/, '');
+    script.src = src;
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+</body>
+
+</html>

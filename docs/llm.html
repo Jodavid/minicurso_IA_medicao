@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xml:lang="pt-BR">
+<head>
+
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>Capítulo 5 O LLM como instrumento | Inteligência Artificial como Instrumento de Medição</title>
+  <meta name="description" content="Livro do minicurso ‘IA como Instrumento de Medição’ (II DataPOL/UFPE, 2026): do dado legislativo bruto à inferência com rótulos produzidos por LLMs, em R e Python." />
+  <meta name="generator" content="bookdown 0.48 and GitBook 2.6.7" />
+
+  <meta property="og:title" content="Capítulo 5 O LLM como instrumento | Inteligência Artificial como Instrumento de Medição" />
+  <meta property="og:type" content="book" />
+  <meta property="og:image" content="https://jodavid.github.io/minicurso-ia-medicao/capa/capa.png" />
+  <meta property="og:description" content="Livro do minicurso ‘IA como Instrumento de Medição’ (II DataPOL/UFPE, 2026): do dado legislativo bruto à inferência com rótulos produzidos por LLMs, em R e Python." />
+  
+
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Capítulo 5 O LLM como instrumento | Inteligência Artificial como Instrumento de Medição" />
+  
+  <meta name="twitter:description" content="Livro do minicurso ‘IA como Instrumento de Medição’ (II DataPOL/UFPE, 2026): do dado legislativo bruto à inferência com rótulos produzidos por LLMs, em R e Python." />
+  <meta name="twitter:image" content="https://jodavid.github.io/minicurso-ia-medicao/capa/capa.png" />
+
+<meta name="author" content="Prof. Dr. Jodavid Ferreira (Departamento de Estatística, UFPE)" />
+<meta name="author" content="Coautoria: Claude Opus 5.5 (modelo de inteligência artificial da Anthropic)" />
+
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  
+  
+<link rel="prev" href="baselines.html"/>
+<link rel="next" href="validacao.html"/>
+<script src="assets/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
+<link href="assets/gitbook-2.6.7/css/style.css" rel="stylesheet" />
+<link href="assets/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
+<link href="assets/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
+<link href="assets/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
+<link href="assets/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
+<link href="assets/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
+<link href="assets/gitbook-2.6.7/css/plugin-clipboard.css" rel="stylesheet" />
+
+
+
+
+
+
+
+
+<link href="assets/anchor-sections-1.1.0/anchor-sections.css" rel="stylesheet" />
+<link href="assets/anchor-sections-1.1.0/anchor-sections-hash.css" rel="stylesheet" />
+<script src="assets/anchor-sections-1.1.0/anchor-sections.js"></script>
+
+
+<style type="text/css">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+<style type="text/css">
+  
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+</style>
+<style type="text/css">
+/* Used with Pandoc 2.11+ new --citeproc when CSL is used */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}
+</style>
+
+<link rel="stylesheet" href="estilo.css" type="text/css" />
+</head>
+
+<body>
+
+
+
+  <div class="book without-animation with-summary font-size-2 font-family-1" data-basepath=".">
+
+    <div class="book-summary">
+      <nav role="navigation">
+
+<ul class="summary">
+<li class="toc-titulo"><a href="./">IA como Instrumento de Medição</a></li>
+<li class="toc-sub">II DataPOL · UFPE · 2026</li>
+
+<li class="divider"></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i>Apresentação</a>
+<ul>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#o-estudo-de-caso"><i class="fa fa-check"></i>O estudo de caso</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#a-quem-se-destina"><i class="fa fa-check"></i>A quem se destina</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#como-usar-este-livro"><i class="fa fa-check"></i>Como usar este livro</a>
+<ul>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#dois-formatos-para-o-minicurso"><i class="fa fa-check"></i>Dois formatos para o minicurso</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#material"><i class="fa fa-check"></i>Material</a></li>
+</ul></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#autoria-e-uso-de-intelig%C3%AAncia-artificial"><i class="fa fa-check"></i>Autoria e uso de inteligência artificial</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#como-citar"><i class="fa fa-check"></i>Como citar</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#licen%C3%A7a"><i class="fa fa-check"></i>Licença</a></li>
+</ul></li>
+<li class="chapter" data-level="1" data-path="intro.html"><a href="intro.html"><i class="fa fa-check"></i><b>1</b> Quem mede a régua?</a>
+<ul>
+<li class="chapter" data-level="1.1" data-path="intro.html"><a href="intro.html#duas-perguntas"><i class="fa fa-check"></i><b>1.1</b> Duas perguntas</a></li>
+<li class="chapter" data-level="1.2" data-path="intro.html"><a href="intro.html#por-que-agora"><i class="fa fa-check"></i><b>1.2</b> Por que agora?</a></li>
+<li class="chapter" data-level="1.3" data-path="intro.html"><a href="intro.html#a-fase-atual-da-estat%C3%ADstica"><i class="fa fa-check"></i><b>1.3</b> A “fase atual” da estatística</a></li>
+<li class="chapter" data-level="1.4" data-path="intro.html"><a href="intro.html#o-caminho-deste-livro"><i class="fa fa-check"></i><b>1.4</b> O caminho deste livro</a></li>
+</ul></li>
+<li class="chapter" data-level="2" data-path="dados.html"><a href="dados.html"><i class="fa fa-check"></i><b>2</b> Dados legislativos</a>
+<ul>
+<li class="chapter" data-level="2.1" data-path="dados.html"><a href="dados.html#as-apis-de-dados-abertos"><i class="fa fa-check"></i><b>2.1</b> As APIs de dados abertos</a></li>
+<li class="chapter" data-level="2.2" data-path="dados.html"><a href="dados.html#a-coleta-tamb%C3%A9m-%C3%A9-medi%C3%A7%C3%A3o"><i class="fa fa-check"></i><b>2.2</b> A coleta também é medição</a></li>
+<li class="chapter" data-level="2.3" data-path="dados.html"><a href="dados.html#mao-dados"><i class="fa fa-check"></i><b>2.3</b> Mão na massa: do JSON da API ao corpus</a>
+<ul>
+<li class="chapter" data-level="2.3.1" data-path="dados.html"><a href="dados.html#uma-chamada-%C3%A0-api"><i class="fa fa-check"></i><b>2.3.1</b> Uma chamada à API</a></li>
+<li class="chapter" data-level="2.3.2" data-path="dados.html"><a href="dados.html#partido-do-senado-e-limpeza-da-ementa"><i class="fa fa-check"></i><b>2.3.2</b> Partido do Senado e limpeza da ementa</a></li>
+<li class="chapter" data-level="2.3.3" data-path="dados.html"><a href="dados.html#o-corpus-congelado"><i class="fa fa-check"></i><b>2.3.3</b> O corpus congelado</a></li>
+<li class="chapter" data-level="2.3.4" data-path="dados.html"><a href="dados.html#o-campo-pol%C3%ADtico"><i class="fa fa-check"></i><b>2.3.4</b> O campo político</a></li>
+<li class="chapter" data-level="2.3.5" data-path="dados.html"><a href="dados.html#a-explos%C3%A3o-legislativa-em-gr%C3%A1fico"><i class="fa fa-check"></i><b>2.3.5</b> A explosão legislativa, em gráfico</a></li>
+<li class="chapter" data-level="2.3.6" data-path="dados.html"><a href="dados.html#a-recoleta-o-que-muda-em-um-m%C3%AAs"><i class="fa fa-check"></i><b>2.3.6</b> A recoleta: o que muda em um mês</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="3" data-path="codificacao.html"><a href="codificacao.html"><i class="fa fa-check"></i><b>3</b> Codificar é medir</a>
+<ul>
+<li class="chapter" data-level="3.1" data-path="codificacao.html"><a href="codificacao.html#o-livro-de-c%C3%B3digos"><i class="fa fa-check"></i><b>3.1</b> O livro de códigos</a>
+<ul>
+<li class="chapter" data-level="3.1.1" data-path="codificacao.html"><a href="codificacao.html#regras-de-decis%C3%A3o"><i class="fa fa-check"></i><b>3.1.1</b> Regras de decisão</a></li>
+</ul></li>
+<li class="chapter" data-level="3.2" data-path="codificacao.html"><a href="codificacao.html#referencia"><i class="fa fa-check"></i><b>3.2</b> A codificação de referência: quem fez e como</a></li>
+<li class="chapter" data-level="3.3" data-path="codificacao.html"><a href="codificacao.html#classes"><i class="fa fa-check"></i><b>3.3</b> Quantas ementas de cada classe</a>
+<ul>
+<li class="chapter" data-level="3.3.1" data-path="codificacao.html"><a href="codificacao.html#o-que-foi-classificado-como-outro"><i class="fa fa-check"></i><b>3.3.1</b> O que foi classificado como OUTRO</a></li>
+</ul></li>
+<li class="chapter" data-level="3.4" data-path="codificacao.html"><a href="codificacao.html#a-amostra-ouro"><i class="fa fa-check"></i><b>3.4</b> A amostra-ouro</a></li>
+<li class="chapter" data-level="3.5" data-path="codificacao.html"><a href="codificacao.html#quanto-n%C3%B3s-concordamos-o-teto-humano"><i class="fa fa-check"></i><b>3.5</b> Quanto nós concordamos? O teto humano</a></li>
+<li class="chapter" data-level="3.6" data-path="codificacao.html"><a href="codificacao.html#mao-codificacao"><i class="fa fa-check"></i><b>3.6</b> Mão na massa: amostra-ouro e concordância</a>
+<ul>
+<li class="chapter" data-level="3.6.1" data-path="codificacao.html"><a href="codificacao.html#o-sorteio-%C3%A9-reprodut%C3%ADvel"><i class="fa fa-check"></i><b>3.6.1</b> O sorteio é reprodutível</a></li>
+<li class="chapter" data-level="3.6.2" data-path="codificacao.html"><a href="codificacao.html#quantos-de-cada-classe-no-corpus-todo"><i class="fa fa-check"></i><b>3.6.2</b> Quantos de cada classe, no corpus todo</a></li>
+<li class="chapter" data-level="3.6.3" data-path="codificacao.html"><a href="codificacao.html#o-que-h%C3%A1-na-amostra-ouro"><i class="fa fa-check"></i><b>3.6.3</b> O que há na amostra-ouro</a></li>
+<li class="chapter" data-level="3.6.4" data-path="codificacao.html"><a href="codificacao.html#concord%C3%A2ncia-entre-codificadores"><i class="fa fa-check"></i><b>3.6.4</b> Concordância entre codificadores</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="4" data-path="baselines.html"><a href="baselines.html"><i class="fa fa-check"></i><b>4</b> Baselines: quanto se acerta sem LLM?</a>
+<ul>
+<li class="chapter" data-level="4.1" data-path="baselines.html"><a href="baselines.html#dicion%C3%A1rio"><i class="fa fa-check"></i><b>4.1</b> Dicionário</a></li>
+<li class="chapter" data-level="4.2" data-path="baselines.html"><a href="baselines.html#tf-idf-e-regress%C3%A3o-log%C3%ADstica"><i class="fa fa-check"></i><b>4.2</b> TF-IDF e regressão logística</a></li>
+<li class="chapter" data-level="4.3" data-path="baselines.html"><a href="baselines.html#resultados"><i class="fa fa-check"></i><b>4.3</b> Resultados</a></li>
+<li class="chapter" data-level="4.4" data-path="baselines.html"><a href="baselines.html#o-mesmo-m%C3%A9todo-implementa%C3%A7%C3%B5es-diferentes"><i class="fa fa-check"></i><b>4.4</b> O “mesmo” método, implementações diferentes</a></li>
+<li class="chapter" data-level="4.5" data-path="baselines.html"><a href="baselines.html#mao-baselines"><i class="fa fa-check"></i><b>4.5</b> Mão na massa: dicionário e TF-IDF</a>
+<ul>
+<li class="chapter" data-level="4.5.1" data-path="baselines.html"><a href="baselines.html#preparar-os-dados"><i class="fa fa-check"></i><b>4.5.1</b> Preparar os dados</a></li>
+<li class="chapter" data-level="4.5.2" data-path="baselines.html"><a href="baselines.html#o-dicion%C3%A1rio-em-a%C3%A7%C3%A3o"><i class="fa fa-check"></i><b>4.5.2</b> O dicionário em ação</a></li>
+<li class="chapter" data-level="4.5.3" data-path="baselines.html"><a href="baselines.html#desempenho-do-dicion%C3%A1rio-na-amostra-ouro"><i class="fa fa-check"></i><b>4.5.3</b> Desempenho do dicionário na amostra-ouro</a></li>
+<li class="chapter" data-level="4.5.4" data-path="baselines.html"><a href="baselines.html#tf-idf-e-regress%C3%A3o-log%C3%ADstica-com-valida%C3%A7%C3%A3o-cruzada"><i class="fa fa-check"></i><b>4.5.4</b> TF-IDF e regressão logística com validação cruzada</a></li>
+<li class="chapter" data-level="4.5.5" data-path="baselines.html"><a href="baselines.html#a-tabela-final"><i class="fa fa-check"></i><b>4.5.5</b> A tabela final</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="5" data-path="llm.html"><a href="llm.html"><i class="fa fa-check"></i><b>5</b> O LLM como instrumento</a>
+<ul>
+<li class="chapter" data-level="5.1" data-path="llm.html"><a href="llm.html#um-modelo-brasileiro-aberto-e-local"><i class="fa fa-check"></i><b>5.1</b> Um modelo brasileiro, aberto e local</a></li>
+<li class="chapter" data-level="5.2" data-path="llm.html"><a href="llm.html#o-prompt-%C3%A9-parte-do-instrumento"><i class="fa fa-check"></i><b>5.2</b> O prompt é parte do instrumento</a></li>
+<li class="chapter" data-level="5.3" data-path="llm.html"><a href="llm.html#cache-as-respostas-do-llm-s%C3%A3o-dados"><i class="fa fa-check"></i><b>5.3</b> Cache: as respostas do LLM são dados</a></li>
+<li class="chapter" data-level="5.4" data-path="llm.html"><a href="llm.html#falhas-de-formato"><i class="fa fa-check"></i><b>5.4</b> Falhas de formato</a></li>
+<li class="chapter" data-level="5.5" data-path="llm.html"><a href="llm.html#mao-llm"><i class="fa fa-check"></i><b>5.5</b> Mão na massa: chamar o modelo, guardar e ler o cache</a>
+<ul>
+<li class="chapter" data-level="5.5.1" data-path="llm.html"><a href="llm.html#o-instrumento-por-escrito"><i class="fa fa-check"></i><b>5.5.1</b> O instrumento, por escrito</a></li>
+<li class="chapter" data-level="5.5.2" data-path="llm.html"><a href="llm.html#o-prompt-e-sua-impress%C3%A3o-digital"><i class="fa fa-check"></i><b>5.5.2</b> O prompt e sua impressão digital</a></li>
+<li class="chapter" data-level="5.5.3" data-path="llm.html"><a href="llm.html#uma-chamada-ao-modelo"><i class="fa fa-check"></i><b>5.5.3</b> Uma chamada ao modelo</a></li>
+<li class="chapter" data-level="5.5.4" data-path="llm.html"><a href="llm.html#extrair-o-r%C3%B3tulo-de-respostas-imperfeitas"><i class="fa fa-check"></i><b>5.5.4</b> Extrair o rótulo de respostas imperfeitas</a></li>
+<li class="chapter" data-level="5.5.5" data-path="llm.html"><a href="llm.html#ler-o-cache"><i class="fa fa-check"></i><b>5.5.5</b> Ler o cache</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="6" data-path="validacao.html"><a href="validacao.html"><i class="fa fa-check"></i><b>6</b> Validação: o instrumento mede o que diz medir?</a>
+<ul>
+<li class="chapter" data-level="6.1" data-path="validacao.html"><a href="validacao.html#validade-concord%C3%A2ncia-com-a-amostra-ouro"><i class="fa fa-check"></i><b>6.1</b> Validade: concordância com a amostra-ouro</a></li>
+<li class="chapter" data-level="6.2" data-path="validacao.html"><a href="validacao.html#onde-o-instrumento-erra"><i class="fa fa-check"></i><b>6.2</b> Onde o instrumento erra</a></li>
+<li class="chapter" data-level="6.3" data-path="validacao.html"><a href="validacao.html#vi%C3%A9s-diferencial"><i class="fa fa-check"></i><b>6.3</b> Viés diferencial</a></li>
+<li class="chapter" data-level="6.4" data-path="validacao.html"><a href="validacao.html#confiabilidade"><i class="fa fa-check"></i><b>6.4</b> Confiabilidade</a></li>
+<li class="chapter" data-level="6.5" data-path="validacao.html"><a href="validacao.html#a-vari%C3%A1vel-eleitoral"><i class="fa fa-check"></i><b>6.5</b> A variável eleitoral</a></li>
+<li class="chapter" data-level="6.6" data-path="validacao.html"><a href="validacao.html#humano-humano"><i class="fa fa-check"></i><b>6.6</b> Humano × humano</a></li>
+<li class="chapter" data-level="6.7" data-path="validacao.html"><a href="validacao.html#mao-validacao"><i class="fa fa-check"></i><b>6.7</b> Mão na massa: validar o instrumento</a>
+<ul>
+<li class="chapter" data-level="6.7.1" data-path="validacao.html"><a href="validacao.html#juntar-o-llm-%C3%A0-amostra-ouro"><i class="fa fa-check"></i><b>6.7.1</b> Juntar o LLM à amostra-ouro</a></li>
+<li class="chapter" data-level="6.7.2" data-path="validacao.html"><a href="validacao.html#validade-com-intervalo-bootstrap"><i class="fa fa-check"></i><b>6.7.2</b> Validade com intervalo bootstrap</a></li>
+<li class="chapter" data-level="6.7.3" data-path="validacao.html"><a href="validacao.html#onde-o-melhor-instrumento-erra"><i class="fa fa-check"></i><b>6.7.3</b> Onde o melhor instrumento erra</a></li>
+<li class="chapter" data-level="6.7.4" data-path="validacao.html"><a href="validacao.html#vi%C3%A9s-diferencial-por-campo-pol%C3%ADtico"><i class="fa fa-check"></i><b>6.7.4</b> Viés diferencial por campo político</a></li>
+<li class="chapter" data-level="6.7.5" data-path="validacao.html"><a href="validacao.html#confiabilidade-sementes-e-prompts"><i class="fa fa-check"></i><b>6.7.5</b> Confiabilidade: sementes e prompts</a></li>
+<li class="chapter" data-level="6.7.6" data-path="validacao.html"><a href="validacao.html#a-vari%C3%A1vel-eleitoral-1"><i class="fa fa-check"></i><b>6.7.6</b> A variável eleitoral</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="7" data-path="inferencia.html"><a href="inferencia.html"><i class="fa fa-check"></i><b>7</b> Inferência com rótulos imperfeitos</a>
+<ul>
+<li class="chapter" data-level="7.1" data-path="inferencia.html"><a href="inferencia.html#duas-solu%C3%A7%C3%B5es-ruins"><i class="fa fa-check"></i><b>7.1</b> Duas soluções ruins</a></li>
+<li class="chapter" data-level="7.2" data-path="inferencia.html"><a href="inferencia.html#prediction-powered-inference"><i class="fa fa-check"></i><b>7.2</b> <em>Prediction-Powered Inference</em></a></li>
+<li class="chapter" data-level="7.3" data-path="inferencia.html"><a href="inferencia.html#ppi"><i class="fa fa-check"></i><b>7.3</b> PPI++</a></li>
+<li class="chapter" data-level="7.4" data-path="inferencia.html"><a href="inferencia.html#que-propor%C3%A7%C3%A3o-dos-projetos-quer-punir"><i class="fa fa-check"></i><b>7.4</b> Que proporção dos projetos quer PUNIR?</a></li>
+<li class="chapter" data-level="7.5" data-path="inferencia.html"><a href="inferencia.html#simula%C3%A7%C3%A3o-com-que-frequ%C3%AAncia-o-ic-acerta"><i class="fa fa-check"></i><b>7.5</b> Simulação: com que frequência o IC acerta?</a></li>
+<li class="chapter" data-level="7.6" data-path="inferencia.html"><a href="inferencia.html#e-entre-campos-pol%C3%ADticos"><i class="fa fa-check"></i><b>7.6</b> E entre campos políticos?</a></li>
+<li class="chapter" data-level="7.7" data-path="inferencia.html"><a href="inferencia.html#o-que-os-n%C3%BAmeros-dizem"><i class="fa fa-check"></i><b>7.7</b> O que os números dizem</a></li>
+<li class="chapter" data-level="7.8" data-path="inferencia.html"><a href="inferencia.html#mao-inferencia"><i class="fa fa-check"></i><b>7.8</b> Mão na massa: os quatro estimadores, passo a passo</a>
+<ul>
+<li class="chapter" data-level="7.8.1" data-path="inferencia.html"><a href="inferencia.html#montar-y-e-f"><i class="fa fa-check"></i><b>7.8.1</b> Montar <span class="math inline">\(Y\)</span> e <span class="math inline">\(f\)</span></a></li>
+<li class="chapter" data-level="7.8.2" data-path="inferencia.html"><a href="inferencia.html#cada-estimador-%C3%A0-m%C3%A3o"><i class="fa fa-check"></i><b>7.8.2</b> Cada estimador, à mão</a></li>
+<li class="chapter" data-level="7.8.3" data-path="inferencia.html"><a href="inferencia.html#com-intervalos-de-confian%C3%A7a"><i class="fa fa-check"></i><b>7.8.3</b> Com intervalos de confiança</a></li>
+<li class="chapter" data-level="7.8.4" data-path="inferencia.html"><a href="inferencia.html#a-simula%C3%A7%C3%A3o-de-cobertura"><i class="fa fa-check"></i><b>7.8.4</b> A simulação de cobertura</a></li>
+<li class="chapter" data-level="7.8.5" data-path="inferencia.html"><a href="inferencia.html#por-campo-pol%C3%ADtico"><i class="fa fa-check"></i><b>7.8.5</b> Por campo político</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="8" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html"><i class="fa fa-check"></i><b>8</b> Reprodutibilidade (MLOps)</a>
+<ul>
+<li class="chapter" data-level="8.1" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#o-que-precisa-ser-versionado"><i class="fa fa-check"></i><b>8.1</b> O que precisa ser versionado?</a></li>
+<li class="chapter" data-level="8.2" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#um-pipeline-declarativo-com-targets"><i class="fa fa-check"></i><b>8.2</b> Um pipeline declarativo com <code>targets</code></a></li>
+<li class="chapter" data-level="8.3" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#r-e-python-duas-trilhas-os-mesmos-resultados"><i class="fa fa-check"></i><b>8.3</b> R e Python: duas trilhas, os mesmos resultados</a></li>
+<li class="chapter" data-level="8.4" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#drift-quando-o-instrumento-muda-sozinho"><i class="fa fa-check"></i><b>8.4</b> <em>Drift</em>: quando o instrumento muda sozinho</a></li>
+<li class="chapter" data-level="8.5" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#c%C3%B3digo-gerado-por-ia"><i class="fa fa-check"></i><b>8.5</b> Código gerado por IA</a></li>
+<li class="chapter" data-level="8.6" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#mao-reprodutibilidade"><i class="fa fa-check"></i><b>8.6</b> Mão na massa: verificar a reprodutibilidade</a>
+<ul>
+<li class="chapter" data-level="8.6.1" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#o-pipeline-sem-execut%C3%A1-lo"><i class="fa fa-check"></i><b>8.6.1</b> O pipeline, sem executá-lo</a></li>
+<li class="chapter" data-level="8.6.2" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#o-cache-confere-com-os-prompts"><i class="fa fa-check"></i><b>8.6.2</b> O cache confere com os prompts?</a></li>
+<li class="chapter" data-level="8.6.3" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#temperatura-0-%C3%A9-determin%C3%ADstica-a-repeti%C3%A7%C3%A3o-de-12112026"><i class="fa fa-check"></i><b>8.6.3</b> Temperatura 0 é determinística? A repetição de 12/11/2026</a></li>
+<li class="chapter" data-level="8.6.4" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#r-e-python-chegam-aos-mesmos-n%C3%BAmeros"><i class="fa fa-check"></i><b>8.6.4</b> R e Python chegam aos mesmos números?</a></li>
+<li class="chapter" data-level="8.6.5" data-path="reprodutibilidade.html"><a href="reprodutibilidade.html#o-ambiente"><i class="fa fa-check"></i><b>8.6.5</b> O ambiente</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="9" data-path="etica.html"><a href="etica.html"><i class="fa fa-check"></i><b>9</b> Ética, limites e debate</a>
+<ul>
+<li class="chapter" data-level="9.1" data-path="etica.html"><a href="etica.html#elei%C3%A7%C3%B5es-de-2026-regras-do-tse"><i class="fa fa-check"></i><b>9.1</b> Eleições de 2026: regras do TSE</a></li>
+<li class="chapter" data-level="9.2" data-path="etica.html"><a href="etica.html#o-marco-legal-da-ia-pl-23382023"><i class="fa fa-check"></i><b>9.2</b> O Marco Legal da IA: PL 2338/2023</a></li>
+<li class="chapter" data-level="9.3" data-path="etica.html"><a href="etica.html#o-que-o-corpus-n%C3%A3o-pode-mostrar"><i class="fa fa-check"></i><b>9.3</b> O que o corpus não pode mostrar</a></li>
+<li class="chapter" data-level="9.4" data-path="etica.html"><a href="etica.html#quando-n%C3%A3o-usar-um-llm"><i class="fa fa-check"></i><b>9.4</b> Quando <strong>não</strong> usar um LLM</a></li>
+<li class="chapter" data-level="9.5" data-path="etica.html"><a href="etica.html#para-debater"><i class="fa fa-check"></i><b>9.5</b> Para debater</a></li>
+<li class="chapter" data-level="9.6" data-path="etica.html"><a href="etica.html#mensagem-final"><i class="fa fa-check"></i><b>9.6</b> Mensagem final</a></li>
+</ul></li>
+<li class="appendix"><span><b>Apêndices</b></span></li>
+<li class="chapter" data-level="A" data-path="ambiente.html"><a href="ambiente.html"><i class="fa fa-check"></i><b>A</b> Preparando o ambiente</a>
+<ul>
+<li class="chapter" data-level="A.1" data-path="ambiente.html"><a href="ambiente.html#o-que-voc%C3%AA-precisa"><i class="fa fa-check"></i><b>A.1</b> O que você precisa</a></li>
+<li class="chapter" data-level="A.2" data-path="ambiente.html"><a href="ambiente.html#o-material"><i class="fa fa-check"></i><b>A.2</b> O material</a></li>
+<li class="chapter" data-level="A.3" data-path="ambiente.html"><a href="ambiente.html#r"><i class="fa fa-check"></i><b>A.3</b> R</a></li>
+<li class="chapter" data-level="A.4" data-path="ambiente.html"><a href="ambiente.html#python"><i class="fa fa-check"></i><b>A.4</b> Python</a>
+<ul>
+<li class="chapter" data-level="A.4.1" data-path="ambiente.html"><a href="ambiente.html#no-seu-computador"><i class="fa fa-check"></i><b>A.4.1</b> No seu computador</a></li>
+<li class="chapter" data-level="A.4.2" data-path="ambiente.html"><a href="ambiente.html#no-google-colab"><i class="fa fa-check"></i><b>A.4.2</b> No Google Colab</a></li>
+</ul></li>
+<li class="chapter" data-level="A.5" data-path="ambiente.html"><a href="ambiente.html#ollama-e-o-s5-nano-opcional"><i class="fa fa-check"></i><b>A.5</b> Ollama e o S5-nano (opcional)</a></li>
+<li class="chapter" data-level="A.6" data-path="ambiente.html"><a href="ambiente.html#qual-arquivo-roda-cada-bloco"><i class="fa fa-check"></i><b>A.6</b> Qual arquivo roda cada bloco</a></li>
+<li class="chapter" data-level="A.7" data-path="ambiente.html"><a href="ambiente.html#problemas-comuns"><i class="fa fa-check"></i><b>A.7</b> Problemas comuns</a></li>
+</ul></li>
+<li class="chapter" data-level="B" data-path="checklist.html"><a href="checklist.html"><i class="fa fa-check"></i><b>B</b> Checklist: usar um LLM como instrumento de medição</a>
+<ul>
+<li class="chapter" data-level="B.0.1" data-path="checklist.html"><a href="checklist.html#a.-antes-de-anotar"><i class="fa fa-check"></i><b>B.0.1</b> A. Antes de anotar</a></li>
+<li class="chapter" data-level="B.0.2" data-path="checklist.html"><a href="checklist.html#b.-durante-a-anota%C3%A7%C3%A3o"><i class="fa fa-check"></i><b>B.0.2</b> B. Durante a anotação</a></li>
+<li class="chapter" data-level="B.0.3" data-path="checklist.html"><a href="checklist.html#c.-valida%C3%A7%C3%A3o"><i class="fa fa-check"></i><b>B.0.3</b> C. Validação</a></li>
+<li class="chapter" data-level="B.0.4" data-path="checklist.html"><a href="checklist.html#d.-infer%C3%AAncia"><i class="fa fa-check"></i><b>B.0.4</b> D. Inferência</a></li>
+<li class="chapter" data-level="B.0.5" data-path="checklist.html"><a href="checklist.html#e.-reprodutibilidade-mlops"><i class="fa fa-check"></i><b>B.0.5</b> E. Reprodutibilidade (MLOps)</a></li>
+<li class="chapter" data-level="B.0.6" data-path="checklist.html"><a href="checklist.html#f.-quando-n%C3%A3o-usar-um-llm"><i class="fa fa-check"></i><b>B.0.6</b> F. Quando NÃO usar um LLM</a></li>
+</ul></li>
+<li class="chapter" data-level="C" data-path="prompts.html"><a href="prompts.html"><i class="fa fa-check"></i><b>C</b> Prompts completos</a>
+<ul>
+<li class="chapter" data-level="" data-path="prompts.html"><a href="prompts.html#prompt-v1"><i class="fa fa-check"></i>Prompt v1</a></li>
+<li class="chapter" data-level="" data-path="prompts.html"><a href="prompts.html#prompt-v2"><i class="fa fa-check"></i>Prompt v2</a></li>
+<li class="chapter" data-level="" data-path="prompts.html"><a href="prompts.html#prompt-v3"><i class="fa fa-check"></i>Prompt v3</a></li>
+</ul></li>
+<li class="chapter" data-level="D" data-path="reproduzir.html"><a href="reproduzir.html"><i class="fa fa-check"></i><b>D</b> Como reproduzir</a>
+<ul>
+<li class="chapter" data-level="D.1" data-path="reproduzir.html"><a href="reproduzir.html#sem-llm-e-sem-internet-como-em-sala"><i class="fa fa-check"></i><b>D.1</b> Sem LLM e sem internet (como em sala)</a></li>
+<li class="chapter" data-level="D.2" data-path="reproduzir.html"><a href="reproduzir.html#refazendo-a-coleta-e-a-anota%C3%A7%C3%A3o"><i class="fa fa-check"></i><b>D.2</b> Refazendo a coleta e a anotação</a></li>
+<li class="chapter" data-level="D.3" data-path="reproduzir.html"><a href="reproduzir.html#este-livro-e-os-slides"><i class="fa fa-check"></i><b>D.3</b> Este livro e os slides</a></li>
+<li class="chapter" data-level="D.4" data-path="reproduzir.html"><a href="reproduzir.html#estrutura-do-material"><i class="fa fa-check"></i><b>D.4</b> Estrutura do material</a></li>
+<li class="chapter" data-level="D.5" data-path="reproduzir.html"><a href="reproduzir.html#ambiente-usado-nos-resultados"><i class="fa fa-check"></i><b>D.5</b> Ambiente usado nos resultados</a></li>
+</ul></li>
+<li class="chapter" data-level="E" data-path="declaracao-ia.html"><a href="declaracao-ia.html"><i class="fa fa-check"></i><b>E</b> Declaração de uso de inteligência artificial e responsabilidade</a>
+<ul>
+<li class="chapter" data-level="E.1" data-path="declaracao-ia.html"><a href="declaracao-ia.html#autoria"><i class="fa fa-check"></i><b>E.1</b> Autoria</a></li>
+<li class="chapter" data-level="E.2" data-path="declaracao-ia.html"><a href="declaracao-ia.html#identifica%C3%A7%C3%A3o-da-ferramenta"><i class="fa fa-check"></i><b>E.2</b> Identificação da ferramenta</a></li>
+<li class="chapter" data-level="E.3" data-path="declaracao-ia.html"><a href="declaracao-ia.html#o-que-a-ia-fez"><i class="fa fa-check"></i><b>E.3</b> O que a IA fez</a></li>
+<li class="chapter" data-level="E.4" data-path="declaracao-ia.html"><a href="declaracao-ia.html#o-que-coube-ao-autor-humano"><i class="fa fa-check"></i><b>E.4</b> O que coube ao autor humano</a></li>
+<li class="chapter" data-level="E.5" data-path="declaracao-ia.html"><a href="declaracao-ia.html#responsabilidade"><i class="fa fa-check"></i><b>E.5</b> Responsabilidade</a></li>
+<li class="chapter" data-level="E.6" data-path="declaracao-ia.html"><a href="declaracao-ia.html#dois-pap%C3%A9is-diferentes-para-a-ia"><i class="fa fa-check"></i><b>E.6</b> Dois papéis diferentes para a IA</a></li>
+<li class="chapter" data-level="E.7" data-path="declaracao-ia.html"><a href="declaracao-ia.html#por-que-esta-declara%C3%A7%C3%A3o-existe"><i class="fa fa-check"></i><b>E.7</b> Por que esta declaração existe</a></li>
+</ul></li>
+<li class="chapter" data-level="" data-path="referencias.html"><a href="referencias.html"><i class="fa fa-check"></i>Referências</a></li>
+<li class="divider"></li>
+<li class="toc-sub"><strong>Jodavid Ferreira</strong> · DE/UFPE<br>coautoria: Claude Opus 5.5 (IA)</li>
+<li class="toc-sub">Texto: <a href="https://creativecommons.org/licenses/by/4.0/deed.pt-br" target="_blank">CC BY 4.0</a> · Código: <a href="https://opensource.org/license/mit" target="_blank">MIT</a></li>
+<li class="toc-links"><a href="ia-instrumento-medicao.pdf" target="_blank">PDF</a><a href="material/minicurso_IA_medicao.zip">Material .zip</a></li>
+<li class="toc-sub"><strong>Slides</strong></li>
+<li class="toc-links"><a href="slides/parte1_conceitos.html" target="_blank">Parte 1: conceitos</a><a href="slides/slides.html" target="_blank">Versão resumida</a></li>
+<li class="toc-links"><a href="slides/completo_R.html" target="_blank">Completos · R</a><a href="slides/completo_python.html" target="_blank">Completos · Python</a></li>
+
+</ul>
+
+      </nav>
+    </div>
+
+    <div class="book-body">
+      <div class="body-inner">
+        <div class="book-header" role="navigation">
+          <h1>
+            <i class="fa fa-circle-o-notch fa-spin"></i><a href="./">Inteligência Artificial como Instrumento de Medição</a>
+          </h1>
+        </div>
+
+        <div class="page-wrapper" tabindex="-1" role="main">
+          <div class="page-inner">
+
+            <section class="normal" id="section-">
+<div id="llm" class="section level1 hasAnchor" number="5">
+<h1><span class="header-section-number">Capítulo 5</span> O LLM como instrumento<a href="llm.html#llm" class="anchor-section" aria-label="Anchor link to header"></a></h1>
+<p>Neste capítulo, o LLM entra em cena. Ele não é tratado como um oráculo, mas como um <strong>instrumento</strong> cujo funcionamento precisa ser descrito com a mesma precisão com que se descreve um questionário: qual modelo, qual pergunta (prompt), quais parâmetros, quais respostas brutas.</p>
+<div id="um-modelo-brasileiro-aberto-e-local" class="section level2 hasAnchor" number="5.1">
+<h2><span class="header-section-number">5.1</span> Um modelo brasileiro, aberto e local<a href="llm.html#um-modelo-brasileiro-aberto-e-local" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>Usamos o <strong>S5-nano</strong>, da Maritaca AI, em modo <em>instruct</em>: um modelo aberto (licença Apache-2.0) de cerca de 4 bilhões de parâmetros. Três características justificam a escolha:</p>
+<ul>
+<li><strong>É um modelo brasileiro, treinado com dados em português.</strong> A Maritaca AI é uma empresa brasileira, e o S5-nano passou por um pré-treinamento adicional com textos em português. As ementas usam o vocabulário do direito e do processo legislativo brasileiros (“tipifica”, “altera o Decreto-Lei nº 2.848”, “Lei das Eleições”), e a fronteira entre PUNIR e REGULAR depende justamente dessas expressões. Um modelo que viu mais texto em português, e sobre o Brasil, tem mais chance de captar essas distinções.</li>
+<li><strong>Ele vem do Qwen.</strong> O S5-nano não foi treinado do zero: ele parte do <strong>Qwen3.5-4B</strong>, modelo aberto da Alibaba, e herda dele a arquitetura, o tokenizador e boa parte do que “sabe”. O pré-treinamento em português <strong>ajusta</strong> o modelo-base, mas não apaga o que veio antes. Para quem mede, isso tem duas consequências. Primeiro, a origem faz parte da descrição do instrumento: o S5-nano é um Qwen adaptado ao português, e vieses do modelo-base podem persistir. Segundo, ser brasileiro é uma característica do treinamento, não uma garantia de validade. Ela precisa ser medida na amostra-ouro, como em qualquer outro instrumento (Capítulo <a href="validacao.html#validacao">6</a>).</li>
+<li><strong>É aberto e pequeno.</strong> Os pesos são públicos, então qualquer pessoa pode baixar <strong>exatamente a mesma versão</strong> usada aqui, e o modelo roda numa GPU de notebook, sem custo e sem enviar os dados para fora da máquina.</li>
+</ul>
+<p>Rodamos a versão <strong>quantizada em 4 bits</strong> (formato GGUF, Q4_K_M), publicada pela própria Maritaca. Os pesos ocupam cerca de 2,8 GB, mais 0,7 GB de um módulo de visão que não usamos, e cabem numa GPU de notebook com 6 GB por meio do <a href="https://ollama.com">Ollama</a>. No Ollama, o modelo recebe o nome local <code>s5-nano-instruct</code>, definido num arquivo versionado junto com o material:</p>
+<div class="sourceCode" id="cb138"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb138-1"><a href="llm.html#cb138-1" tabindex="-1"></a><span class="ex">ollama</span> pull hf.co/maritaca-ai/S5-nano-GGUF:Q4_K_M</span>
+<span id="cb138-2"><a href="llm.html#cb138-2" tabindex="-1"></a><span class="ex">ollama</span> create s5-nano-instruct <span class="at">-f</span> modelos/Modelfile.s5-nano-instruct</span></code></pre></div>
+<p>A chamada é uma requisição HTTP a um servidor local:</p>
+<div class="sourceCode" id="cb139"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb139-1"><a href="llm.html#cb139-1" tabindex="-1"></a>chama_ollama <span class="ot">&lt;-</span> <span class="cf">function</span>(prompt, modelo, temperatura, semente) {</span>
+<span id="cb139-2"><a href="llm.html#cb139-2" tabindex="-1"></a>  msg <span class="ot">&lt;-</span> <span class="fu">request</span>(<span class="fu">file.path</span>(OLLAMA, <span class="st">&quot;api/chat&quot;</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb139-3"><a href="llm.html#cb139-3" tabindex="-1"></a>    <span class="fu">req_body_json</span>(<span class="fu">list</span>(</span>
+<span id="cb139-4"><a href="llm.html#cb139-4" tabindex="-1"></a>      <span class="at">model =</span> modelo, <span class="at">stream =</span> <span class="cn">FALSE</span>, <span class="at">think =</span> <span class="cn">FALSE</span>, <span class="at">format =</span> ESQUEMA,</span>
+<span id="cb139-5"><a href="llm.html#cb139-5" tabindex="-1"></a>      <span class="at">options =</span> <span class="fu">list</span>(<span class="at">temperature =</span> temperatura, <span class="at">seed =</span> semente),</span>
+<span id="cb139-6"><a href="llm.html#cb139-6" tabindex="-1"></a>      <span class="at">messages =</span> <span class="fu">list</span>(<span class="fu">list</span>(<span class="at">role =</span> <span class="st">&quot;user&quot;</span>, <span class="at">content =</span> prompt))</span>
+<span id="cb139-7"><a href="llm.html#cb139-7" tabindex="-1"></a>    )) <span class="sc">|&gt;</span></span>
+<span id="cb139-8"><a href="llm.html#cb139-8" tabindex="-1"></a>    <span class="fu">req_timeout</span>(<span class="dv">120</span>) <span class="sc">|&gt;</span></span>
+<span id="cb139-9"><a href="llm.html#cb139-9" tabindex="-1"></a>    <span class="fu">req_perform</span>() <span class="sc">|&gt;</span></span>
+<span id="cb139-10"><a href="llm.html#cb139-10" tabindex="-1"></a>    <span class="fu">resp_body_json</span>() <span class="sc">|&gt;</span></span>
+<span id="cb139-11"><a href="llm.html#cb139-11" tabindex="-1"></a>    <span class="fu">pluck</span>(<span class="st">&quot;message&quot;</span>)</span>
+<span id="cb139-12"><a href="llm.html#cb139-12" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">nzchar</span>(msg<span class="sc">$</span>thinking <span class="sc">%||%</span> <span class="st">&quot;&quot;</span>)) <span class="fu">stop</span>(<span class="st">&quot;o modelo devolveu raciocínio: o modo instruct não foi respeitado&quot;</span>)</span>
+<span id="cb139-13"><a href="llm.html#cb139-13" tabindex="-1"></a>  msg<span class="sc">$</span>content</span>
+<span id="cb139-14"><a href="llm.html#cb139-14" tabindex="-1"></a>}</span></code></pre></div>
+<p>Quatro detalhes dessa chamada e do modelo são decisões de medição:</p>
+<ul>
+<li><strong><code>format = ESQUEMA</code></strong>: pedimos <strong>saída estruturada</strong>, um JSON com os campos <code>categoria</code> (restrita às quatro categorias) e <code>eleitoral</code> (verdadeiro/falso).</li>
+<li><strong><code>temperature</code> e <code>seed</code></strong>: com temperatura 0, o modelo escolhe sempre a resposta mais provável; com temperatura maior, há aleatoriedade, controlada pela semente. Os dois parâmetros devem ser <strong>sempre registrados</strong>.</li>
+<li><strong><code>think = FALSE</code></strong>: o S5-nano tem dois modos. No modo <em>think</em>, ele “raciocina” por escrito antes de responder; no modo <em>instruct</em>, responde direto. Usamos só o <em>instruct</em>, porque o <em>think</em> é bem mais lento e produz saídas longas e variáveis. Se a resposta vier com raciocínio, a função para com erro, em vez de registrar em silêncio as respostas de outro instrumento.</li>
+<li><strong>A quantização</strong>: reduzir os pesos a 4 bits torna o modelo viável num notebook, mas o modelo quantizado é <strong>outro instrumento</strong>. Os resultados que a Maritaca publica foram obtidos com os pesos completos (BF16). O que vale para este material é a validação feita aqui, com o modelo que de fato usamos. O cache também registra o <em>digest</em> dos pesos, porque o nome <code>s5-nano-instruct</code> é só um apelido local.</li>
+</ul>
+<p><strong>Por que local?</strong> Os dados não saem da máquina, o custo é zero e, principalmente, <strong>a versão do modelo não muda sem aviso</strong>. Com cerca de 0,41 segundo por ementa numa GPU de notebook, as 304 ementas são anotadas em aproximadamente 2 minutos.</p>
+<p>APIs comerciais funcionam da mesma forma, com o pacote <code>ellmer</code> em R ou <code>openai</code> em Python (há exemplos em <code>R/04_anotacao_llm.R</code> e <code>python/03_anotacao_llm.ipynb</code>). Nesse caso, registre o <strong>identificador exato do modelo</strong> e a <strong>data</strong>, e guarde as respostas brutas, porque APIs comerciais trocam a versão do modelo sem aviso. A chave de API nunca vai no código: use <code>~/.Renviron</code> ou variáveis de ambiente.</p>
+</div>
+<div id="o-prompt-é-parte-do-instrumento" class="section level2 hasAnchor" number="5.2">
+<h2><span class="header-section-number">5.2</span> O prompt é parte do instrumento<a href="llm.html#o-prompt-%C3%A9-parte-do-instrumento" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>Mudar a redação do prompt é mudar o instrumento. Por isso usamos <strong>três versões</strong>, versionadas como código (texto completo no Apêndice <a href="prompts.html#prompts">C</a>):</p>
+<table>
+<caption><span id="tab:tab-prompts">Tabela 5.1: </span>Versões do prompt.</caption>
+<colgroup>
+<col width="6%" />
+<col width="38%" />
+<col width="55%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">Versão</th>
+<th align="left">Conteúdo</th>
+<th align="left">Motivação</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left"><strong>v1</strong></td>
+<td align="left">Só os nomes das categorias</td>
+<td align="left">O que o modelo “entende” sozinho por PUNIR, REGULAR e PROMOVER?</td>
+</tr>
+<tr class="even">
+<td align="left"><strong>v2</strong></td>
+<td align="left">v1 + definições e regras do livro de códigos</td>
+<td align="left">Aproximar o LLM do codificador humano treinado</td>
+</tr>
+<tr class="odd">
+<td align="left"><strong>v3</strong></td>
+<td align="left">v2 + 6 exemplos fictícios (<em>few-shot</em>)</td>
+<td align="left">Testar se exemplos melhoram as categorias ambíguas</td>
+</tr>
+</tbody>
+</table>
+<p>Os exemplos do v3 são <strong>fictícios</strong> de propósito: usar ementas reais arriscaria vazar casos da amostra-ouro para o modelo, o mesmo problema do dicionário no capítulo anterior.</p>
+</div>
+<div id="cache-as-respostas-do-llm-são-dados" class="section level2 hasAnchor" number="5.3">
+<h2><span class="header-section-number">5.3</span> Cache: as respostas do LLM são dados<a href="llm.html#cache-as-respostas-do-llm-s%C3%A3o-dados" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>Cada chamada fica registrada em <code>dados/cache_llm/&lt;run_id&gt;.jsonl</code>, uma linha por ementa, com o modelo, o identificador e o <strong>hash SHA-256 do prompt</strong>, a temperatura, a semente, a <strong>resposta bruta</strong>, o rótulo extraído, o tempo e a data. Este é o primeiro registro real do cache:</p>
+<div class="sourceCode" id="cb140"><pre class="sourceCode json"><code class="sourceCode json"><span id="cb140-1"><a href="llm.html#cb140-1" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb140-2"><a href="llm.html#cb140-2" tabindex="-1"></a>  <span class="dt">&quot;doc_id&quot;</span><span class="fu">:</span> <span class="st">&quot;doc0001&quot;</span><span class="fu">,</span></span>
+<span id="cb140-3"><a href="llm.html#cb140-3" tabindex="-1"></a>  <span class="dt">&quot;run_id&quot;</span><span class="fu">:</span> <span class="st">&quot;s5-nano-instruct__v2__t0.0__s42&quot;</span><span class="fu">,</span></span>
+<span id="cb140-4"><a href="llm.html#cb140-4" tabindex="-1"></a>  <span class="dt">&quot;modelo&quot;</span><span class="fu">:</span> <span class="st">&quot;s5-nano-instruct&quot;</span><span class="fu">,</span></span>
+<span id="cb140-5"><a href="llm.html#cb140-5" tabindex="-1"></a>  <span class="dt">&quot;modelo_digest&quot;</span><span class="fu">:</span> <span class="st">&quot;85ec77c8f04e&quot;</span><span class="fu">,</span></span>
+<span id="cb140-6"><a href="llm.html#cb140-6" tabindex="-1"></a>  <span class="dt">&quot;ollama_versao&quot;</span><span class="fu">:</span> <span class="st">&quot;0.40.15&quot;</span><span class="fu">,</span></span>
+<span id="cb140-7"><a href="llm.html#cb140-7" tabindex="-1"></a>  <span class="dt">&quot;prompt_id&quot;</span><span class="fu">:</span> <span class="st">&quot;v2&quot;</span><span class="fu">,</span></span>
+<span id="cb140-8"><a href="llm.html#cb140-8" tabindex="-1"></a>  <span class="dt">&quot;prompt_sha&quot;</span><span class="fu">:</span> <span class="st">&quot;c4b5a5ade801&quot;</span><span class="fu">,</span></span>
+<span id="cb140-9"><a href="llm.html#cb140-9" tabindex="-1"></a>  <span class="dt">&quot;temperatura&quot;</span><span class="fu">:</span> <span class="dv">0</span><span class="fu">,</span></span>
+<span id="cb140-10"><a href="llm.html#cb140-10" tabindex="-1"></a>  <span class="dt">&quot;semente&quot;</span><span class="fu">:</span> <span class="dv">42</span><span class="fu">,</span></span>
+<span id="cb140-11"><a href="llm.html#cb140-11" tabindex="-1"></a>  <span class="dt">&quot;resposta_bruta&quot;</span><span class="fu">:</span> <span class="st">&quot;{</span><span class="ch">\&quot;</span><span class="st">categoria</span><span class="ch">\&quot;</span><span class="st">: </span><span class="ch">\&quot;</span><span class="st">REGULAR</span><span class="ch">\&quot;</span><span class="st">, </span><span class="ch">\&quot;</span><span class="st">eleitoral</span><span class="ch">\&quot;</span><span class="st">: false}&quot;</span><span class="fu">,</span></span>
+<span id="cb140-12"><a href="llm.html#cb140-12" tabindex="-1"></a>  <span class="dt">&quot;categoria_llm&quot;</span><span class="fu">:</span> <span class="st">&quot;REGULAR&quot;</span><span class="fu">,</span></span>
+<span id="cb140-13"><a href="llm.html#cb140-13" tabindex="-1"></a>  <span class="dt">&quot;eleitoral_llm&quot;</span><span class="fu">:</span> <span class="kw">false</span><span class="fu">,</span></span>
+<span id="cb140-14"><a href="llm.html#cb140-14" tabindex="-1"></a>  <span class="dt">&quot;segundos&quot;</span><span class="fu">:</span> <span class="fl">0.451</span><span class="fu">,</span></span>
+<span id="cb140-15"><a href="llm.html#cb140-15" tabindex="-1"></a>  <span class="dt">&quot;timestamp&quot;</span><span class="fu">:</span> <span class="st">&quot;2026-11-12T02:38:40+00:00&quot;</span></span>
+<span id="cb140-16"><a href="llm.html#cb140-16" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<p>Esse formato resolve três problemas de uma vez:</p>
+<ol style="list-style-type: decimal">
+<li><strong>Auditoria.</strong> Qualquer pessoa pode conferir o que o modelo respondeu de fato, e não apenas o rótulo que extraímos.</li>
+<li><strong>Retomada.</strong> Se o processo for interrompido, ele continua de onde parou; nada é anotado duas vezes. Se uma nova coleta trouxer projetos novos, só eles são enviados ao modelo.</li>
+<li><strong>Replicação sem o modelo.</strong> Quem não tem GPU nem Ollama refaz todas as análises a partir do cache.</li>
+</ol>
+<p>O material traz 6 execuções: os três prompts com temperatura 0 e semente 42, e o prompt v2 com temperatura 0,8 e sementes 1, 2 e 3 (usadas no teste-reteste do próximo capítulo).</p>
+</div>
+<div id="falhas-de-formato" class="section level2 hasAnchor" number="5.4">
+<h2><span class="header-section-number">5.4</span> Falhas de formato<a href="llm.html#falhas-de-formato" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>Mesmo pedindo saída estruturada, o modelo pode devolver algo fora do formato: o JSON envolvido em blocos de código Markdown (<code>```json ... ```</code>), texto extra ou um campo com outro nome. Por isso a extração do rótulo é deliberadamente tolerante (procura o primeiro objeto JSON na resposta), e as falhas que restam <strong>são contadas</strong>, nunca descartadas em silêncio. Nas 6 execuções deste material, a taxa de falhas de formato foi 0%. Com outros prompts ou outra versão do Ollama, ela pode não ser zero, e a taxa de falhas é ela própria uma propriedade do instrumento.</p>
+</div>
+<div id="mao-llm" class="section level2 hasAnchor" number="5.5">
+<h2><span class="header-section-number">5.5</span> Mão na massa: chamar o modelo, guardar e ler o cache<a href="llm.html#mao-llm" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<div class="caixa executar">
+<p><span class="titulo-caixa">Como executar</span></p>
+<ul>
+<li><strong>Pré-requisito</strong>: Ollama instalado e o modelo criado (Apêndice <a href="ambiente.html#ambiente">A</a>):
+<code>ollama pull hf.co/maritaca-ai/S5-nano-GGUF:Q4_K_M</code> e <code>ollama create s5-nano-instruct -f modelos/Modelfile.s5-nano-instruct</code>.</li>
+<li><strong>Em Python</strong> (como os dados do material foram gerados): <code>python python/anotar_llm.py --todas</code> anota o corpus com as 6 configurações (cerca de 15 minutos numa GPU de notebook). Para um teste rápido: <code>python python/anotar_llm.py --prompt v2 --semente 7 --n 5</code>. No Colab: notebook <code>python/03_anotacao_llm.ipynb</code> (com GPU T4).</li>
+<li><strong>Em R</strong>: <code>Rscript R/04_anotacao_llm.R</code> anota as 10 primeiras ementas com o prompt v2 e a semente 7.</li>
+<li><strong>Atenção</strong>: os dois comandos <strong>acrescentam</strong> registros em <code>dados/cache_llm/</code>. Uma semente diferente de 42 cria um arquivo novo, que as análises dos capítulos seguintes mostram como instrumento à parte. Para não misturar seus testes ao material, use <code>--pasta</code> (Python) ou apague o arquivo de teste depois.</li>
+<li><strong>Sem GPU e sem Ollama</strong>: tudo a partir da seção “Ler o cache” roda só com os arquivos do material.</li>
+</ul>
+</div>
+<div id="o-instrumento-por-escrito" class="section level3 hasAnchor" number="5.5.1">
+<h3><span class="header-section-number">5.5.1</span> O instrumento, por escrito<a href="llm.html#o-instrumento-por-escrito" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>O modelo é definido por um arquivo de texto versionado. Ele só aponta para os pesos; tudo o que muda a medida (modo, temperatura, semente) é enviado pelo código em cada chamada.</p>
+<div class="abas">
+<div class="aba" data-nome="R">
+<div class="sourceCode" id="cb141"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb141-1"><a href="llm.html#cb141-1" tabindex="-1"></a>mf <span class="ot">&lt;-</span> <span class="fu">readLines</span>(<span class="st">&quot;modelos/Modelfile.s5-nano-instruct&quot;</span>)</span>
+<span id="cb141-2"><a href="llm.html#cb141-2" tabindex="-1"></a><span class="fu">cat</span>(mf[<span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>], <span class="st">&quot;(...)&quot;</span>, <span class="fu">grep</span>(<span class="st">&quot;^FROM&quot;</span>, mf, <span class="at">value =</span> <span class="cn">TRUE</span>), <span class="at">sep =</span> <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span></code></pre></div>
+<pre><code># S5-nano (Maritaca AI) em modo INSTRUCT: o instrumento de medição do minicurso.
+#
+# Pesos: GGUF oficial quantizado em 4 bits (Q4_K_M, ~2,8 GB + 0,7 GB do módulo de visão),
+# licença Apache-2.0: https://huggingface.co/maritaca-ai/S5-nano-GGUF
+(...)
+FROM hf.co/maritaca-ai/S5-nano-GGUF:Q4_K_M</code></pre>
+</div>
+<div class="aba" data-nome="Python">
+<div class="sourceCode" id="cb143"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb143-1"><a href="llm.html#cb143-1" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb143-2"><a href="llm.html#cb143-2" tabindex="-1"></a>arq <span class="op">=</span> Path(<span class="st">&quot;modelos/Modelfile.s5-nano-instruct&quot;</span>)</span>
+<span id="cb143-3"><a href="llm.html#cb143-3" tabindex="-1"></a>linhas <span class="op">=</span> arq.read_text(encoding<span class="op">=</span><span class="st">&quot;utf-8&quot;</span>).splitlines()</span>
+<span id="cb143-4"><a href="llm.html#cb143-4" tabindex="-1"></a><span class="bu">print</span>(<span class="st">&quot;</span><span class="ch">\n</span><span class="st">&quot;</span>.join(linhas[:<span class="dv">4</span>] <span class="op">+</span> [<span class="st">&quot;(...)&quot;</span>] <span class="op">+</span> [l <span class="cf">for</span> l <span class="kw">in</span> linhas <span class="cf">if</span> l.startswith(<span class="st">&quot;FROM&quot;</span>)]))</span></code></pre></div>
+<pre><code># S5-nano (Maritaca AI) em modo INSTRUCT: o instrumento de medição do minicurso.
+#
+# Pesos: GGUF oficial quantizado em 4 bits (Q4_K_M, ~2,8 GB + 0,7 GB do módulo de visão),
+# licença Apache-2.0: https://huggingface.co/maritaca-ai/S5-nano-GGUF
+(...)
+FROM hf.co/maritaca-ai/S5-nano-GGUF:Q4_K_M</code></pre>
+</div>
+</div>
+</div>
+<div id="o-prompt-e-sua-impressão-digital" class="section level3 hasAnchor" number="5.5.2">
+<h3><span class="header-section-number">5.5.2</span> O prompt e sua impressão digital<a href="llm.html#o-prompt-e-sua-impress%C3%A3o-digital" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>Cada prompt é um arquivo em <code>prompts/</code>, com <code>{{ementa}}</code> no lugar do texto a classificar. O hash SHA-256 do arquivo é a “impressão digital” do prompt: se uma vírgula mudar, o hash muda.</p>
+<div class="abas">
+<div class="aba" data-nome="R">
+<div class="sourceCode" id="cb145"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb145-1"><a href="llm.html#cb145-1" tabindex="-1"></a><span class="co"># define chama_ollama(), extrai_rotulo() e anota_corpus()</span></span>
+<span id="cb145-2"><a href="llm.html#cb145-2" tabindex="-1"></a><span class="fu">source</span>(<span class="st">&quot;R/04_anotacao_llm.R&quot;</span>)</span>
+<span id="cb145-3"><a href="llm.html#cb145-3" tabindex="-1"></a><span class="cf">for</span> (arq <span class="cf">in</span> <span class="fu">list.files</span>(<span class="st">&quot;prompts&quot;</span>, <span class="st">&quot;</span><span class="sc">\\</span><span class="st">.txt$&quot;</span>, <span class="at">full.names =</span> <span class="cn">TRUE</span>)) {</span>
+<span id="cb145-4"><a href="llm.html#cb145-4" tabindex="-1"></a>  txt <span class="ot">&lt;-</span> <span class="fu">readChar</span>(arq, <span class="fu">file.size</span>(arq), <span class="at">useBytes =</span> <span class="cn">TRUE</span>); <span class="fu">Encoding</span>(txt) <span class="ot">&lt;-</span> <span class="st">&quot;UTF-8&quot;</span></span>
+<span id="cb145-5"><a href="llm.html#cb145-5" tabindex="-1"></a>  sha <span class="ot">&lt;-</span> <span class="fu">substr</span>(<span class="fu">digest</span>(txt, <span class="at">algo =</span> <span class="st">&quot;sha256&quot;</span>, <span class="at">serialize =</span> <span class="cn">FALSE</span>), <span class="dv">1</span>, <span class="dv">12</span>)</span>
+<span id="cb145-6"><a href="llm.html#cb145-6" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">&quot;%s  sha = %s  (%d caracteres)</span><span class="sc">\n</span><span class="st">&quot;</span>, <span class="fu">basename</span>(arq), sha, <span class="fu">nchar</span>(txt)))</span>
+<span id="cb145-7"><a href="llm.html#cb145-7" tabindex="-1"></a>}</span></code></pre></div>
+<pre><code>prompt_v1_simples.txt  sha = 5eb0f92ea13d  (252 caracteres)
+prompt_v2_codebook.txt  sha = c4b5a5ade801  (1522 caracteres)
+prompt_v3_fewshot.txt  sha = 6fdbfaf1d613  (2485 caracteres)</code></pre>
+</div>
+<div class="aba" data-nome="Python">
+<div class="sourceCode" id="cb147"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb147-1"><a href="llm.html#cb147-1" tabindex="-1"></a><span class="im">import</span> anotar_llm <span class="im">as</span> al      <span class="co"># python/anotar_llm.py</span></span>
+<span id="cb147-2"><a href="llm.html#cb147-2" tabindex="-1"></a><span class="cf">for</span> pid, arq <span class="kw">in</span> al.PROMPTS.items():</span>
+<span id="cb147-3"><a href="llm.html#cb147-3" tabindex="-1"></a>    texto <span class="op">=</span> arq.read_text(encoding<span class="op">=</span><span class="st">&quot;utf-8&quot;</span>)</span>
+<span id="cb147-4"><a href="llm.html#cb147-4" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f&quot;</span><span class="sc">{</span>arq<span class="sc">.</span>name<span class="sc">}</span><span class="ss">  sha = </span><span class="sc">{</span>al<span class="sc">.</span>sha(texto)<span class="sc">}</span><span class="ss">  (</span><span class="sc">{</span><span class="bu">len</span>(texto)<span class="sc">}</span><span class="ss"> caracteres)&quot;</span>)</span></code></pre></div>
+<pre><code>prompt_v1_simples.txt  sha = 5eb0f92ea13d  (252 caracteres)
+prompt_v2_codebook.txt  sha = c4b5a5ade801  (1522 caracteres)
+prompt_v3_fewshot.txt  sha = 6fdbfaf1d613  (2485 caracteres)</code></pre>
+</div>
+</div>
+<p>Os hashes coincidem nas duas linguagens e com o campo <code>prompt_sha</code> gravado no cache (veja o registro mais abaixo). É essa coincidência que permite afirmar que as respostas guardadas foram produzidas <strong>por este</strong> prompt.</p>
+</div>
+<div id="uma-chamada-ao-modelo" class="section level3 hasAnchor" number="5.5.3">
+<h3><span class="header-section-number">5.5.3</span> Uma chamada ao modelo<a href="llm.html#uma-chamada-ao-modelo" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>Os blocos abaixo <strong>não são executados</strong> ao compilar o livro: precisam do Ollama rodando com o modelo.</p>
+<div class="abas">
+<div class="aba" data-nome="R">
+<div class="sourceCode" id="cb149"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb149-1"><a href="llm.html#cb149-1" tabindex="-1"></a>corpus <span class="ot">&lt;-</span> <span class="fu">carrega_corpus</span>()</span>
+<span id="cb149-2"><a href="llm.html#cb149-2" tabindex="-1"></a>modelo_prompt <span class="ot">&lt;-</span> <span class="fu">readChar</span>(<span class="st">&quot;prompts/prompt_v2_codebook.txt&quot;</span>,</span>
+<span id="cb149-3"><a href="llm.html#cb149-3" tabindex="-1"></a>                          <span class="fu">file.size</span>(<span class="st">&quot;prompts/prompt_v2_codebook.txt&quot;</span>), <span class="at">useBytes =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb149-4"><a href="llm.html#cb149-4" tabindex="-1"></a><span class="fu">Encoding</span>(modelo_prompt) <span class="ot">&lt;-</span> <span class="st">&quot;UTF-8&quot;</span></span>
+<span id="cb149-5"><a href="llm.html#cb149-5" tabindex="-1"></a>prompt <span class="ot">&lt;-</span> <span class="fu">str_replace</span>(modelo_prompt, <span class="fu">fixed</span>(<span class="st">&quot;{{ementa}}&quot;</span>), corpus<span class="sc">$</span>ementa[<span class="dv">1</span>])</span>
+<span id="cb149-6"><a href="llm.html#cb149-6" tabindex="-1"></a></span>
+<span id="cb149-7"><a href="llm.html#cb149-7" tabindex="-1"></a>resposta <span class="ot">&lt;-</span> <span class="fu">chama_ollama</span>(prompt, <span class="st">&quot;s5-nano-instruct&quot;</span>, <span class="at">temperatura =</span> <span class="dv">0</span>, <span class="at">semente =</span> <span class="dv">42</span>)</span>
+<span id="cb149-8"><a href="llm.html#cb149-8" tabindex="-1"></a>resposta                  <span class="co"># texto bruto devolvido pelo modelo</span></span>
+<span id="cb149-9"><a href="llm.html#cb149-9" tabindex="-1"></a><span class="fu">extrai_rotulo</span>(resposta)   <span class="co"># rótulo extraído</span></span>
+<span id="cb149-10"><a href="llm.html#cb149-10" tabindex="-1"></a></span>
+<span id="cb149-11"><a href="llm.html#cb149-11" tabindex="-1"></a><span class="co"># O laço completo, com cache e retomada (5 ementas, semente 7):</span></span>
+<span id="cb149-12"><a href="llm.html#cb149-12" tabindex="-1"></a><span class="fu">anota_corpus</span>(<span class="fu">head</span>(corpus, <span class="dv">5</span>), <span class="at">prompt_id =</span> <span class="st">&quot;v2&quot;</span>, <span class="at">temperatura =</span> <span class="dv">0</span>, <span class="at">semente =</span> <span class="dv">7</span>)</span></code></pre></div>
+</div>
+<div class="aba" data-nome="Python">
+<div class="sourceCode" id="cb150"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb150-1"><a href="llm.html#cb150-1" tabindex="-1"></a><span class="im">from</span> medicao <span class="im">import</span> carrega_corpus</span>
+<span id="cb150-2"><a href="llm.html#cb150-2" tabindex="-1"></a>corpus <span class="op">=</span> carrega_corpus(<span class="st">&quot;.&quot;</span>)</span>
+<span id="cb150-3"><a href="llm.html#cb150-3" tabindex="-1"></a>modelo_prompt <span class="op">=</span> al.PROMPTS[<span class="st">&quot;v2&quot;</span>].read_text(encoding<span class="op">=</span><span class="st">&quot;utf-8&quot;</span>)</span>
+<span id="cb150-4"><a href="llm.html#cb150-4" tabindex="-1"></a>prompt <span class="op">=</span> modelo_prompt.replace(<span class="st">&quot;</span><span class="sc">{{</span><span class="st">ementa</span><span class="sc">}}</span><span class="st">&quot;</span>, corpus[<span class="st">&quot;ementa&quot;</span>][<span class="dv">0</span>])</span>
+<span id="cb150-5"><a href="llm.html#cb150-5" tabindex="-1"></a></span>
+<span id="cb150-6"><a href="llm.html#cb150-6" tabindex="-1"></a>resposta <span class="op">=</span> al.chama_ollama(<span class="st">&quot;s5-nano-instruct&quot;</span>, prompt, temperatura<span class="op">=</span><span class="dv">0</span>, semente<span class="op">=</span><span class="dv">42</span>)</span>
+<span id="cb150-7"><a href="llm.html#cb150-7" tabindex="-1"></a><span class="bu">print</span>(resposta)                  <span class="co"># texto bruto devolvido pelo modelo</span></span>
+<span id="cb150-8"><a href="llm.html#cb150-8" tabindex="-1"></a><span class="bu">print</span>(al.extrai_rotulo(resposta))  <span class="co"># rótulo extraído</span></span>
+<span id="cb150-9"><a href="llm.html#cb150-9" tabindex="-1"></a></span>
+<span id="cb150-10"><a href="llm.html#cb150-10" tabindex="-1"></a><span class="co"># O laço completo, com cache e retomada (5 ementas, semente 7):</span></span>
+<span id="cb150-11"><a href="llm.html#cb150-11" tabindex="-1"></a>al.anota(corpus.head(<span class="dv">5</span>), <span class="st">&quot;s5-nano-instruct&quot;</span>, <span class="st">&quot;v2&quot;</span>, <span class="fl">0.0</span>, <span class="dv">7</span>)</span></code></pre></div>
+</div>
+</div>
+<p>O que o modelo respondeu para essas ementas, na execução oficial (prompt v2, temperatura 0, semente 42), está no cache:</p>
+<p><span class="saida-registrada">Saída registrada: lida de <code>dados/cache_llm/s5-nano-instruct__v2__t0.0__s42.jsonl</code> (anotação de 11/11/2026)</span></p>
+<div class="abas">
+<div class="aba" data-nome="R">
+<div class="sourceCode" id="cb151"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb151-1"><a href="llm.html#cb151-1" tabindex="-1"></a>arq <span class="ot">&lt;-</span> <span class="st">&quot;dados/cache_llm/s5-nano-instruct__v2__t0.0__s42.jsonl&quot;</span></span>
+<span id="cb151-2"><a href="llm.html#cb151-2" tabindex="-1"></a>v2 <span class="ot">&lt;-</span> <span class="fu">stream_in</span>(<span class="fu">file</span>(arq), <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb151-3"><a href="llm.html#cb151-3" tabindex="-1"></a>v2 <span class="sc">|&gt;</span> <span class="fu">select</span>(doc_id, resposta_bruta, categoria_llm, eleitoral_llm, segundos) <span class="sc">|&gt;</span> <span class="fu">head</span>(<span class="dv">5</span>)</span></code></pre></div>
+<pre><code>   doc_id                               resposta_bruta categoria_llm
+1 doc0001 {&quot;categoria&quot;: &quot;REGULAR&quot;, &quot;eleitoral&quot;: false}       REGULAR
+2 doc0002 {&quot;categoria&quot;: &quot;REGULAR&quot;, &quot;eleitoral&quot;: false}       REGULAR
+3 doc0003 {&quot;categoria&quot;: &quot;REGULAR&quot;, &quot;eleitoral&quot;: false}       REGULAR
+4 doc0004 {&quot;categoria&quot;: &quot;REGULAR&quot;, &quot;eleitoral&quot;: false}       REGULAR
+5 doc0005 {&quot;categoria&quot;: &quot;REGULAR&quot;, &quot;eleitoral&quot;: false}       REGULAR
+  eleitoral_llm segundos
+1         FALSE    0.451
+2         FALSE    0.384
+3         FALSE    0.383
+4         FALSE    0.382
+5         FALSE    0.385</code></pre>
+</div>
+<div class="aba" data-nome="Python">
+<div class="sourceCode" id="cb153"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb153-1"><a href="llm.html#cb153-1" tabindex="-1"></a>v2 <span class="op">=</span> pd.read_json(<span class="st">&quot;dados/cache_llm/s5-nano-instruct__v2__t0.0__s42.jsonl&quot;</span>, lines<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb153-2"><a href="llm.html#cb153-2" tabindex="-1"></a>v2[[<span class="st">&quot;doc_id&quot;</span>, <span class="st">&quot;resposta_bruta&quot;</span>, <span class="st">&quot;categoria_llm&quot;</span>, <span class="st">&quot;eleitoral_llm&quot;</span>, <span class="st">&quot;segundos&quot;</span>]].head(<span class="dv">5</span>)</span></code></pre></div>
+<pre><code>    doc_id                                resposta_bruta categoria_llm  eleitoral_llm  segundos
+0  doc0001  {&quot;categoria&quot;: &quot;REGULAR&quot;, &quot;eleitoral&quot;: false}       REGULAR          False     0.451
+1  doc0002  {&quot;categoria&quot;: &quot;REGULAR&quot;, &quot;eleitoral&quot;: false}       REGULAR          False     0.384
+2  doc0003  {&quot;categoria&quot;: &quot;REGULAR&quot;, &quot;eleitoral&quot;: false}       REGULAR          False     0.383
+3  doc0004  {&quot;categoria&quot;: &quot;REGULAR&quot;, &quot;eleitoral&quot;: false}       REGULAR          False     0.382
+4  doc0005  {&quot;categoria&quot;: &quot;REGULAR&quot;, &quot;eleitoral&quot;: false}       REGULAR          False     0.385</code></pre>
+</div>
+</div>
+<p><strong>O que está sendo executado.</strong> <code>chama_ollama()</code> envia uma requisição HTTP ao servidor local (<code>/api/chat</code>) com o nome do modelo, o prompt já preenchido com a ementa, <code>think = false</code> (modo <em>instruct</em>), o esquema JSON da saída e as opções <code>temperature</code> e <code>seed</code>. O modelo devolve um texto, que deveria ser um JSON como <code>{"categoria": "REGULAR", "eleitoral": false}</code>. <code>anota_corpus()</code>/<code>anota()</code> repete isso para cada ementa: antes de começar, lê o arquivo de cache e pula as ementas já anotadas (retomada); depois de cada resposta, grava uma linha JSON com a resposta bruta, o rótulo extraído e todos os metadados do instrumento. O nome do arquivo (<code>run_id</code>) codifica modelo, prompt, temperatura e semente.</p>
+</div>
+<div id="extrair-o-rótulo-de-respostas-imperfeitas" class="section level3 hasAnchor" number="5.5.4">
+<h3><span class="header-section-number">5.5.4</span> Extrair o rótulo de respostas imperfeitas<a href="llm.html#extrair-o-r%C3%B3tulo-de-respostas-imperfeitas" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>A extração não confia que o modelo obedeceu ao formato. Ela é testável sem o modelo:</p>
+<div class="abas">
+<div class="aba" data-nome="R">
+<div class="sourceCode" id="cb155"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb155-1"><a href="llm.html#cb155-1" tabindex="-1"></a>respostas <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb155-2"><a href="llm.html#cb155-2" tabindex="-1"></a>  <span class="st">&#39;{&quot;categoria&quot;: &quot;PUNIR&quot;, &quot;eleitoral&quot;: true}&#39;</span>,</span>
+<span id="cb155-3"><a href="llm.html#cb155-3" tabindex="-1"></a>  <span class="st">&#39;```json</span><span class="sc">\n</span><span class="st">{&quot;categoria&quot;: &quot;regular&quot;, &quot;eleitoral&quot;: false}</span><span class="sc">\n</span><span class="st">```&#39;</span>,</span>
+<span id="cb155-4"><a href="llm.html#cb155-4" tabindex="-1"></a>  <span class="st">&#39;Claro! A classificação é {&quot;classificacao&quot;: &quot;PROMOVER&quot;, &quot;eleitoral&quot;: false}.&#39;</span>,</span>
+<span id="cb155-5"><a href="llm.html#cb155-5" tabindex="-1"></a>  <span class="st">&#39;{&quot;categoria&quot;: &quot;PENAL&quot;, &quot;eleitoral&quot;: false}&#39;</span>,</span>
+<span id="cb155-6"><a href="llm.html#cb155-6" tabindex="-1"></a>  <span class="st">&#39;Não sei classificar esta ementa.&#39;</span>)</span>
+<span id="cb155-7"><a href="llm.html#cb155-7" tabindex="-1"></a>purrr<span class="sc">::</span><span class="fu">map</span>(respostas, extrai_rotulo) <span class="sc">|&gt;</span> purrr<span class="sc">::</span><span class="fu">map_dfr</span>(as_tibble)</span></code></pre></div>
+<pre><code># A tibble: 5 × 2
+  categoria eleitoral
+  &lt;chr&gt;     &lt;lgl&gt;    
+1 PUNIR     TRUE     
+2 REGULAR   FALSE    
+3 PROMOVER  FALSE    
+4 &lt;NA&gt;      FALSE    
+5 &lt;NA&gt;      NA       </code></pre>
+</div>
+<div class="aba" data-nome="Python">
+<div class="sourceCode" id="cb157"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb157-1"><a href="llm.html#cb157-1" tabindex="-1"></a>respostas <span class="op">=</span> [</span>
+<span id="cb157-2"><a href="llm.html#cb157-2" tabindex="-1"></a>    <span class="st">&#39;{&quot;categoria&quot;: &quot;PUNIR&quot;, &quot;eleitoral&quot;: true}&#39;</span>,</span>
+<span id="cb157-3"><a href="llm.html#cb157-3" tabindex="-1"></a>    <span class="st">&#39;```json</span><span class="ch">\n</span><span class="st">{&quot;categoria&quot;: &quot;regular&quot;, &quot;eleitoral&quot;: false}</span><span class="ch">\n</span><span class="st">```&#39;</span>,</span>
+<span id="cb157-4"><a href="llm.html#cb157-4" tabindex="-1"></a>    <span class="st">&#39;Claro! A classificação é {&quot;classificacao&quot;: &quot;PROMOVER&quot;, &quot;eleitoral&quot;: false}.&#39;</span>,</span>
+<span id="cb157-5"><a href="llm.html#cb157-5" tabindex="-1"></a>    <span class="st">&#39;{&quot;categoria&quot;: &quot;PENAL&quot;, &quot;eleitoral&quot;: false}&#39;</span>,</span>
+<span id="cb157-6"><a href="llm.html#cb157-6" tabindex="-1"></a>    <span class="st">&#39;Não sei classificar esta ementa.&#39;</span>]</span>
+<span id="cb157-7"><a href="llm.html#cb157-7" tabindex="-1"></a><span class="cf">for</span> r <span class="kw">in</span> respostas:</span>
+<span id="cb157-8"><a href="llm.html#cb157-8" tabindex="-1"></a>    <span class="bu">print</span>(al.extrai_rotulo(r))</span></code></pre></div>
+<pre><code>(&#39;PUNIR&#39;, True)
+(&#39;REGULAR&#39;, False)
+(&#39;PROMOVER&#39;, False)
+(None, False)
+(None, None)</code></pre>
+</div>
+</div>
+<p><strong>O que está sendo executado.</strong> A função procura o primeiro trecho entre chaves (<code>{...}</code>), tenta lê-lo como JSON, aceita <code>categoria</code> ou <code>classificacao</code> como nome do campo, passa o valor para maiúsculas e só o aceita se for uma das quatro categorias. As respostas 2 e 3 são <strong>recuperadas</strong>; a 4 (categoria inexistente) e a 5 (sem JSON) viram falhas de formato (<code>NA</code>/<code>None</code>), que são contadas, nunca descartadas.</p>
+</div>
+<div id="ler-o-cache" class="section level3 hasAnchor" number="5.5.5">
+<h3><span class="header-section-number">5.5.5</span> Ler o cache<a href="llm.html#ler-o-cache" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>Daqui em diante, nada depende do modelo. Todas as análises do livro partem destes arquivos.</p>
+<div class="abas">
+<div class="aba" data-nome="R">
+<div class="sourceCode" id="cb159"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb159-1"><a href="llm.html#cb159-1" tabindex="-1"></a>llm <span class="ot">&lt;-</span> <span class="fu">carrega_llm</span>()</span>
+<span id="cb159-2"><a href="llm.html#cb159-2" tabindex="-1"></a><span class="fu">nrow</span>(llm)</span></code></pre></div>
+<pre><code>[1] 1824</code></pre>
+<div class="sourceCode" id="cb161"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb161-1"><a href="llm.html#cb161-1" tabindex="-1"></a>llm <span class="sc">|&gt;</span></span>
+<span id="cb161-2"><a href="llm.html#cb161-2" tabindex="-1"></a>  <span class="fu">group_by</span>(run_id) <span class="sc">|&gt;</span></span>
+<span id="cb161-3"><a href="llm.html#cb161-3" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">n =</span> <span class="fu">n</span>(), <span class="at">falhas =</span> <span class="fu">mean</span>(<span class="fu">is.na</span>(categoria_llm)),</span>
+<span id="cb161-4"><a href="llm.html#cb161-4" tabindex="-1"></a>            <span class="at">seg_mediano =</span> <span class="fu">median</span>(segundos),</span>
+<span id="cb161-5"><a href="llm.html#cb161-5" tabindex="-1"></a>            <span class="at">digest =</span> <span class="fu">unique</span>(modelo_digest), <span class="at">ollama =</span> <span class="fu">unique</span>(ollama_versao))</span></code></pre></div>
+<pre><code># A tibble: 6 × 6
+  run_id                              n falhas seg_mediano digest       ollama 
+  &lt;chr&gt;                           &lt;int&gt;  &lt;dbl&gt;       &lt;dbl&gt; &lt;chr&gt;        &lt;chr&gt;  
+1 s5-nano-instruct__v1__t0.0__s42   304      0       0.359 85ec77c8f04e 0.40.15
+2 s5-nano-instruct__v2__t0.0__s42   304      0       0.407 85ec77c8f04e 0.40.15
+3 s5-nano-instruct__v2__t0.8__s1    304      0       0.356 85ec77c8f04e 0.40.15
+4 s5-nano-instruct__v2__t0.8__s2    304      0       0.358 85ec77c8f04e 0.40.15
+5 s5-nano-instruct__v2__t0.8__s3    304      0       0.359 85ec77c8f04e 0.40.15
+6 s5-nano-instruct__v3__t0.0__s42   304      0       0.439 85ec77c8f04e 0.40.15</code></pre>
+</div>
+<div class="aba" data-nome="Python">
+<div class="sourceCode" id="cb163"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb163-1"><a href="llm.html#cb163-1" tabindex="-1"></a><span class="im">from</span> medicao <span class="im">import</span> carrega_llm</span>
+<span id="cb163-2"><a href="llm.html#cb163-2" tabindex="-1"></a>llm <span class="op">=</span> carrega_llm(<span class="st">&quot;.&quot;</span>)</span>
+<span id="cb163-3"><a href="llm.html#cb163-3" tabindex="-1"></a><span class="bu">print</span>(<span class="bu">len</span>(llm))</span></code></pre></div>
+<pre><code>1824</code></pre>
+<div class="sourceCode" id="cb165"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb165-1"><a href="llm.html#cb165-1" tabindex="-1"></a>llm.groupby(<span class="st">&quot;run_id&quot;</span>).agg(n<span class="op">=</span>(<span class="st">&quot;doc_id&quot;</span>, <span class="st">&quot;size&quot;</span>),</span>
+<span id="cb165-2"><a href="llm.html#cb165-2" tabindex="-1"></a>                          falhas<span class="op">=</span>(<span class="st">&quot;categoria_llm&quot;</span>, <span class="kw">lambda</span> s: s.isna().mean()),</span>
+<span id="cb165-3"><a href="llm.html#cb165-3" tabindex="-1"></a>                          seg_mediano<span class="op">=</span>(<span class="st">&quot;segundos&quot;</span>, <span class="st">&quot;median&quot;</span>),</span>
+<span id="cb165-4"><a href="llm.html#cb165-4" tabindex="-1"></a>                          digest<span class="op">=</span>(<span class="st">&quot;modelo_digest&quot;</span>, <span class="st">&quot;first&quot;</span>),</span>
+<span id="cb165-5"><a href="llm.html#cb165-5" tabindex="-1"></a>                          ollama<span class="op">=</span>(<span class="st">&quot;ollama_versao&quot;</span>, <span class="st">&quot;first&quot;</span>))</span></code></pre></div>
+<pre><code>                                   n  falhas  seg_mediano        digest   ollama
+run_id                                                                          
+s5-nano-instruct__v1__t0.0__s42  304     0.0        0.359  85ec77c8f04e  0.40.15
+s5-nano-instruct__v2__t0.0__s42  304     0.0        0.407  85ec77c8f04e  0.40.15
+s5-nano-instruct__v2__t0.8__s1   304     0.0        0.356  85ec77c8f04e  0.40.15
+s5-nano-instruct__v2__t0.8__s2   304     0.0        0.358  85ec77c8f04e  0.40.15
+s5-nano-instruct__v2__t0.8__s3   304     0.0        0.359  85ec77c8f04e  0.40.15
+s5-nano-instruct__v3__t0.0__s42  304     0.0        0.439  85ec77c8f04e  0.40.15</code></pre>
+</div>
+</div>
+<p>E a pergunta que antecipa o próximo capítulo: os três prompts produzem a mesma distribuição de categorias?</p>
+<div class="abas">
+<div class="aba" data-nome="R">
+<div class="sourceCode" id="cb167"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb167-1"><a href="llm.html#cb167-1" tabindex="-1"></a>llm <span class="sc">|&gt;</span></span>
+<span id="cb167-2"><a href="llm.html#cb167-2" tabindex="-1"></a>  <span class="fu">filter</span>(temperatura <span class="sc">==</span> <span class="dv">0</span>, semente <span class="sc">==</span> <span class="dv">42</span>) <span class="sc">|&gt;</span></span>
+<span id="cb167-3"><a href="llm.html#cb167-3" tabindex="-1"></a>  <span class="fu">count</span>(prompt_id, categoria_llm) <span class="sc">|&gt;</span></span>
+<span id="cb167-4"><a href="llm.html#cb167-4" tabindex="-1"></a>  tidyr<span class="sc">::</span><span class="fu">pivot_wider</span>(<span class="at">names_from =</span> categoria_llm, <span class="at">values_from =</span> n, <span class="at">values_fill =</span> <span class="dv">0</span>)</span></code></pre></div>
+<pre><code># A tibble: 3 × 5
+  prompt_id PUNIR REGULAR PROMOVER OUTRO
+  &lt;chr&gt;     &lt;int&gt;   &lt;int&gt;    &lt;int&gt; &lt;int&gt;
+1 v1           62     192       47     3
+2 v2           70     157       58    19
+3 v3           68     149       63    24</code></pre>
+</div>
+<div class="aba" data-nome="Python">
+<div class="sourceCode" id="cb169"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb169-1"><a href="llm.html#cb169-1" tabindex="-1"></a>t0 <span class="op">=</span> llm[(llm[<span class="st">&quot;temperatura&quot;</span>] <span class="op">==</span> <span class="dv">0</span>) <span class="op">&amp;</span> (llm[<span class="st">&quot;semente&quot;</span>] <span class="op">==</span> <span class="dv">42</span>)]</span>
+<span id="cb169-2"><a href="llm.html#cb169-2" tabindex="-1"></a>(pd.crosstab(t0[<span class="st">&quot;prompt_id&quot;</span>], t0[<span class="st">&quot;categoria_llm&quot;</span>])</span>
+<span id="cb169-3"><a href="llm.html#cb169-3" tabindex="-1"></a>   .reindex(columns<span class="op">=</span>CATEGORIAS, fill_value<span class="op">=</span><span class="dv">0</span>))</span></code></pre></div>
+<pre><code>categoria_llm  PUNIR  REGULAR  PROMOVER  OUTRO
+prompt_id                                     
+v1                62      192        47      3
+v2                70      157        58     19
+v3                68      149        63     24</code></pre>
+</div>
+</div>
+<p><strong>O que está sendo executado.</strong> <code>carrega_llm()</code> lê todos os arquivos <code>s5-nano-instruct__*.jsonl</code> de <code>dados/cache_llm/</code> (um registro por linha) e empilha tudo numa só tabela: 304 ementas × 6 execuções. A primeira tabela confere, para cada execução, o número de respostas, a taxa de falhas de formato, o tempo mediano e se o <em>digest</em> dos pesos e a versão do Ollama são únicos (são: todas as respostas vieram do mesmo instrumento). A segunda mostra que o prompt muda a medida agregada, o que o Capítulo <a href="validacao.html#validacao">6</a> quantifica.</p>
+
+</div>
+</div>
+</div>
+<!-- Abas R | Python do livro: transforma ::: {.abas} / ::: {.aba data-nome="R"} em abas.
+     A escolha vale para todas as abas da página e fica lembrada entre os capítulos. -->
+<script>
+(function () {
+  var CHAVE = "livro-linguagem";
+  function lerPref() { try { return localStorage.getItem(CHAVE); } catch (e) { return null; } }
+  function salvarPref(v) { try { localStorage.setItem(CHAVE, v); } catch (e) {} }
+  function filhas(box) {
+    return Array.prototype.filter.call(box.children, function (el) { return el.classList.contains("aba"); });
+  }
+  function escolhe(nome) {
+    document.querySelectorAll(".abas").forEach(function (box) {
+      var abas = filhas(box);
+      if (!abas.length) return;
+      var alvo = abas.some(function (a) { return a.getAttribute("data-nome") === nome; }) ? nome : abas[0].getAttribute("data-nome");
+      abas.forEach(function (a) { a.hidden = a.getAttribute("data-nome") !== alvo; });
+      box.querySelectorAll(":scope > .abas-barra > button").forEach(function (b) {
+        var ativo = b.textContent === alvo;
+        b.classList.toggle("ativo", ativo);
+        b.setAttribute("aria-selected", ativo ? "true" : "false");
+      });
+    });
+  }
+  function monta() {
+    document.querySelectorAll(".abas").forEach(function (box) {
+      if (box.getAttribute("data-pronto")) return;
+      box.setAttribute("data-pronto", "1");
+      var barra = document.createElement("div");
+      barra.className = "abas-barra";
+      barra.setAttribute("role", "tablist");
+      filhas(box).forEach(function (aba) {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.setAttribute("role", "tab");
+        b.textContent = aba.getAttribute("data-nome");
+        b.addEventListener("click", function () { salvarPref(b.textContent); escolhe(b.textContent); });
+        barra.appendChild(b);
+      });
+      box.insertBefore(barra, box.firstChild);
+    });
+    escolhe(lerPref() || "R");
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", monta); else monta();
+  if (window.gitbook && gitbook.events) gitbook.events.bind("page.change", monta);
+})();
+</script>
+            </section>
+
+          </div>
+        </div>
+      </div>
+<a href="baselines.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+<a href="validacao.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
+    </div>
+  </div>
+<script src="assets/gitbook-2.6.7/js/app.min.js"></script>
+<script src="assets/gitbook-2.6.7/js/clipboard.min.js"></script>
+<script src="assets/gitbook-2.6.7/js/plugin-search.js"></script>
+<script src="assets/gitbook-2.6.7/js/plugin-sharing.js"></script>
+<script src="assets/gitbook-2.6.7/js/plugin-fontsettings.js"></script>
+<script src="assets/gitbook-2.6.7/js/plugin-bookdown.js"></script>
+<script src="assets/gitbook-2.6.7/js/jquery.highlight.js"></script>
+<script src="assets/gitbook-2.6.7/js/plugin-clipboard.js"></script>
+<script>
+gitbook.require(["gitbook"], function(gitbook) {
+gitbook.start({
+  "sharing": null,
+  "fontsettings": {
+    "theme": "white",
+    "family": "sans",
+    "size": 2
+  },
+  "edit": null,
+  "history": {
+    "link": null,
+    "text": null
+  },
+  "view": {
+    "link": null,
+    "text": null
+  },
+  "download": ["ia-instrumento-medicao.pdf"],
+  "search": {
+    "engine": "fuse",
+    "options": null
+  },
+  "toc": {
+    "collapse": "section"
+  },
+  "info": false
+});
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    var src = "true";
+    if (src === "" || src === "true") src = "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/latest.js?config=TeX-MML-AM_CHTML";
+    if (location.protocol !== "file:")
+      if (/^https?:/.test(src))
+        src = src.replace(/^https?:/, '');
+    script.src = src;
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+</body>
+
+</html>

@@ -1,0 +1,1147 @@
+---
+title: "Inteligência Artificial como Instrumento de Medição"
+subtitle: "Parte 1 · Conceitos e desenho"
+author: "Prof. Dr. Jodavid Ferreira · Departamento de Estatística · UFPE"
+institute: "II DataPOL · 24 a 26 de novembro de 2026 · CCEN/UFPE"
+lang: pt-BR
+format:
+  revealjs:
+    theme: [default, estilo.scss, estilo_codigo.scss]
+    title-slide-attributes:
+      data-background-color: "#0f2440"
+    slide-number: true
+    progress: true
+    embed-resources: true
+    code-copy: true
+    code-line-numbers: false
+    highlight-style: github
+    width: 1280
+    height: 720
+    footer: "II DataPOL · IA como Instrumento de Medição · Parte 1: conceitos"
+    include-in-header:
+      text: |
+        <style>
+        /* Pseudocódigo (blocos text): moldura dos blocos de código e fonte legível */
+        .reveal pre.text { background-color: #f4f6f9; border: 1px solid #e2e8f0; border-left: 4px solid #1c3f6e; border-radius: 6px; margin: 0.45em 0; }
+        .reveal pre.text code { font-size: 18px; line-height: 1.35; padding: 0.5em 0.75em !important; }
+
+        </style>
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r}
+#| include: false
+# Só números DESCRITIVOS do corpus e da referência (nenhum resultado de validação ou inferência)
+library(readr)
+corpus <- read_csv("../dados/processado/corpus.csv", show_col_types = FALSE)
+ref    <- read_csv("../dados/anotacoes/referencia_completa.csv", show_col_types = FALSE)
+ouro   <- read_csv("../dados/anotacoes/amostra_ouro.csv", show_col_types = FALSE)
+n_corpus <- nrow(corpus)
+n_camara <- sum(corpus$casa == "Câmara")
+n_senado <- sum(corpus$casa == "Senado")
+n_2026   <- sum(corpus$ano == 2026)
+CATS <- c("PUNIR", "REGULAR", "PROMOVER", "OUTRO")
+pc   <- function(x, d = 1) paste0(format(round(100 * x, d), nsmall = d, decimal.mark = ","), "%")
+cont <- function(x) as.integer(table(factor(x, CATS)))
+outros <- merge(corpus, ref[ref$categoria == "OUTRO", ], by = "doc_id")
+```
+
+
+
+## {background-color="#1c3f6e"}
+
+<br/>
+<br/>
+
+::: {style="color:white; font-size:1.6em; margin-top:2em"}
+"O futuro traz novas perguntas.<br>Os dados ampliam nossas formas de responder."
+:::
+
+::: {style="color:#c9d7ec; margin-top:1.5em"}
+...mas **quem mede a régua?**
+:::
+
+## Duas perguntas para hoje
+
+<br/>
+
+::: {.columns}
+::: {.column width="50%"}
+### Substantiva
+Quando o Congresso legisla sobre **IA**, ele quer **punir**, **regular** ou **promover**?
+
+E isso varia entre campos políticos?
+:::
+::: {.column width="50%"}
+### Metodológica
+Se usarmos um **LLM** para responder, **como sabemos se a resposta está certa**?
+
+E como **reproduzir** a resposta daqui a dois anos?
+:::
+:::
+
+. . .
+
+> Na I edição do DataPOL vocês viram como **usar** IA para analisar textos. Hoje vamos **medir** com ela e medir o erro dela.
+
+## Por que agora?
+
+<br/>
+
+- **Eleições de 2026**: primeiras eleições gerais sob a Res. TSE nº 23.755/2026 (rotulagem obrigatória, deepfakes proibidos, IA não pode recomendar voto)
+- **Marco Legal da IA (PL 2338/2023)**: aprovado no Senado em dez/2024, **aguardando parecer** na Câmara
+- **`r n_corpus` projetos de lei** sobre IA no Congresso desde 2019, `r n_2026` só em 2026
+- LLMs viraram **infraestrutura de pesquisa**: classificam discursos, extraem informações, anotam corpora inteiros em minutos
+- Mas são **sensíveis ao prompt**, **mudam de versão** e podem ter **viés político**
+
+## A "fase atual" da estatística
+
+<br/>
+
+::: {.columns}
+::: {.column width="55%"}
+- **Breiman (2001)**: duas culturas, *modelar* × *prever*
+
+::: {.pequeno}
+*Modelar* = explicar como os dados são gerados e medir a incerteza (a estatística clássica). *Prever* = acertar a resposta, mesmo sem entender o mecanismo (o aprendizado de máquina).
+:::
+
+- **2018–2026**: a síntese, com ML **a serviço da inferência**
+
+::: {.pequeno}
+As previsões do ML viram matéria-prima para estimar efeitos e proporções **com intervalo de confiança válido** (quatro exemplos no próximo slide).
+:::
+:::
+::: {.column width="45%"}
+::: {.callout-note title="O fio comum"}
+Previsões de modelos podem tornar a inferência **mais precisa**, desde que o erro delas seja **medido e corrigido**, e não ignorado.
+:::
+
+::: {.pequeno}
+**Traduzindo para hoje:** o LLM rotula todas as ementas (barato, mas com erro) → a amostra-ouro mede esse erro → o PPI corrige a estimativa e alarga o IC na medida certa. Usar os rótulos do LLM como se fossem a verdade é **ignorar** o erro.
+:::
+:::
+:::
+
+## A síntese em quatro exemplos
+
+::: {style="font-size:1.02em"}
+| Método | O que faz, em uma frase |
+|---|---|
+| *Double ML*<br>(Chernozhukov et al., 2018) | Usa ML para "limpar" a influência de muitas variáveis de controle e estima um **efeito causal** com IC válido |
+| Predição conformal<br>(Vovk et al., 2005) | Transforma a previsão de qualquer modelo num **intervalo** (ou num conjunto de rótulos possíveis) que contém a resposta certa com a frequência prometida, p. ex. 95% |
+| ***Prediction-Powered Inference***<br>(Angelopoulos et al., *Science*, 2023) | Junta **muitas previsões** e **poucos rótulos verdadeiros**: mede o viés das previsões nos rotulados e o desconta. **É o que usamos no bloco 6** |
+| *Design-based Supervised Learning*<br>(Egami et al., 2023) | A mesma correção para **regressões** com rótulos de LLM, usando uma amostra codificada por especialistas e sorteada com probabilidades conhecidas |
+:::
+
+::: {.pequeno}
+Não é preciso dominar os quatro: hoje usamos só o **PPI** (e sua versão PPI++). Os outros mostram que a ideia é geral.
+:::
+
+## Um LLM é um instrumento de medição
+
+<br/>
+
+| Propriedade | Pergunta | Como vamos medir |
+|---|---|---|
+| **Validade** | Mede o que diz medir? | Concordância com uma **amostra-ouro** codificada por humanos |
+| **Confiabilidade** | Mede sempre igual? | Repetir com **outras sementes** e **outros prompts** |
+| **Viés** | Erra mais para uns grupos? | Comparar o erro **entre campos políticos** |
+| **Reprodutibilidade** | Outra pessoa obtém o mesmo? | Versionar modelo, prompt, parâmetros e **respostas brutas** |
+
+<br/>
+
+> Como um questionário ou um codificador humano: o instrumento tem **erro**, e o erro **se mede**.
+
+## O caminho de hoje
+
+<br/>
+<br/>
+
+```{mermaid}
+%%| fig-width: 11
+%%{init: {"theme": "base", "themeVariables": {"lineColor": "#8f8d88", "primaryColor": "#eef4fc", "primaryBorderColor": "#7ba4de", "primaryTextColor": "#0b0b0b", "fontFamily": "Source Sans Pro, Helvetica Neue, Arial, sans-serif"}}}%%
+flowchart LR
+  A[APIs<br>Câmara + Senado] --> B[Corpus<br>de ementas]
+  B --> C[Livro de códigos<br>+ amostra-ouro]
+  C --> D[Baselines<br>dicionário · TF-IDF]
+  B --> E[LLM local<br>3 prompts · cache]
+  C --> F[Validação<br>kappa · viés · reteste]
+  D --> F
+  E --> F
+  F --> G[Inferência<br>PPI]
+  G --> H[Pipeline<br>targets]
+  classDef foco fill:#1c3f6e,stroke:#1c3f6e,color:#ffffff
+  class E foco
+```
+
+<br/>
+
+Cada seta é uma **decisão de medição**, e cada decisão deixa um **rastro no código**.
+
+# 1 · Dados legislativos {background-color="#1c3f6e"}
+
+[De onde vêm os textos?]{style="color:#c9d7ec"}
+
+## APIs de dados abertos
+
+::: {.columns}
+::: {.column width="55%"}
+- **Câmara**: `dadosabertos.camara.leg.br/api/v2`
+- **Senado**: `legis.senado.leg.br/dadosabertos`
+- Públicas, gratuitas, sem chave
+- Termos: *inteligência artificial*, *deepfake*, *deep fake*, *conteúdo sintético*
+- Projetos de lei de **2019 a 2026**
+- Corpus: **`r n_corpus` proposições** (`r n_camara` da Câmara, `r n_senado` do Senado)
+:::
+::: {.column width="45%"}
+**Uma linha por proposição:**
+
+- identificação (ex.: PL 2338/2023)
+- **ementa** (o texto que vamos classificar)
+- data de apresentação
+- autor, partido e UF **na data**
+- situação de tramitação
+- campo político do autor
+:::
+:::
+
+```text
+GET .../api/v2/proposicoes?keywords=inteligência artificial&ano=2026&siglaTipo=PL&itens=100&pagina=1
+```
+
+Boas práticas: **identificar** o cliente · **tentar de novo** em falhas temporárias (429, 5xx) · **limitar a taxa** (~5 req/s) · **paginar** até o fim
+
+## A coleta também é medição
+
+<br/>
+
+::: {.incremental}
+- **Limite de datas**: a API da Câmara só aceita intervalos de até 3 meses → filtrar por `ano`
+- **Busca por palavra-chave** depende de um indexador que não controlamos → **falsos positivos** (ex.: uma lei sobre atividades nucleares) e possíveis **omissões**
+- **Duplicatas**: um PL do Senado remetido à Câmara aparece nas duas casas
+- **Partido "na data"**: queremos o partido **quando o projeto foi apresentado**, não o atual
+- **Campo político** (esquerda, centro, direita) é atribuído ao partido, seguindo Bolognesi, Ribeiro & Codato (2023): é **ela própria uma medida**, com erro
+:::
+
+## Partido "na data": uma armadilha real
+
+<br/>
+
+::: {.columns}
+::: {.column width="55%"}
+O histórico de cada deputado traz registros "partido no início da legislatura" **datados de 2023** para legislaturas antigas.
+
+**Exemplo fictício** do problema:
+
+| Data registrada | Partido | Situação |
+|---|---|---|
+| 2023-02-01 | PFL | *(vazio)* |
+| 2023-02-01 | PL | Exercício |
+| 2025-04-10 | PL | Exercício |
+
+Sem filtrar o registro sem situação, o autor de um PL de 2023 pode aparecer como **PFL**.
+:::
+::: {.column width="45%"}
+::: {.callout-warning title="Lição"}
+O erro não aparece como "erro": o código roda, a tabela sai bonita, e a variável **campo político** fica errada em silêncio.
+
+Ler a documentação **e os dados** é parte do método.
+:::
+:::
+:::
+
+## Por que congelar os dados
+
+- APIs mudam: projetos são arquivados, ementas reescritas, índices refeitos
+- Guardamos as **respostas brutas** (`dados/bruto/`) e o **corpus processado** com a **data da coleta**
+- Em sala e em qualquer replicação, partimos desses arquivos
+- Recoletar é possível, mas **gera outro corpus**
+
+<br/>
+
+::: {.columns}
+::: {.column width="50%"}
+::: {.callout-tip title="Na Parte 2"}
+`R/01_coleta.R` · `python/01_coleta.ipynb`
+
+Uma chamada ao vivo, leitura do corpus congelado e comparação entre duas coletas feitas com um mês de diferença.
+:::
+:::
+::: {.column width="50%"}
+::: {.callout-note title="Pergunta para a turma"}
+Em um mês, o que vocês acham que muda numa coleta de dados legislativos? Ementas? Partidos? A situação de tramitação?
+:::
+:::
+:::
+
+# 2 · Codificar é medir {background-color="#1c3f6e"}
+
+[O que exatamente queremos medir?]{style="color:#c9d7ec"}
+
+## Livro de códigos
+
+Sem **definição operacional** escrita, aplicável por pessoas diferentes da mesma forma, não há referência, e sem referência não há como avaliar o LLM. **Unidade de análise:** a **ementa** (sem pesquisar o autor).
+
+| Código | Instrumento central | Exemplo |
+|---|---|---|
+| **PUNIR** | penal: crime, pena, Código Penal | "tipifica o crime de deepfake sexual" |
+| **REGULAR** | regras não penais: deveres, rotulagem, direitos, responsabilidade civil | "obriga identificar conteúdo gerado por IA" |
+| **PROMOVER** | fomento, ensino, adoção de IA pelo Estado | "inclui IA no currículo do ensino médio" |
+| **OUTRO** | não trata de IA | falsos positivos da busca |
+
+Segunda variável, independente: **eleitoral** (0/1): a ementa trata de eleições, campanhas, propaganda, candidatos ou processo democrático?
+
+## Regras de decisão
+
+<br/>
+
+1. **Precedência:** PUNIR > REGULAR > PROMOVER
+2. "Responsabilização" ou "penalidades" **sem** crime, pena ou Código Penal → **REGULAR**
+3. **Marcos gerais** ("princípios, direitos e deveres") → **REGULAR**
+4. **Proteção de trabalhadores** diante da automação → **REGULAR**
+5. **Obrigar o Estado ou empresas a usar IA** → **PROMOVER**
+6. Deepfake, montagem, nudez falsa contam como **conteúdo sintético**
+7. Na dúvida com OUTRO: *a ementa, sozinha, deixa claro que o objeto é IA, algoritmo, automação ou conteúdo sintético?*
+
+## Casos difíceis: como vocês codificariam?
+
+<br/>
+
+::: {.incremental}
+- *"Dispõe sobre a regulação de deepfakes, estabelece penalidades e incentiva o desenvolvimento ético."*
+  - → **REGULAR**: "penalidades" sem crime (regra 2), e REGULAR precede PROMOVER
+- *"Institui a obrigatoriedade de câmeras corporais com IA pelas polícias."*
+  - → **PROMOVER**: adoção de IA pelo Estado (regra 5)
+- *"Altera o Código Penal para aumentar a pena dos crimes dos arts. 216-B e 218-C."*
+  - → **OUTRO**: a ementa sozinha não menciona IA nem conteúdo sintético (regra 7)
+:::
+
+. . .
+
+> Se vocês hesitaram, imaginem o LLM. **Ambiguidade no livro de códigos vira erro de medição.**
+
+## De onde vêm os rótulos de referência?
+
+::: {.columns}
+::: {.column width="56%"}
+::: {.pequeno}
+- As `r n_corpus` ementas têm um rótulo de **referência** (`dados/anotacoes/referencia_completa.csv`): é a "régua" do minicurso
+- **Quem codificou:** outra IA, o **Claude Opus 5.5** (Anthropic), coautor deste material. **Não** é o S5-nano, o instrumento que vamos avaliar
+- **Como:** aplicando o **livro de códigos** ementa por ementa, lendo **só a ementa** (sem autor, sem inteiro teor); os casos ambíguos ficaram anotados para discussão (ex.: doc0121, doc0185, doc0233)
+- **Quando:** 298 ementas da coleta de 08/10/2026 e as 6 novas da coleta de 06/11/2026
+- **Status:** **preliminar**, ainda **sem revisão humana** (`codificador = "preliminar"`, `revisado = FALSE`)
+:::
+:::
+::: {.column width="44%"}
+::: {.callout-warning title="O que isso muda"}
+Sem revisão humana, o kappa do bloco 5 mede a concordância **entre duas IAs** (S5-nano × Claude), não a validade contra humanos. Se as duas erram nos mesmos casos, a concordância **infla**.
+
+Os números **ensinam o método**; não são achados sobre o Congresso.
+:::
+
+::: {.callout-note title="Pergunta para a turma"}
+Por que não aceitar o rótulo do Claude como "verdade" e dispensar os humanos?
+:::
+:::
+:::
+
+## Quantos de cada classe?
+
+```{r}
+tab <- data.frame(
+  Categoria = paste0("**", c(CATS, "Total"), "**"),
+  n_c = c(cont(ref$categoria), nrow(ref)),
+  p_c = c(pc(cont(ref$categoria) / nrow(ref)), "100%"),
+  n_o = c(cont(ouro$categoria), nrow(ouro)),
+  p_o = c(pc(cont(ouro$categoria) / nrow(ouro)), "100%"))
+knitr::kable(tab, align = "lrrrr",
+             col.names = c("Categoria (referência)", "Corpus (n)", "Corpus (%)",
+                           "Amostra-ouro (n)", "Amostra-ouro (%)"))
+```
+
+- **REGULAR é metade do corpus**: chutar sempre REGULAR já acerta `r pc(mean(ouro$categoria == "REGULAR"), 0)` na amostra-ouro, o **piso** de qualquer instrumento
+- **Eleitoral = 1** é **rara**: `r sum(ref$eleitoral)` ementas no corpus (`r pc(mean(ref$eleitoral))`) e `r sum(ouro$eleitoral)` na amostra-ouro
+
+## O que foi parar em OUTRO?
+
+`r nrow(outros)` ementas (`r pc(nrow(outros) / n_corpus)` do corpus, `r sum(outros$ano == 2026)` delas de 2026) vieram na busca, mas a **ementa, sozinha, não trata de IA nem de conteúdo sintético** (regra 7).
+
+::: {.pequeno}
+| Tipo | Exemplos reais do corpus (ementas resumidas) |
+|---|---|
+| **Temas digitais vizinhos**, sem IA na ementa | violência contra a mulher em ambiente digital · crimes cibernéticos · LGPD para crianças · inclusão e soberania digital · nuvem soberana |
+| **Leis penais** que não citam IA nem conteúdo sintético | aumento de pena dos arts. 216-B e 218-C do Código Penal · estelionato · usura · ameaça pelo Pix |
+| **Falsos positivos puros** | Lei Geral das Atividades Nucleares · transplante de órgãos · Código de Trânsito · processo administrativo |
+:::
+
+::: {.columns}
+::: {.column width="55%"}
+::: {.pequeno}
+**Por que vieram?** A busca das APIs não olha só a ementa (o indexador usa também outros campos, como a indexação do projeto), e o texto completo pode até tratar de IA. Mas a unidade de análise é a **ementa**.
+:::
+:::
+::: {.column width="45%"}
+::: {.callout-note title="Pergunta para a turma"}
+A proporção PUNIR deve ser calculada sobre as `r n_corpus` ementas ou só sobre as que tratam de IA?
+:::
+
+::: {.fragment .pequeno}
+Sobre `r n_corpus`: `r pc(mean(ref$categoria == "PUNIR"))` · sobre `r sum(ref$categoria != "OUTRO")`: `r pc(sum(ref$categoria == "PUNIR") / sum(ref$categoria != "OUTRO"))`. O denominador é uma **decisão de medição** (aqui, as `r n_corpus`).
+:::
+:::
+:::
+
+## A amostra-ouro
+
+<br/>
+
+::: {.columns}
+::: {.column width="55%"}
+- Conjunto de ementas codificadas com o livro de códigos, idealmente **por humanos** (neste material: a referência preliminar do slide anterior)
+- É contra ela que **todo** instrumento automático será avaliado
+- **Aleatória**: nem as "mais fáceis", nem as "mais interessantes". Só assim o erro medido nela vale para o corpus todo
+- **Tamanho** = decisão de **custo × precisão**: aqui, 120 ementas (~40% do corpus), sorteadas com semente fixa
+:::
+::: {.column width="45%"}
+```text
+semente <- 2026
+ouro <- sorteia(corpus, n = 120)
+```
+
+<br/>
+
+::: {.callout-note title="Pergunta para a turma"}
+Com metade das ementas codificadas por humanos, ainda precisaríamos do LLM? E com 30?
+:::
+:::
+:::
+
+## Quanto **nós** concordamos?
+
+::: {.columns}
+::: {.column width="64%"}
+**Levantem a mão:** PUNIR, REGULAR, PROMOVER ou OUTRO?
+
+1. *"Estabelece condições, deveres e restrições ao uso de óculos inteligentes com recursos de inteligência artificial, altera o Código de Trânsito Brasileiro e o Código Penal..."* (doc0185)
+2. *"Dispõe sobre medidas de prevenção, combate e responsabilização relacionadas à criação e disseminação de manipulação digital de conteúdo sexual (deepfakes)..."* (doc0233)
+
+::: {.fragment .pequeno}
+Referência: 1 → **PUNIR** (altera o Código Penal; PUNIR precede REGULAR) · 2 → **REGULAR** ("responsabilização" sem crime nem pena; regra 2). A sala se dividiu? É essa divergência que o **alfa entre codificadores** mede.
+:::
+:::
+::: {.column width="36%"}
+::: {.callout-tip title="Por que isso importa"}
+Se humanos treinados não concordam, o LLM **não tem alvo**.
+
+A concordância **humano × humano** é o **teto realista** do instrumento: kappa de 0,65 é ruim se humanos concordam a 0,90, e excelente se concordam a 0,60.
+:::
+:::
+:::
+
+# 3 · Baselines {background-color="#1c3f6e"}
+
+[Quanto se acerta **sem** LLM?]{style="color:#c9d7ec"}
+
+## Quanto se acerta sem LLM? Três baselines
+
+- **Classe majoritária**: chutar sempre a categoria mais comum (o **piso**)
+- **Dicionário**: expressões regulares que traduzem o livro de códigos (barato, auditável)
+- **TF-IDF + logística**: aprendizado supervisionado clássico (precisa de exemplos rotulados)
+
+Um LLM só "vale a pena" se superar esses instrumentos de forma **estatisticamente consistente**.
+
+```text
+se   menciona (crime | pena | Código Penal | tipifica)  e  menciona IA  →  PUNIR
+se   não menciona IA (inteligência artificial | algoritmo | deepfake ...)  →  OUTRO
+se   menciona (incentivo | fomento | ensino | pesquisa ...)                →  PROMOVER
+caso contrário                                                              →  REGULAR
+```
+
+A **ordem das regras** implementa a precedência · cada decisão é **auditável** · frágil a sinônimos e redações novas
+
+## TF-IDF + regressão logística
+
+<br/>
+
+::: {.columns}
+::: {.column width="55%"}
+Cada ementa vira um vetor de pesos por palavra:
+
+$$
+\text{tf-idf}(t, d) = \text{tf}(t, d) \times \log\frac{D}{\text{df}(t)}
+$$
+
+- palavras frequentes **no documento** pesam mais
+- palavras comuns **em todo o corpus** pesam menos
+- depois: **regressão logística multinomial** com penalização
+:::
+::: {.column width="45%"}
+**Validação cruzada (10 dobras)**
+
+A amostra-ouro é pequena; para não avaliar o modelo nos mesmos dados em que ele aprendeu:
+
+1. divide as 120 ementas em 10 partes
+2. treina em 9, prevê a 10ª
+3. repete 10 vezes
+
+Cada ementa é prevista por um modelo que **não a viu**.
+:::
+:::
+
+## *Data leakage*: o dicionário "viu a prova"
+
+<br/>
+
+::: {.callout-warning title="Um problema que vamos encontrar"}
+As regras do dicionário deste material foram escritas **depois de ler as ementas do corpus**. Seu desempenho na amostra-ouro será **otimista**.
+:::
+
+- Num estudo real: definir as regras **antes**, ou validar em **dados novos** (projetos apresentados depois da coleta)
+- O mesmo vale para os exemplos do prompt *few-shot* e para a **escolha do modelo**: tudo o que "viu" a amostra-ouro infla o desempenho
+
+<br/>
+
+::: {.callout-note title="Aposta para a Parte 2"}
+O LLM vai **superar** o dicionário? Por muito? Com 120 ementas, conseguiremos **distinguir** os dois?
+:::
+
+# 4 · O LLM como instrumento {background-color="#1c3f6e"}
+
+[Como descrever o instrumento com precisão?]{style="color:#c9d7ec"}
+
+## O que é um LLM, para quem mede
+
+<br/>
+
+::: {.columns}
+::: {.column width="55%"}
+- Um modelo que atribui **probabilidades à próxima palavra** (*token*), dado o texto anterior
+- A "resposta" é uma **amostra** dessa distribuição
+- **Temperatura** controla a aleatoriedade:
+  - $t = 0$: escolhe sempre o mais provável
+  - $t > 0$: sorteia, e a **semente** fixa o sorteio
+- O **prompt** muda a distribuição: é parte do instrumento
+:::
+::: {.column width="45%"}
+::: {.callout-note title="Consequência"}
+Descrever o instrumento é registrar:
+
+- **modelo** (e os pesos exatos)
+- **software** que o executa
+- **prompt** (texto e versão)
+- **temperatura** e **semente**
+- **respostas brutas**
+:::
+:::
+:::
+
+## Local ou comercial?
+
+<br/>
+
+| | Modelo **local** (aberto) | API **comercial** |
+|---|---|---|
+| Dados | não saem da máquina | vão para o provedor |
+| Custo | zero (precisa de GPU ou paciência) | por *token* |
+| Versão | **fixa**: você guarda os pesos | pode mudar **sem aviso** |
+| Desempenho | em geral menor | em geral maior |
+| Reprodução | qualquer um baixa os mesmos pesos | depende do provedor manter o modelo |
+
+<br/>
+
+Neste minicurso: **local**, servido pelo **Ollama** (`localhost:11434`). A mesma lógica vale para APIs comerciais (`ellmer` em R, `openai` em Python).
+
+## Por que o S5-nano?
+
+- **Brasileiro:** desenvolvido pela Maritaca AI, com pré-treinamento adicional em **dados em português**, a língua (e o vocabulário jurídico-legislativo) das ementas
+- **Vem do Qwen:** parte do **Qwen3.5-4B** (Alibaba) e herda dele arquitetura, tokenizador e boa parte do que "sabe"
+- **Aberto e pequeno:** Apache-2.0, pesos públicos, roda numa GPU de notebook
+- **Modo *instruct*:** responde direto, sem "raciocinar" por escrito antes (o modo *think* é mais lento e variável)
+- **Quantizado em 4 bits** (GGUF Q4_K_M, ~3,5 GB, cabe numa GPU de 6 GB): é **outro instrumento** que o modelo original. O nome `s5-nano-instruct` é só um apelido local; registramos o **digest** dos pesos
+
+::: {.callout-warning title="Atenção"}
+"Brasileiro" **não garante validade**. A origem faz parte da **descrição** do instrumento; a validade se **mede** na amostra-ouro.
+:::
+
+## Anatomia de uma chamada
+
+<br/>
+
+```text
+POST http://localhost:11434/api/chat
+{
+  "model":   "s5-nano-instruct",
+  "think":   false,                                  ← modo instruct
+  "format":  { categoria: PUNIR|REGULAR|PROMOVER|OUTRO,
+               eleitoral: true|false },               ← saída estruturada
+  "options": { "temperature": 0, "seed": 42 },        ← registrar SEMPRE
+  "messages": [{ "role": "user", "content": prompt + ementa }]
+}
+```
+
+- **Saída estruturada**: pedimos um JSON com campos restritos
+- Mesmo assim podem ocorrer **falhas de formato** (texto extra, blocos de código, campo com outro nome)
+- A extração é tolerante, e as falhas que restam são **contadas, nunca descartadas em silêncio**
+
+## O prompt é parte do instrumento
+
+<br/>
+
+| Versão | Conteúdo | O que testa |
+|---|---|---|
+| **v1** | só os nomes das categorias | o que o modelo "entende" sozinho por PUNIR, REGULAR, PROMOVER |
+| **v2** | + definições e regras do livro de códigos | aproximar o LLM do codificador treinado |
+| **v3** | + 6 exemplos **fictícios** (*few-shot*) | exemplos ajudam nos casos ambíguos? |
+
+<br/>
+
+- Os exemplos do v3 são **fictícios de propósito**: ementas reais poderiam vazar casos da amostra-ouro
+- Cada prompt é um **arquivo versionado** (`prompts/`), com **hash SHA-256** e um `CHANGELOG.md`
+- Mudar uma vírgula = **novo instrumento** = novo hash
+
+## Cache: as respostas do LLM são dados
+
+<br/>
+
+Cada chamada vira **uma linha** em `dados/cache_llm/<execução>.jsonl`:
+
+```text
+{ doc_id, modelo, modelo_digest, ollama_versao,
+  prompt_id, prompt_sha, temperatura, semente,
+  resposta_bruta, categoria_llm, eleitoral_llm, segundos, timestamp }
+```
+
+::: {.columns}
+::: {.column width="33%"}
+**Auditoria**
+
+qualquer um confere o que o modelo respondeu de fato
+:::
+::: {.column width="33%"}
+**Retomada**
+
+se o processo parar, continua de onde parou; nada é anotado duas vezes
+:::
+::: {.column width="33%"}
+**Replicação sem modelo**
+
+quem não tem GPU refaz todas as análises a partir do cache
+:::
+:::
+
+## O plano de experimentos
+
+<br/>
+
+| Execução | Prompt | Temperatura | Semente | Para quê |
+|---|---|---|---|---|
+| 1 | v1 | 0 | 42 | validade e sensibilidade ao prompt |
+| 2 | v2 | 0 | 42 | validade e sensibilidade ao prompt |
+| 3 | v3 | 0 | 42 | validade e sensibilidade ao prompt |
+| 4–6 | v2 | 0,8 | 1, 2, 3 | teste-reteste (estabilidade) |
+
+<br/>
+
+::: {.columns}
+::: {.column width="50%"}
+::: {.callout-tip title="Na Parte 2"}
+`R/04_anotacao_llm.R` · `python/03_anotacao_llm.ipynb` · `python/anotar_llm.py`
+
+Demonstração ao vivo com 5 ementas; o resto vem do cache.
+:::
+:::
+::: {.column width="50%"}
+::: {.callout-note title="Aposta para a Parte 2"}
+O que muda mais os rótulos: **trocar a semente** (com $t = 0{,}8$) ou **trocar a redação do prompt**?
+:::
+:::
+:::
+
+# 5 · Validação {background-color="#1c3f6e"}
+
+[O instrumento mede o que diz medir?]{style="color:#c9d7ec"}
+
+## Quatro perguntas
+
+| Pergunta | Conceito | Ferramenta |
+|---|---|---|
+| Ele **acerta**? | validade | acurácia, F1 macro, kappa + IC bootstrap |
+| **Onde** erra? | estrutura do erro | matriz de confusão |
+| Erra **igual para todos**? | viés diferencial | acerto por campo político + teste |
+| Mede **sempre igual**? | confiabilidade | alfa de Krippendorff entre execuções |
+
+<br/>
+
+Para variáveis **raras** (como *eleitoral*), a acurácia quase nada informa (dizer "não" para todas já acerta muito). Usamos:
+
+- **Sensibilidade** = eleitorais que o LLM identificou ÷ eleitorais (humano)
+- **Especificidade** = não eleitorais que o LLM descartou ÷ não eleitorais (humano)
+
+## Acurácia e F1 macro
+
+<br/>
+
+::: {.columns}
+::: {.column width="50%"}
+**Acurácia**
+
+$$
+\text{Acurácia} = \frac{\text{acertos}}{n}
+$$
+
+Fácil de interpretar, mas **engana** com classes desbalanceadas.
+
+*Exemplo fictício:* se 50% das ementas são REGULAR, chutar sempre REGULAR acerta 50%, sem saber nada.
+:::
+::: {.column width="50%"}
+**F1 macro**
+
+$$
+F1_c = \frac{2\,TP_c}{2\,TP_c + FP_c + FN_c}
+$$
+
+$$
+F1_{\text{macro}} = \frac{1}{K}\sum_{c=1}^{K} F1_c
+$$
+
+Dá o **mesmo peso** a cada categoria, inclusive às raras.
+:::
+:::
+
+## Kappa de Cohen: acerto além do acaso
+
+<br/>
+
+$$
+\kappa = \frac{p_o - p_e}{1 - p_e}
+\qquad
+p_e = \sum_{c} p_{c}^{\,\text{humano}} \; p_{c}^{\,\text{LLM}}
+$$
+
+::: {.columns}
+::: {.column width="55%"}
+- $p_o$: concordância **observada**
+- $p_e$: concordância **esperada ao acaso**, mantendo as distribuições de cada codificador
+- $\kappa = 0$: nada além do acaso · $\kappa = 1$: concordância perfeita
+- Landis & Koch (1977): 0,4 moderada · 0,6 substancial · 0,8 quase perfeita
+:::
+::: {.column width="45%"}
+::: {.callout-note title="Exemplo fictício"}
+Dois codificadores concordam em 80% dos casos ($p_o = 0{,}8$), mas o acaso já daria 50% ($p_e = 0{,}5$):
+
+$$\kappa = \frac{0{,}8 - 0{,}5}{1 - 0{,}5} = 0{,}6$$
+:::
+:::
+:::
+
+## Incerteza: o kappa também tem IC
+
+<br/>
+
+::: {.columns}
+::: {.column width="55%"}
+Com $n = 120$ ementas, qualquer métrica é **incerta**.
+
+**Bootstrap percentil:**
+
+1. sorteie 120 ementas **com reposição**
+2. calcule o kappa nessa reamostra
+3. repita $B = 2.000$ vezes
+4. IC 95% = percentis 2,5% e 97,5%
+
+```text
+para b em 1..2000:
+    i <- sorteia(1:n, n, com_reposicao)
+    k[b] <- kappa(humano[i], llm[i])
+IC <- quantis(k, 0.025, 0.975)
+```
+:::
+::: {.column width="45%"}
+::: {.callout-tip title="Por que importa"}
+Dois instrumentos com kappas pontuais diferentes podem ser **indistinguíveis** se os ICs se sobrepõem.
+
+"O LLM ganhou" precisa de **evidência**, não de um número maior.
+:::
+:::
+:::
+
+## Onde o instrumento erra: matriz de confusão
+
+<br/>
+
+::: {.columns}
+::: {.column width="50%"}
+*Estrutura (sem números):*
+
+| Humano \\ LLM | PUNIR | REGULAR | PROM. | OUTRO |
+|---|---|---|---|---|
+| **PUNIR** | ✔ | a | | |
+| **REGULAR** | b | ✔ | c | |
+| **PROMOVER** | | d | ✔ | |
+| **OUTRO** | | | | ✔ |
+:::
+::: {.column width="50%"}
+**Erros não são todos iguais:**
+
+- **b** (REGULAR → PUNIR) **infla** a proporção punitiva que queremos estimar
+- **a** (PUNIR → REGULAR) a **reduz**
+- **c**, **d** (REGULAR ↔ PROMOVER) **não afetam** a proporção punitiva
+
+O que importa é o erro **na quantidade que você vai estimar**.
+:::
+:::
+
+## Viés diferencial
+
+- Acurácia alta **na média** não garante comparações válidas **entre grupos**
+- Se o LLM erra mais nas ementas de um campo político, qualquer comparação **entre campos** com seus rótulos estará enviesada
+- LLMs têm **viés político** documentado (Motoki et al., 2024; Rozado, 2024)
+
+<br/>
+
+::: {.columns}
+::: {.column width="50%"}
+**O que faremos:**
+
+- acurácia por campo (esquerda, centro, direita) com IC
+- viés na proporção PUNIR por campo
+- regressão logística: `acerto ~ campo`
+:::
+::: {.column width="50%"}
+::: {.callout-warning title="Cuidado"}
+Com poucas ementas por grupo, "não encontrei diferença" **não é** "não há diferença".
+:::
+:::
+:::
+
+## Confiabilidade: alfa de Krippendorff
+
+<br/>
+
+::: {.columns}
+::: {.column width="50%"}
+$$
+\alpha = 1 - \frac{D_o}{D_e}
+$$
+
+- $D_o$: discordância **observada** entre execuções
+- $D_e$: discordância **esperada ao acaso**
+- Generaliza o kappa para **qualquer número de codificadores** e aceita dados faltantes
+- **Não precisa de rótulo humano**: mede só a estabilidade
+:::
+::: {.column width="50%"}
+**Dois desenhos:**
+
+- **Teste-reteste:** mesmo prompt (v2), mesma ementa, $t = 0{,}8$, **três sementes**
+- **Sensibilidade ao prompt:** mesmo modelo, $t = 0$, **três redações** (v1, v2, v3) do mesmo livro de códigos
+
+Além do alfa: a **% de ementas que mudam de rótulo** e a **distribuição agregada** das categorias por prompt.
+:::
+:::
+
+::: {.menor}
+**Na Parte 2:** `R/05_validacao.R` · `python/04_validacao.ipynb`. O alfa **humano × humano** fica para quando houver dois codificadores humanos: neste material, a referência ainda é de outra IA.
+:::
+
+# 6 · Inferência com rótulos imperfeitos {background-color="#1c3f6e"}
+
+[Que proporção dos projetos quer PUNIR?]{style="color:#c9d7ec"}
+
+## O problema e duas soluções ruins
+
+Queremos $\theta$ = proporção de projetos **PUNIR**. Na **amostra-ouro** ($n$ = 120) temos o rótulo humano $Y_j$ e o do LLM $f(X_j)$; nas **demais** $N$ ementas, só $f(X_i)$ (1 = PUNIR, 0 = não). [Neste material, o "humano" é a referência preliminar, feita por outra IA (bloco 2).]{.menor}
+
+::: {.columns}
+::: {.column width="50%"}
+### Só humanos
+
+$$\hat\theta_H = \frac{1}{n}\sum_{j=1}^{n} Y_j$$
+
+- **sem viés** (a amostra é aleatória)
+- mas **imprecisa**: joga fora a informação das outras $N$ ementas
+:::
+::: {.column width="50%"}
+### Ingênuo
+
+$$\hat\theta_{LLM} = \frac{1}{N+n}\sum_{i=1}^{N+n} f(X_i)$$
+
+- **preciso**: usa todas as ementas
+- mas **enviesado** pelo erro do LLM
+- e com IC **estreito**, que transmite uma segurança que ele não tem
+:::
+:::
+
+## *Prediction-Powered Inference* (Angelopoulos et al., 2023)
+
+<br/>
+
+$$
+\hat\theta_{PP} = \underbrace{\frac{1}{N}\sum_{i=1}^{N} f(X_i)}_{\text{LLM no não rotulado}} \; - \; \underbrace{\frac{1}{n}\sum_{j=1}^{n}\big(f(X_j) - Y_j\big)}_{\text{viés do LLM medido na amostra-ouro (retificador)}}
+$$
+
+$$
+\widehat{\text{Var}}(\hat\theta_{PP}) = \frac{\hat\sigma^2_{f}}{N} + \frac{\hat\sigma^2_{f-Y}}{n}
+\qquad
+\text{IC 95}\%\text{: } \hat\theta_{PP} \pm 1{,}96\,\sqrt{\widehat{\text{Var}}}
+$$
+
+- **Nenhuma hipótese** sobre a qualidade do LLM
+- LLM ruim → retificador com variância alta → **IC largo**, não **IC errado**
+- A amostra-ouro **aleatória** é o que garante a correção
+
+## PPI++: quanto confiar no LLM?
+
+<br/>
+
+$$
+\hat\theta_{PP}^{\lambda} = \bar Y_n + \lambda\big(\bar f_N - \bar f_n\big),
+\qquad
+\hat\lambda = \frac{\widehat{\text{Cov}}(Y, f)}{(1 + n/N)\,\widehat{\text{Var}}(f)}, \quad \lambda \in [0, 1]
+$$
+
+::: {.columns}
+::: {.column width="50%"}
+- $\lambda = 0$: volta ao **só humanos**
+- $\lambda = 1$: é o **PPI**
+- $\hat\lambda$ é escolhido pelos dados para **minimizar a variância**
+:::
+::: {.column width="50%"}
+::: {.callout-note title="Intuição"}
+Se o LLM concorda muito com os humanos, ele "vale" muitas ementas rotuladas. Se não concorda, o estimador o ignora.
+:::
+:::
+:::
+
+Relacionado: *Design-based Supervised Learning* (Egami et al., 2023), a mesma lógica para regressões.
+
+## Como saber se um IC "funciona"?
+
+<br/>
+
+::: {.columns}
+::: {.column width="55%"}
+**Cobertura:** a fração de vezes em que o IC de 95% **contém o valor verdadeiro**. Deveria ser ~95%.
+
+Nosso corpus é didático: temos uma **referência para todas as ementas**, então conhecemos o "verdadeiro" $\theta$. Podemos **simular**:
+
+```text
+para cada n_ouro em {30, 60, 120}:
+  repita 1000 vezes:
+    sorteia uma amostra-ouro
+    calcula os 4 estimadores e seus ICs
+  cobertura = % de ICs que contêm θ
+  largura   = largura média dos ICs
+```
+:::
+::: {.column width="45%"}
+::: {.callout-note title="Apostas para a Parte 2"}
+1. Qual estimador terá o IC **mais estreito**?
+2. Qual terá a **pior cobertura**?
+3. O que acontece com amostras-ouro **pequenas** ($n$ = 30)?
+4. Por campo político, teremos precisão suficiente?
+:::
+
+`R/06_inferencia.R` · `python/05_inferencia.ipynb`
+:::
+:::
+
+# 7 · Reprodutibilidade (MLOps) {background-color="#1c3f6e"}
+
+[Outra pessoa chega ao mesmo número?]{style="color:#c9d7ec"}
+
+## O que precisa ser versionado?
+
+<br/>
+
+| Componente | Como versionar | Neste material |
+|---|---|---|
+| **Código** | Git | `R/`, `python/` |
+| **Ambiente** | `renv` / `requirements.txt` / Docker | `R/00_pacotes.R`, `requirements.txt` |
+| **Dados brutos** | congelados, com data de coleta | `dados/bruto/`, `dados/processado/` |
+| **Instrumento** | digest dos pesos + prompt (hash) + parâmetros | `modelos/`, `prompts/` + `CHANGELOG.md` |
+| **Respostas do LLM** | cache (é dado, não lixo) | `dados/cache_llm/*.jsonl` |
+| **Referência humana** | arquivo com codificador e status de revisão | `dados/anotacoes/` |
+| **Código gerado por IA** | tratar como o de um **coautor**: revisão, testes, versionamento | uso de IA **declarado** no livro |
+
+## Um pipeline declarativo: `targets`
+
+<br/>
+
+::: {.columns}
+::: {.column width="50%"}
+```{mermaid}
+%%| fig-width: 5.5
+%%{init: {"theme": "base", "themeVariables": {"lineColor": "#8f8d88", "primaryColor": "#eef4fc", "primaryBorderColor": "#7ba4de", "primaryTextColor": "#0b0b0b", "fontFamily": "Source Sans Pro, Helvetica Neue, Arial, sans-serif"}}}%%
+flowchart TD
+  C[corpus.csv] --> O[amostra-ouro]
+  R[referência] --> O
+  O --> B[baselines]
+  B --> V[validação]
+  P[prompts] --> V
+  K[cache do LLM] --> V
+  V --> I[inferência]
+  classDef arq fill:#f4f6f9,stroke:#94a3b8
+  class C,R,P,K arq
+```
+:::
+::: {.column width="50%"}
+- Cada etapa declara **de que arquivos depende** e **o que produz**
+- `tar_make()` refaz **só o que mudou**
+- Editou o prompt v2? Validação e inferência ficam desatualizadas; amostra-ouro e baselines, não
+- Coleta e anotação **não** são refeitas: entram como **arquivos versionados**
+
+::: {.callout-warning title=""}
+Ferramentas de reprodutibilidade também precisam ser **testadas**.
+:::
+:::
+:::
+
+## *Drift*: quando o instrumento muda sozinho
+
+<br/>
+
+- API comercial atualiza o modelo → **mesmo prompt, outra medida**
+- Defesas: modelo local com versão fixa, **ou** registrar `model_id` + data + respostas brutas
+- **Monitorar**: re-anotar a amostra-ouro de tempos em tempos e acompanhar o kappa
+- Mesmo local, **$t = 0$ não garante determinismo**: diferenças numéricas na GPU podem trocar respostas quase empatadas
+- O **software** (versão do Ollama) também faz parte do instrumento
+
+<br/>
+
+::: {.callout-note title="Aposta para a Parte 2"}
+Repetimos as anotações com $t = 0$, mesmos pesos, mesmo Ollama, mesma semente. **Quantos rótulos** vocês acham que mudaram?
+:::
+
+# 8 · Ética, limites e debate {background-color="#1c3f6e"}
+
+
+## IA na política brasileira em 2026
+
+<br/>
+
+::: {.columns}
+::: {.column width="50%"}
+### Eleições (TSE)
+- Res. 23.755/2026: **rotulagem** de conteúdo sintético
+- **Deepfakes** proibidos, mesmo com autorização
+- Vedação de novos conteúdos sintéticos **72h antes / 24h depois** da votação
+- IA não pode **recomendar voto**
+:::
+::: {.column width="50%"}
+### Congresso
+- **PL 2338/2023**: risco, direitos, governança, sanções de até R$ 50 mi
+- Na Câmara desde mar/2025; **aguardando parecer**
+- Enquanto isso: centenas de projetos **fragmentados** sobre IA
+:::
+:::
+
+## Para debater · Quando **não** usar um LLM
+
+<br/>
+
+::: {.columns}
+::: {.column width="50%"}
+### Para debater
+1. Se um LLM classifica centenas de ementas em minutos, ainda precisamos de codificadores humanos? **Para quê, exatamente?**
+2. Modelo **local** (reprodutível) com desempenho menor × API **comercial** com desempenho maior?
+3. O **viés político** dos LLMs pode contaminar comparações entre campos? Como testar?
+:::
+::: {.column width="50%"}
+### Quando não usar
+- O conceito não tem **definição operacional** clara
+- Não há como montar uma **amostra-ouro**
+- O erro é **correlacionado** com a variável explicativa e não pode ser corrigido
+- Poucos documentos: codificar à mão é mais barato
+- Os dados não podem sair da instituição e não há modelo local adequado
+:::
+:::
+
+## Parte 2: mãos à obra
+
+<br/>
+
+| Bloco | R | Python (Colab) |
+|---|---|---|
+| 1. Dados | `R/01_coleta.R` | `python/01_coleta.ipynb` |
+| 2. Codificação | `R/02_amostra_ouro.R` | lê `dados/anotacoes/amostra_ouro.csv` (sorteada em R) |
+| 3. Baselines | `R/03_baselines.R` | `python/02_baselines.ipynb` |
+| 4. LLM | `R/04_anotacao_llm.R` | `python/03_anotacao_llm.ipynb` · `anotar_llm.py` |
+| 5. Validação | `R/05_validacao.R` | `python/04_validacao.ipynb` |
+| 6. Inferência | `R/06_inferencia.R` | `python/05_inferencia.ipynb` |
+| 7. Pipeline | `_targets.R` · `targets::tar_make()` | `requirements.txt` |
+
+## Como rodar na Parte 2
+
+<br/>
+
+::: {.columns}
+::: {.column width="50%"}
+### Em R
+```r
+source("R/00_pacotes.R")   # uma vez
+targets::tar_make()        # tudo, do corpus às figuras
+# ou passo a passo:
+source("R/03_baselines.R")
+source("R/05_validacao.R")
+```
+
+### Em Python
+- Abra os notebooks de `python/` no **Google Colab** (ou Jupyter)
+- A **primeira célula** baixa o material e configura o ambiente
+:::
+::: {.column width="50%"}
+::: {.callout-tip title="Sem GPU, sem chave, sem internet"}
+Tudo roda a partir de `dados/` e do **cache** do LLM. O Ollama só é necessário para anotar de novo.
+:::
+
+### Para estudar depois
+- `completo_R.html` e `completo_python.html`: o minicurso **inteiro em slides**, com código e saídas
+- O **livro** do minicurso (HTML e PDF)
+- `CHECKLIST.md` para o seu próximo artigo
+:::
+:::
+
+## Mensagem final
+
+<br/>
+<br/>
+
+::: {.callout-important title=""}
+A IA amplia as formas de responder,<br>mas **não substitui** a boa pergunta, o desenho de pesquisa e a **validação estatística**.
+:::
+
+<br/>
+
+- Parte 1: **ideias, desenho e apostas**
+- Parte 2: **os dados decidem**
+
+<br>
+
+**Jodavid Ferreira** · jodavid.ferreira@ufpe.br · jodavid.github.io
+
+## Referências
+
+<br/>
+
+::: {style="font-size:0.62em"}
+- Angelopoulos, A. N. et al. (2023). Prediction-powered inference. *Science*, 382(6671).
+- Angelopoulos, A. N.; Duchi, J.; Zrnic, T. (2023). PPI++: Efficient prediction-powered inference. *arXiv:2311.01453*.
+- Bolognesi, B.; Ribeiro, E.; Codato, A. (2023). A new ideological classification of Brazilian political parties. *Dados*, 66(2).
+- Breiman, L. (2001). Statistical modeling: the two cultures. *Statistical Science*, 16(3).
+- Chernozhukov, V. et al. (2018). Double/debiased machine learning. *The Econometrics Journal*, 21(1).
+- Cohen, J. (1960). A coefficient of agreement for nominal scales. *Educational and Psychological Measurement*, 20(1).
+- Egami, N. et al. (2023). Using imperfect surrogates for downstream inference. *NeurIPS*.
+- Gilardi, F.; Alizadeh, M.; Kubli, M. (2023). ChatGPT outperforms crowd workers for text-annotation tasks. *PNAS*, 120(30).
+- Grimmer, J.; Roberts, M.; Stewart, B. (2022). *Text as Data*. Princeton University Press.
+- Krippendorff, K. (2018). *Content Analysis* (4ª ed.). SAGE.
+- Landis, J. R.; Koch, G. G. (1977). The measurement of observer agreement for categorical data. *Biometrics*, 33(1).
+- Landau, W. M. (2021). The targets R package. *JOSS*, 6(57).
+- Motoki, F.; Pinho Neto, V.; Rodrigues, V. (2024). More human than human: measuring ChatGPT political bias. *Public Choice*, 198.
+- Rozado, D. (2024). The political preferences of LLMs. *PLOS ONE*, 19(7).
+- Tribunal Superior Eleitoral. Resolução nº 23.755, de 2 de março de 2026.
+- Vovk, V.; Gammerman, A.; Shafer, G. (2005). *Algorithmic Learning in a Random World*. Springer.
+:::

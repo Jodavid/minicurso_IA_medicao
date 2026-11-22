@@ -1,0 +1,46 @@
+<!-- Abas R | Python do livro: transforma ::: {.abas} / ::: {.aba data-nome="R"} em abas.
+     A escolha vale para todas as abas da página e fica lembrada entre os capítulos. -->
+<script>
+(function () {
+  var CHAVE = "livro-linguagem";
+  function lerPref() { try { return localStorage.getItem(CHAVE); } catch (e) { return null; } }
+  function salvarPref(v) { try { localStorage.setItem(CHAVE, v); } catch (e) {} }
+  function filhas(box) {
+    return Array.prototype.filter.call(box.children, function (el) { return el.classList.contains("aba"); });
+  }
+  function escolhe(nome) {
+    document.querySelectorAll(".abas").forEach(function (box) {
+      var abas = filhas(box);
+      if (!abas.length) return;
+      var alvo = abas.some(function (a) { return a.getAttribute("data-nome") === nome; }) ? nome : abas[0].getAttribute("data-nome");
+      abas.forEach(function (a) { a.hidden = a.getAttribute("data-nome") !== alvo; });
+      box.querySelectorAll(":scope > .abas-barra > button").forEach(function (b) {
+        var ativo = b.textContent === alvo;
+        b.classList.toggle("ativo", ativo);
+        b.setAttribute("aria-selected", ativo ? "true" : "false");
+      });
+    });
+  }
+  function monta() {
+    document.querySelectorAll(".abas").forEach(function (box) {
+      if (box.getAttribute("data-pronto")) return;
+      box.setAttribute("data-pronto", "1");
+      var barra = document.createElement("div");
+      barra.className = "abas-barra";
+      barra.setAttribute("role", "tablist");
+      filhas(box).forEach(function (aba) {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.setAttribute("role", "tab");
+        b.textContent = aba.getAttribute("data-nome");
+        b.addEventListener("click", function () { salvarPref(b.textContent); escolhe(b.textContent); });
+        barra.appendChild(b);
+      });
+      box.insertBefore(barra, box.firstChild);
+    });
+    escolhe(lerPref() || "R");
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", monta); else monta();
+  if (window.gitbook && gitbook.events) gitbook.events.bind("page.change", monta);
+})();
+</script>

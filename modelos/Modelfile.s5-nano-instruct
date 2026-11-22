@@ -1,0 +1,19 @@
+# S5-nano (Maritaca AI) em modo INSTRUCT: o instrumento de medição do minicurso.
+#
+# Pesos: GGUF oficial quantizado em 4 bits (Q4_K_M, ~2,8 GB + 0,7 GB do módulo de visão),
+# licença Apache-2.0: https://huggingface.co/maritaca-ai/S5-nano-GGUF
+#
+# Criar (uma vez):
+#   ollama pull hf.co/maritaca-ai/S5-nano-GGUF:Q4_K_M
+#   ollama create s5-nano-instruct -f modelos/Modelfile.s5-nano-instruct
+#
+# A Maritaca publica UM modelo com dois modos: "think" (raciocina antes de responder) e
+# "instruct" (responde direto). O modo é escolhido em cada chamada: o template oficial,
+# embutido no GGUF, abre o bloco <think> vazio quando o cliente envia "think": false.
+# Por isso o modo instruct é garantido pelo código (python/anotar_llm.py e
+# R/04_anotacao_llm.R enviam sempre "think": false e rejeitam respostas com raciocínio),
+# e não por este arquivo.
+#
+# Temperatura, semente e demais opções também NÃO ficam aqui: o código envia tudo
+# explicitamente em cada chamada (e registra no cache), para o instrumento ser auditável.
+FROM hf.co/maritaca-ai/S5-nano-GGUF:Q4_K_M

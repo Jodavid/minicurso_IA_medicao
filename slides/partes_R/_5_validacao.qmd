@@ -1,0 +1,445 @@
+# 5 · Validação: o instrumento mede o que diz medir? {background-color="#1c3f6e"}
+
+::: {style="color:#c9d7ec"}
+`R/05_validacao.R` · `R/funcoes_medicao.R`
+:::
+
+## O que vamos executar neste bloco
+
+<br/>
+
+1. **Validade:** comparar cada instrumento com a amostra-ouro, com **IC bootstrap**
+2. **Onde erra:** matriz de confusão e as ementas que o LLM erra
+3. **Viés diferencial:** o erro é igual entre campos políticos?
+4. **Confiabilidade:** alfa de Krippendorff entre **sementes** e entre **prompts**
+5. A variável **eleitoral** e a concordância **humano × humano**
+
+## Quatro perguntas
+
+<br/>
+
+| Pergunta | Propriedade | Ferramenta |
+|---|---|---|
+| Ele acerta? | validade | acurácia, F1, kappa + IC 95% |
+| Onde erra? | estrutura do erro | matriz de confusão |
+| Erra igual para todos? | viés diferencial | acurácia e viés em PUNIR por campo |
+| Mede sempre igual? | confiabilidade | alfa de Krippendorff |
+
+<br/>
+
+::: {.pequeno}
+As duas primeiras precisam de rótulo humano. A última, **não**: estabilidade se mede comparando o instrumento com ele mesmo.
+:::
+
+## Juntando LLM e amostra-ouro
+
+```{r}
+rotulo_run <- function(run_id) {
+  p <- str_match(run_id, "__(v\\d)__t([0-9.]+)__s(\\d+)")
+  ifelse(p[, 3] == "0.0" & p[, 4] == "42", paste0("LLM ", p[, 2], " (t=0)"),
+         paste0("LLM ", p[, 2], " (t=", p[, 3], ", s=", p[, 4], ")"))
+}
+llm  <- llm |> mutate(instrumento = rotulo_run(run_id))
+aval <- llm |> inner_join(select(ouro, doc_id, categoria), by = "doc_id")
+
+aval |> count(instrumento)
+```
+
+## Métricas pontuais de cada instrumento
+
+```{r}
+aval |>
+  group_by(instrumento) |>
+  group_modify(\(d, ...) resumo_metricas(d$categoria, d$categoria_llm)) |>
+  ungroup() |>
+  arrange(desc(kappa)) |>
+  mutate(across(acuracia:kappa, \(x) round(x, 3)))
+```
+
+::: {.pequeno}
+Com $n$ = 120, qual diferença entre essas linhas é **real**? Precisamos de intervalos.
+:::
+
+## Bootstrap: a incerteza de uma métrica
+
+```{r}
+#| eval: false
+#| code: !expr trecho("R/funcoes_medicao.R", "boot_ic")
+```
+
+<br/>
+
+1. Sorteie 120 ementas **com reposição**
+2. Calcule o kappa nessa amostra
+3. Repita 2.000 vezes
+4. O IC 95% vai do percentil 2,5 ao 97,5
+
+## O bootstrap do LLM v2, por dentro
+
+```{r}
+#| output-location: column
+#| fig-width: 5.5
+#| fig-height: 4.6
+#| out-width: "100%"
+d <- filter(aval, instrumento == "LLM v2 (t=0)")
+set.seed(2026)
+boot <- replicate(2000, {
+  i <- sample.int(nrow(d), replace = TRUE)
+  kappa_cohen(d$categoria[i], d$categoria_llm[i])
+})
+ic <- quantile(boot, c(.025, .975))
+ggplot(tibble(kappa = boot), aes(kappa)) +
+  geom_histogram(bins = 40, fill = AZUIS[2]) +
+  geom_vline(xintercept = ic, linetype = 2) +
+  labs(title = paste("IC 95%:",
+    round(ic[1], 2), "a", round(ic[2], 2))) +
+  tema_minicurso(11)
+```
+
+## A tabela de validade
+
+```{r}
+#| cache: true
+metricas_llm <- aval |>
+  group_by(instrumento) |>
+  group_modify(\(d, ...) {
+    ic <- boot_ic(d$categoria, d$categoria_llm)
+    resumo_metricas(d$categoria, d$categoria_llm) |> mutate(kappa_li = ic[1], kappa_ls = ic[2])
+  }) |> ungroup()
+base_l <- tibble(doc_id = ouro$doc_id, categoria = ouro$categoria,
+                 pred_dic = ouro$pred_dic, pred_ml = pred_ml)
+metricas_base <- bind_rows(
+  "Dicionário (regex)" = resumo_metricas(base_l$categoria, base_l$pred_dic) |>
+    mutate(kappa_li = boot_ic(base_l$categoria, base_l$pred_dic)[1],
+           kappa_ls = boot_ic(base_l$categoria, base_l$pred_dic)[2]),
+  "TF-IDF + logística (CV 10)" = resumo_metricas(base_l$categoria, base_l$pred_ml) |>
+    mutate(kappa_li = boot_ic(base_l$categoria, base_l$pred_ml)[1],
+           kappa_ls = boot_ic(base_l$categoria, base_l$pred_ml)[2]),
+  .id = "instrumento")
+metricas <- bind_rows(metricas_base, metricas_llm) |> arrange(desc(kappa))
+```
+
+## A tabela de validade: o resultado
+
+```{r}
+metricas |> select(-n) |> mutate(across(where(is.double), \(x) round(x, 2))) |> print(width = 110)
+```
+
+## Confere com o pipeline?
+
+```{r}
+oficial <- read_csv("resultados/tabelas/validade_instrumentos.csv")
+inner_join(select(metricas, instrumento, kappa, kappa_li, kappa_ls),
+           select(oficial, instrumento, kappa_pipeline = kappa, li_pipeline = kappa_li),
+           by = "instrumento") |>
+  mutate(across(where(is.double), \(x) round(x, 3)))
+```
+
+::: {.pequeno}
+Mesmas sementes, mesmos números: o slide refez o que `R/05_validacao.R` grava em `resultados/tabelas/`.
+:::
+
+## Validade: a figura
+
+```{r}
+#| output-location: slide
+melhor <- metricas_llm |> filter(str_detect(instrumento, "t=0\\)")) |>
+  slice_max(kappa, n = 1) |> pull(instrumento)
+
+metricas |>
+  mutate(instrumento = reorder(instrumento, kappa),
+         tipo = if_else(str_detect(instrumento, "^LLM"), "LLM (S5-nano instruct, local)", "Baseline clássico")) |>
+  ggplot(aes(kappa, instrumento, colour = tipo)) +
+  geom_vline(xintercept = c(.4, .6, .8), colour = GRADE, linetype = 2) +
+  geom_linerange(aes(xmin = kappa_li, xmax = kappa_ls), linewidth = 2) +
+  geom_point(size = 3.5) +
+  scale_colour_manual(values = c("Baseline clássico" = CINZA, "LLM (S5-nano instruct, local)" = AZUIS[3])) +
+  scale_x_continuous(limits = c(0, 1)) +
+  labs(title = "Validade: concordância de cada instrumento com a amostra-ouro",
+       subtitle = "Kappa de Cohen com IC 95% bootstrap (n = 120 ementas)",
+       x = "Kappa de Cohen", y = NULL, colour = NULL) +
+  tema_minicurso()
+```
+
+## Três leituras da tabela
+
+<br/>
+
+::: {.incremental}
+1. **O prompt importa:** o melhor LLM (`r melhor`, kappa `r nf(max(metricas_llm$kappa[metricas_llm$instrumento == melhor]))`) supera a versão sem definições (v1, kappa `r nf(metricas$kappa[metricas$instrumento == "LLM v1 (t=0)"])`)
+2. **LLM × dicionário:** kappa `r nf(metricas$kappa[metricas$instrumento == melhor])` × `r nf(metricas$kappa[metricas$instrumento == "Dicionário (regex)"])`, com **intervalos sobrepostos**: com 120 ementas, não há evidência de diferença. E o dicionário viu a prova
+3. **LLM × TF-IDF:** o modelo clássico (`r nf(metricas$kappa[metricas$instrumento == "TF-IDF + logística (CV 10)"])`) precisaria de muito mais exemplos rotulados
+:::
+
+## Onde o instrumento erra
+
+```{r}
+erro <- aval |> filter(instrumento == melhor)
+table(humano = factor(erro$categoria, levels = CATEGORIAS), llm = erro$categoria_llm)
+erro |> count(humano = categoria, llm = categoria_llm) |> filter(humano != llm) |> arrange(desc(n))
+```
+
+::: {.pequeno}
+Erros não são iguais: confundir REGULAR com PUNIR **infla** a proporção punitiva que vamos estimar; confundir REGULAR com PROMOVER não a afeta.
+:::
+
+## Matriz de confusão: a figura
+
+```{r}
+#| output-location: slide
+#| fig-height: 4.4
+conf <- erro |>
+  count(humano = factor(categoria, levels = CATEGORIAS), llm = categoria_llm, .drop = FALSE) |>
+  group_by(humano) |> mutate(prop = n / sum(n)) |> ungroup()
+ggplot(conf, aes(llm, humano, fill = prop)) +
+  geom_tile(colour = "#fcfcfb", linewidth = 1.5) +
+  geom_text(aes(label = n, colour = prop > .5), size = 5) +
+  scale_colour_manual(values = c(`TRUE` = "white", `FALSE` = TINTA), guide = "none") +
+  scale_fill_gradient(low = "#eef4fc", high = AZUIS[3], limits = c(0, 1), labels = scales::percent) +
+  scale_y_discrete(limits = rev) +
+  labs(title = paste("Onde o instrumento erra:", melhor),
+       subtitle = "Linhas: codificação humana · Colunas: LLM · Cor: % da linha",
+       x = "Rótulo do LLM", y = "Rótulo humano", fill = "% da linha") +
+  tema_minicurso()
+```
+
+## As ementas que o LLM errou
+
+```{r}
+erro |>
+  filter(as.character(categoria) != as.character(categoria_llm)) |>
+  left_join(select(corpus, doc_id, ementa), by = "doc_id") |>
+  transmute(doc_id, humano = categoria, llm = categoria_llm, ementa = str_trunc(ementa, 95)) |>
+  head(8) |>
+  knitr::kable()
+```
+
+::: {.pequeno}
+**Pergunta para a turma:** em quais destes o LLM tem razão e a referência deveria ser revista?
+:::
+
+## Viés diferencial: a ideia
+
+<br/>
+
+Acurácia alta **na média** não garante comparações válidas **entre grupos**.
+
+::: {.incremental}
+- Se o LLM erra mais nas ementas de um campo político, qualquer comparação **entre campos** feita com seus rótulos estará enviesada
+- Isso é relevante porque o **viés político** de LLMs está documentado (Motoki et al., 2024; Rozado, 2024)
+- O que medir por grupo: **acurácia** e, principalmente, o **viés na quantidade que vamos estimar** (proporção PUNIR do LLM − do humano)
+:::
+
+## Viés por campo político
+
+```{r}
+dif <- erro |>
+  left_join(select(corpus, doc_id, campo, casa), by = "doc_id") |>
+  mutate(punir_h = categoria == "PUNIR", punir_l = categoria_llm %in% "PUNIR",
+         acerto  = as.character(categoria) == as.character(categoria_llm))
+vies_campo <- dif |>
+  filter(campo != "Sem partido/Outro") |>
+  group_by(campo) |>
+  summarise(n = n(), acuracia = mean(acerto), prop_punir_humano = mean(punir_h),
+            prop_punir_llm = mean(punir_l), vies_punir = prop_punir_llm - prop_punir_humano) |>
+  mutate(ep = sqrt(acuracia * (1 - acuracia) / n), li = acuracia - 1.96 * ep, ls = acuracia + 1.96 * ep)
+vies_campo |> mutate(across(where(is.double), \(x) round(x, 3)))
+```
+
+## Viés diferencial: a figura
+
+```{r}
+#| fig-height: 4.2
+ggplot(vies_campo, aes(acuracia, reorder(campo, acuracia))) +
+  geom_linerange(aes(xmin = pmax(li, 0), xmax = pmin(ls, 1)), linewidth = 2, colour = AZUIS[3]) +
+  geom_point(size = 3.5, colour = AZUIS[3]) +
+  geom_text(aes(label = paste0("n = ", n)), nudge_y = .25, size = 3.5, colour = TINTA2) +
+  scale_x_continuous(limits = c(0, 1), labels = scales::percent) +
+  labs(title = "O acerto do LLM varia por campo político do autor?", x = "Acurácia", y = NULL) +
+  tema_minicurso()
+```
+
+## Um teste formal
+
+```{r}
+mod <- glm(acerto ~ campo, family = binomial, data = filter(dif, campo != "Sem partido/Outro"))
+anova(mod, test = "Chisq")
+```
+
+::: {.callout-note}
+Não rejeitar não é o mesmo que **descartar** o viés: com `r min(vies_campo$n)` a `r max(vies_campo$n)` ementas por campo, o teste tem pouco poder. A lição: **com esta amostra-ouro, não é possível descartar viés diferencial**.
+:::
+
+## Confiabilidade: o instrumento é estável?
+
+<br/>
+
+Duas fontes de instabilidade, **sem precisar de rótulo humano**:
+
+- **Teste-reteste:** mesmo prompt (v2), mesma ementa, temperatura 0,8, **três sementes**
+- **Sensibilidade ao prompt:** mesmo modelo, temperatura 0, **três redações** (v1, v2, v3)
+
+**Alfa de Krippendorff** (nominal): generaliza o kappa para $k$ codificadores e aceita faltantes
+
+$$\alpha = 1 - \frac{D_o}{D_e} \qquad D_o: \text{discordância observada} \quad D_e: \text{esperada ao acaso}$$
+
+## O alfa "na mão"
+
+```{r}
+#| eval: false
+#| class-source: menor
+#| code: !expr trecho("R/funcoes_medicao.R", "alfa_krippendorff")
+```
+
+## O alfa num exemplo pequeno
+
+Três codificadores fictícios, seis ementas:
+
+```{r}
+m <- rbind(c("PUNIR",   "PUNIR",   "PUNIR"),
+           c("REGULAR", "REGULAR", "PROMOVER"),
+           c("REGULAR", "REGULAR", "REGULAR"),
+           c("OUTRO",   "OUTRO",   NA),
+           c("PROMOVER","REGULAR", "PROMOVER"),
+           c("REGULAR", "REGULAR", "REGULAR"))
+alfa_krippendorff(m)
+alfa_krippendorff(m[, 1:2])
+```
+
+::: {.pequeno}
+A matriz de **coincidências** `o` conta pares de rótulos dentro de cada ementa; a diagonal são concordâncias. Sem o terceiro codificador, a concordância muda.
+:::
+
+## Teste-reteste: trocar a semente
+
+```{r}
+largo_seed <- llm |>
+  filter(prompt_id == "v2", temperatura > 0) |>
+  select(doc_id, semente, categoria_llm) |>
+  mutate(categoria_llm = as.character(categoria_llm)) |>
+  tidyr::pivot_wider(names_from = semente, values_from = categoria_llm, names_prefix = "s")
+head(largo_seed, 4)
+alfa_reteste <- alfa_krippendorff(select(largo_seed, -doc_id))
+muda_seed <- mean(apply(select(largo_seed, -doc_id), 1, \(x) n_distinct(na.omit(x)) > 1))
+c(alfa = alfa_reteste, prop_que_muda = muda_seed)
+```
+
+## Sensibilidade ao prompt: trocar a redação
+
+```{r}
+largo_prompt <- llm |>
+  filter(temperatura == 0, semente == 42) |>
+  select(doc_id, prompt_id, categoria_llm) |>
+  mutate(categoria_llm = as.character(categoria_llm)) |>
+  tidyr::pivot_wider(names_from = prompt_id, values_from = categoria_llm)
+alfa_prompt <- alfa_krippendorff(select(largo_prompt, -doc_id))
+muda_prompt <- mean(apply(select(largo_prompt, -doc_id), 1, \(x) n_distinct(na.omit(x)) > 1))
+tibble(comparacao = c("Teste-reteste (v2, t=0,8, 3 sementes)", "Sensibilidade ao prompt (v1, v2, v3; t=0)"),
+       alfa = c(alfa_reteste, alfa_prompt), prop_ementas_que_mudam = c(muda_seed, muda_prompt))
+```
+
+::: {.callout-important}
+**O prompt importa muito mais que o acaso:** trocar a semente muda `r pc(muda_seed)` das ementas; trocar o prompt muda `r pc(muda_prompt)`.
+:::
+
+## Ementas que mudam com o prompt
+
+```{r}
+largo_prompt |>
+  filter(v1 != v2 | v2 != v3) |>
+  left_join(select(corpus, doc_id, ementa), by = "doc_id") |>
+  left_join(select(ref, doc_id, ref = categoria), by = "doc_id") |>
+  transmute(doc_id, v1, v2, v3, ref, ementa = str_trunc(ementa, 70)) |>
+  head(8) |> knitr::kable()
+```
+
+## A medida agregada também muda
+
+```{r}
+#| output-location: slide
+#| fig-height: 4.5
+dist_all <- bind_rows(
+  llm |> filter(temperatura == 0, semente == 42) |> count(fonte = prompt_id, categoria = categoria_llm),
+  ref |> count(categoria = factor(categoria, levels = CATEGORIAS)) |> mutate(fonte = "Referência\nhumana")) |>
+  group_by(fonte) |> mutate(prop = n / sum(n)) |> ungroup() |>
+  mutate(fonte = factor(fonte, levels = c("v1", "v2", "v3", "Referência\nhumana")))
+
+ggplot(dist_all, aes(prop, fonte, fill = fonte)) +
+  geom_col(width = .7) +
+  facet_wrap(~categoria, nrow = 1) +
+  scale_fill_manual(values = c(v1 = AZUIS[1], v2 = AZUIS[2], v3 = AZUIS[3], "Referência\nhumana" = CINZA),
+                    guide = "none") +
+  scale_x_continuous(labels = scales::percent, breaks = c(0, .3, .6)) +
+  scale_y_discrete(limits = rev) +
+  labs(title = "Mesmo modelo, mesmos textos, prompts diferentes: medidas diferentes",
+       x = NULL, y = NULL) +
+  tema_minicurso() + theme(panel.grid.major.y = element_blank())
+```
+
+## A variável eleitoral
+
+```{r}
+llm |> filter(temperatura == 0, semente == 42) |>
+  inner_join(select(ouro, doc_id, eleitoral), by = "doc_id") |>
+  group_by(prompt_id) |>
+  summarise(eleitorais_humano = sum(eleitoral), eleitorais_llm = sum(eleitoral_llm, na.rm = TRUE),
+            sensibilidade  = mean(eleitoral_llm[eleitoral == 1], na.rm = TRUE),
+            especificidade = mean(!eleitoral_llm[eleitoral == 0], na.rm = TRUE))
+```
+
+::: {.pequeno}
+Variável **rara**: acurácia não informa quase nada. **Sensibilidade** (dos eleitorais, quantos o LLM achou?) e **especificidade** (dos não eleitorais, quantos descartou?). Com tão poucos casos eleitorais, a sensibilidade é muito imprecisa.
+:::
+
+## Humano × humano: a comparação que falta
+
+Quando a referência for revisada por **dois codificadores humanos**, este trecho calcula o alfa entre eles:
+
+```{r}
+#| eval: false
+arqs <- list.files("material_apoio/respostas", "\\.csv$", full.names = TRUE)
+resp <- map(arqs, \(a) read_csv(a) |> mutate(codificador = tools::file_path_sans_ext(basename(a)))) |>
+  list_rbind() |>
+  mutate(categoria = str_to_upper(str_trim(categoria)))
+m <- resp |> select(doc_id, codificador, categoria) |>
+  tidyr::pivot_wider(names_from = codificador, values_from = categoria)
+alfa_krippendorff(select(m, -doc_id))     # alfa entre os codificadores
+```
+
+::: {.columns}
+::: {.column width="50%"}
+::: {.callout-tip title="A comparação mais honesta"}
+O LLM concorda com a referência **tanto quanto os humanos concordam entre si**? Neste material a referência é de outra IA, então essa resposta ainda **não existe**.
+:::
+:::
+::: {.column width="50%"}
+::: {.callout-note title="Pergunta para a turma"}
+O kappa do S5-nano contra a referência é alto ou baixo? **Comparado a quê?**
+:::
+:::
+:::
+
+## Síntese da validação
+
+<br/>
+
+::: {.columns}
+::: {.column width="50%"}
+**Executamos**
+
+- métricas e IC bootstrap de 8 instrumentos
+- matriz de confusão e erros
+- viés por campo e teste logístico
+- alfa entre sementes e entre prompts
+:::
+::: {.column width="50%"}
+**O que sabemos do instrumento**
+
+- concordância **substancial** com a referência
+- **estável** entre sementes
+- **sensível ao prompt**
+- viés diferencial **não descartado**
+
+→ bom, mas **imperfeito**. Como usá-lo sem esconder isso?
+:::
+:::

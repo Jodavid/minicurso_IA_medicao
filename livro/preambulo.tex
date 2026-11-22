@@ -1,0 +1,277 @@
+% =============================================================================
+% Template LaTeX Minimalista (Azul & Cinza/Ardósia) — Livro do Minicurso
+% II DataPOL · UFPE · 2026
+% =============================================================================
+
+% --- Geometria da página -----------------------------------------------------
+\usepackage[letterpaper,left=2.6cm,right=2.6cm,top=2.7cm,bottom=3.1cm,headheight=22pt,headsep=0.8cm,footskip=1.25cm]{geometry}
+\usepackage{emptypage}
+
+% --- Tipografia (XeLaTeX) ----------------------------------------------------
+\usepackage{fontspec}
+\defaultfontfeatures{Ligatures=TeX}
+\setmainfont{Noto Serif}[Scale=0.96]
+\setsansfont{Lato}[
+  UprightFont = Lato Regular,
+  BoldFont = Lato Bold,
+  ItalicFont = Lato Italic,
+  BoldItalicFont = Lato Bold Italic
+]
+\setmonofont{DejaVu Sans Mono}[Scale=0.82]
+
+% Seta Unicode (→) renderizada com glifo matemático nítido
+\usepackage{newunicodechar}
+\newunicodechar{→}{\ensuremath{\rightarrow}}
+
+\usepackage{setspace}
+\setstretch{1.14}
+\setlength{\parskip}{0.45em}
+\setlength{\parindent}{0pt}
+
+% --- Paleta de cores minimalista (Azul & Cinza) ------------------------------
+\usepackage{xcolor}
+\usepackage{colortbl}
+\definecolor{azulNoite}{HTML}{0F2440}
+\definecolor{azulEscuro}{HTML}{1C3F6E}
+\definecolor{azulMedio}{HTML}{2B5B9E}
+\definecolor{azul}{HTML}{3D7CCC}
+\definecolor{azulClaro}{HTML}{7BA4DE}
+\definecolor{azulBorda}{HTML}{C9DCF5}
+\definecolor{azulFundo}{HTML}{F2F7FD}
+
+\definecolor{tinta}{HTML}{182026}
+\definecolor{cinzaEscuro}{HTML}{334155}
+\definecolor{cinzaMedio}{HTML}{64748B}
+\definecolor{cinzaClaro}{HTML}{94A3B8}
+\definecolor{cinzaBorda}{HTML}{CBD5E1}
+\definecolor{cinzaFundo}{HTML}{F4F6F9}
+
+\colorlet{corTituloCaixa}{azulEscuro}
+\AtBeginDocument{\color{tinta}}
+
+% --- Links e referências cruzadas --------------------------------------------
+\AtBeginDocument{%
+  \hypersetup{
+    colorlinks=true,
+    linkcolor=azulEscuro,
+    citecolor=azulEscuro,
+    urlcolor=azulMedio,
+    filecolor=azulMedio
+  }%
+}
+
+% --- Folha de rosto interna minimalista (\maketitle) -------------------------
+\makeatletter
+\renewcommand{\maketitle}{%
+  \begin{titlepage}%
+    \sffamily
+    \vspace*{2.5cm}%
+    {\footnotesize\bfseries\color{azul}\MakeUppercase{II DataPOL · UFPE · 2026}\par}%
+    \vspace{0.8em}%
+    {\Huge\bfseries\color{azulNoite}\@title\par}%
+    \vspace{0.6em}%
+    {\color{azul}\rule{2.4cm}{2.5pt}}{\color{cinzaBorda}\rule{5.6cm}{0.6pt}}\par
+    \vspace{0.8em}%
+    \@ifundefined{@subtitle}{}{{\Large\color{cinzaEscuro}\@subtitle\par}}%
+    \vfill
+    {\color{cinzaBorda}\hrule height 0.5pt}\vspace{1em}%
+    {\def\and{\par\vspace{0.25em}}\normalsize\color{tinta}\@author\par}%
+    \vspace{0.6em}%
+    {\small\color{cinzaMedio}\@date\par}%
+    \vspace*{1cm}%
+  \end{titlepage}%
+}
+\makeatother
+
+% --- Cabeçalhos de capítulos e seções (titlesec) -----------------------------
+\usepackage{titlesec}
+
+\titleformat{\chapter}[display]
+  {\normalfont\sffamily}
+  {\footnotesize\bfseries\color{azul}\MakeUppercase{\chaptertitlename}\ \thechapter}
+  {0.35em}
+  {\huge\bfseries\color{azulNoite}}
+  [\vspace{0.45em}{\color{azul}\rule{2.2cm}{2.2pt}}{\color{cinzaBorda}\rule{\dimexpr\textwidth-2.2cm\relax}{0.6pt}}]
+
+\titleformat{name=\chapter,numberless}[display]
+  {\normalfont\sffamily}
+  {}
+  {0pt}
+  {\huge\bfseries\color{azulNoite}}
+  [\vspace{0.45em}{\color{azul}\rule{2.2cm}{2.2pt}}{\color{cinzaBorda}\rule{\dimexpr\textwidth-2.2cm\relax}{0.6pt}}]
+
+\titlespacing*{\chapter}{0pt}{-10pt}{1.8em}
+
+\titleformat{\section}
+  {\normalfont\sffamily\Large\bfseries\color{azulEscuro}}
+  {\textcolor{azul}{\thesection}}
+  {0.6em}
+  {}
+  [\vspace{0.2em}{\color{cinzaBorda}\hrule height 0.4pt}]
+\titlespacing*{\section}{0pt}{1.6em}{0.6em}
+
+\titleformat{\subsection}
+  {\normalfont\sffamily\large\bfseries\color{cinzaEscuro}}
+  {\textcolor{cinzaMedio}{\thesubsection}}
+  {0.55em}
+  {}
+\titlespacing*{\subsection}{0pt}{1.2em}{0.4em}
+
+\titleformat{\subsubsection}
+  {\normalfont\sffamily\normalsize\bfseries\color{cinzaEscuro}}
+  {\thesubsubsection}
+  {0.5em}
+  {}
+
+% --- Cabeçalho e rodapé das páginas (fancyhdr) -------------------------------
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[LE]{\sffamily\footnotesize\color{cinzaMedio}\nouppercase{\leftmark}}
+\fancyhead[RO]{\sffamily\footnotesize\color{cinzaMedio}\nouppercase{\rightmark}}
+\fancyfoot[LE,RO]{\sffamily\footnotesize\bfseries\color{azulEscuro}\thepage}
+\fancyfoot[LO,RE]{\sffamily\scriptsize\color{cinzaClaro}II DataPOL · IA como Instrumento de Medição}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{cinzaBorda}\leaders\hrule height \headrulewidth\hfill}}
+\renewcommand{\footrulewidth}{0pt}
+
+\fancypagestyle{plain}{%
+  \fancyhf{}%
+  \fancyfoot[LE,RO]{\sffamily\footnotesize\bfseries\color{azulEscuro}\thepage}%
+  \renewcommand{\headrulewidth}{0pt}%
+}
+
+% --- Caixas de destaque (tcolorbox + filtro caixa.lua) -----------------------
+\usepackage[most]{tcolorbox}
+
+\newtcolorbox{caixanota}{
+  enhanced,
+  breakable,
+  lines before break=4,
+  pad at break*=2.5mm,
+  colback=azulFundo,
+  colframe=azulBorda,
+  borderline west={3.5pt}{0pt}{azulEscuro},
+  boxrule=0.5pt,
+  arc=3pt,
+  left=11pt, right=11pt, top=9pt, bottom=9pt,
+  before skip=1.1em, after skip=1.1em,
+  before upper={\colorlet{corTituloCaixa}{azulEscuro}\setlength{\parskip}{0.4em}}
+}
+
+\newtcolorbox{caixaaviso}{
+  enhanced,
+  breakable,
+  lines before break=4,
+  pad at break*=2.5mm,
+  colback=cinzaFundo,
+  colframe=cinzaBorda,
+  borderline west={3.5pt}{0pt}{cinzaEscuro},
+  boxrule=0.5pt,
+  arc=3pt,
+  left=11pt, right=11pt, top=9pt, bottom=9pt,
+  before skip=1.1em, after skip=1.1em,
+  before upper={\colorlet{corTituloCaixa}{cinzaEscuro}\setlength{\parskip}{0.4em}}
+}
+
+\newtcolorbox{caixaia}{
+  enhanced,
+  breakable,
+  lines before break=4,
+  pad at break*=2.5mm,
+  colback=azulFundo,
+  colframe=azulBorda,
+  borderline west={3.5pt}{0pt}{azul},
+  boxrule=0.5pt,
+  arc=3pt,
+  left=11pt, right=11pt, top=9pt, bottom=9pt,
+  before skip=1.1em, after skip=1.1em,
+  before upper={\colorlet{corTituloCaixa}{azulMedio}\setlength{\parskip}{0.4em}}
+}
+
+% Citações (blockquote) em estilo minimalista
+\AtBeginDocument{%
+  \renewenvironment{quote}{%
+    \begin{tcolorbox}[
+      enhanced, breakable,
+      lines before break=3,
+      colback=cinzaFundo, colframe=cinzaFundo,
+      borderline west={2.8pt}{0pt}{azulClaro},
+      boxrule=0pt, sharp corners,
+      left=10pt, right=10pt, top=6pt, bottom=6pt,
+      before skip=0.9em, after skip=0.9em,
+      fontupper=\small\color{cinzaEscuro}
+    ]%
+  }{%
+    \end{tcolorbox}%
+  }%
+}
+
+% --- Blocos de código e realce em tons de Azul & Cinza -----------------------
+\usepackage{fvextra}
+\makeatletter
+\AtBeginDocument{%
+  \RecustomVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\},fontsize=\footnotesize,breaklines,breakanywhere}%
+  \let\verbatim\relax\let\endverbatim\relax
+  \DefineVerbatimEnvironment{verbatim}{Verbatim}{fontsize=\footnotesize,breaklines,breakanywhere,frame=leftline,framerule=2pt,rulecolor=\color{cinzaBorda},framesep=7pt}%
+  \@ifundefined{Shaded}{}{%
+    \renewenvironment{Shaded}{%
+      \begin{tcolorbox}[
+        enhanced, breakable,
+        lines before break=3,
+        colback=cinzaFundo, colframe=cinzaBorda,
+        borderline west={2.5pt}{0pt}{azulEscuro},
+        boxrule=0.4pt, arc=2.5pt,
+        left=8pt, right=8pt, top=5pt, bottom=5pt,
+        before skip=0.8em, after skip=0.8em
+      ]%
+    }{%
+      \end{tcolorbox}%
+    }%
+  }%
+  % Paleta de realce de sintaxe em azul e cinza
+  \@ifundefined{KeywordTok}{}{%
+    \renewcommand{\KeywordTok}[1]{\textcolor[HTML]{1C3F6E}{\textbf{#1}}}%
+    \renewcommand{\ControlFlowTok}[1]{\textcolor[HTML]{1C3F6E}{\textbf{#1}}}%
+    \renewcommand{\OperatorTok}[1]{\textcolor[HTML]{1C3F6E}{#1}}%
+    \renewcommand{\FunctionTok}[1]{\textcolor[HTML]{2B5B9E}{#1}}%
+    \renewcommand{\BuiltInTok}[1]{\textcolor[HTML]{2B5B9E}{#1}}%
+    \renewcommand{\StringTok}[1]{\textcolor[HTML]{2B6CB0}{#1}}%
+    \renewcommand{\CharTok}[1]{\textcolor[HTML]{2B6CB0}{#1}}%
+    \renewcommand{\SpecialStringTok}[1]{\textcolor[HTML]{2B6CB0}{#1}}%
+    \renewcommand{\VerbatimStringTok}[1]{\textcolor[HTML]{2B6CB0}{#1}}%
+    \renewcommand{\DecValTok}[1]{\textcolor[HTML]{1E4E8C}{#1}}%
+    \renewcommand{\BaseNTok}[1]{\textcolor[HTML]{1E4E8C}{#1}}%
+    \renewcommand{\FloatTok}[1]{\textcolor[HTML]{1E4E8C}{#1}}%
+    \renewcommand{\ConstantTok}[1]{\textcolor[HTML]{1E4E8C}{#1}}%
+    \renewcommand{\AttributeTok}[1]{\textcolor[HTML]{2B5B9E}{#1}}%
+    \renewcommand{\CommentTok}[1]{\textcolor[HTML]{64748B}{\textit{#1}}}%
+    \renewcommand{\DocumentationTok}[1]{\textcolor[HTML]{64748B}{\textit{#1}}}%
+    \renewcommand{\AnnotationTok}[1]{\textcolor[HTML]{64748B}{\textit{#1}}}%
+    \renewcommand{\CommentVarTok}[1]{\textcolor[HTML]{64748B}{\textit{#1}}}%
+    \renewcommand{\NormalTok}[1]{\textcolor[HTML]{182026}{#1}}%
+    \renewcommand{\VariableTok}[1]{\textcolor[HTML]{182026}{#1}}%
+    \renewcommand{\OtherTok}[1]{\textcolor[HTML]{334155}{#1}}%
+  }%
+}
+\makeatother
+
+% Caminhos de arquivo em \texttt podem quebrar depois de / . e _ (só dentro de \texttt)
+\newXeTeXintercharclass\classebarra
+\XeTeXcharclass`\/=\classebarra
+\XeTeXcharclass`\.=\classebarra
+\XeTeXinterchartoks\classebarra 0={\allowbreak}
+\let\textttorig\texttt
+\renewcommand{\texttt}[1]{\textttorig{\color{azulEscuro}\XeTeXinterchartokenstate=1\def\_{\textunderscore\allowbreak}#1}}
+
+% --- Tabelas e legendas ------------------------------------------------------
+\usepackage{caption}
+\captionsetup{
+  font={small,sf,color=cinzaEscuro},
+  labelfont={bf,sf,color=azulEscuro},
+  labelsep=period,
+  skip=6pt
+}
+\AtBeginEnvironment{longtable}{\small\sffamily\arrayrulecolor{cinzaBorda}}
+\setlength{\LTpre}{0.9em}
+\setlength{\LTpost}{0.9em}

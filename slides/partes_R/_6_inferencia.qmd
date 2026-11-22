@@ -1,0 +1,352 @@
+# 6 · Inferência com rótulos imperfeitos {background-color="#1c3f6e"}
+
+::: {style="color:#c9d7ec"}
+`R/06_inferencia.R` · `R/funcoes_medicao.R`
+:::
+
+## O que vamos executar neste bloco
+
+<br/>
+
+1. Montar, para cada ementa, o rótulo do **LLM** ($f$) e o **humano** ($y$, só na amostra-ouro)
+2. Quatro estimadores da proporção PUNIR: **só humanos**, **ingênuo**, **PPI** e **PPI++**
+3. Conferir quem acerta o valor da referência completa
+4. Uma **simulação**: 1.000 amostras-ouro para cada tamanho, e a **cobertura** dos ICs
+5. A mesma pergunta **por campo político**
+
+## O problema
+
+<br/>
+
+Queremos $\theta$ = proporção de projetos **PUNIR**. Temos:
+
+- a **amostra-ouro**: $n$ = `r nrow(ouro)` ementas com rótulo humano $Y_j$ **e** do LLM $f(X_j)$
+- as outras $N$ = `r nrow(corpus) - nrow(ouro)` ementas, só com o rótulo do LLM $f(X_i)$
+
+::: {.pequeno}
+"Humano" = o rótulo de referência. Neste material ele ainda é preliminar e veio de outra IA (bloco 2); o método é o mesmo quando a referência for revisada por humanos.
+:::
+
+::: {.columns}
+::: {.column width="50%"}
+**Só humanos**
+$$\hat\theta_H = \bar Y_n$$
+sem viés, mas **impreciso**
+:::
+::: {.column width="50%"}
+**Ingênuo**
+$$\hat\theta_{LLM} = \bar f_{N+n}$$
+preciso, mas **enviesado** pelo erro do LLM
+:::
+:::
+
+## Montando $y$ e $f$
+
+```{r}
+PROMPT <- str_extract(melhor, "v\\d")
+dados <- corpus |>
+  select(doc_id, ano, campo, casa) |>
+  left_join(llm |> filter(prompt_id == PROMPT, temperatura == 0, semente == 42) |>
+              select(doc_id, categoria_llm), by = "doc_id") |>
+  left_join(select(ref, doc_id, categoria_ref = categoria), by = "doc_id") |>
+  mutate(na_ouro = doc_id %in% ouro$doc_id,
+         f = as.integer(categoria_llm %in% "PUNIR"),                        # LLM: 0/1
+         y = if_else(na_ouro, as.integer(categoria_ref == "PUNIR"), NA_integer_))  # humano: 0/1 ou NA
+dados |> select(doc_id, campo, categoria_llm, na_ouro, f, y) |> head(6)
+lab <- filter(dados, na_ouro); unl <- filter(dados, !na_ouro)
+c(n = nrow(lab), N = nrow(unl))
+```
+
+## O "valor verdadeiro" (só porque é didático)
+
+```{r}
+verdade <- mean(ref$categoria == "PUNIR")
+verdade
+```
+
+<br/>
+
+::: {.callout-note}
+Este corpus tem referência para **todas** as `r nrow(corpus)` ementas, então conhecemos $\theta$ = `r pc(verdade, 1)`. Numa pesquisa real, **não** conhecemos: por isso precisamos de estimadores com IC honesto. Aqui, podemos **conferir** quem acerta.
+:::
+
+## (a) Só humanos
+
+```{r}
+#| eval: false
+#| code: !expr trecho("R/funcoes_medicao.R", "est_humano")
+```
+
+```{r}
+est_humano(lab$y)
+```
+
+::: {.pequeno}
+Média da amostra-ouro, com erro-padrão $\sqrt{\hat p(1 - \hat p)/n}$. Desperdiça a informação das outras `r nrow(unl)` ementas.
+:::
+
+## (b) Ingênuo: o LLM como verdade
+
+```{r}
+est_ingenuo(c(lab$f, unl$f))
+```
+
+Por que ele erra? Na amostra-ouro, temos **os dois** rótulos:
+
+```{r}
+c(LLM = mean(lab$f), humano = mean(lab$y), vies_estimado = mean(lab$f) - mean(lab$y))
+table(humano = lab$y, llm = lab$f)
+```
+
+::: {.pequeno}
+O LLM marca PUNIR em ementas que o humano não marca: os **falsos positivos** inflam a proporção. E o IC do ingênuo **ignora** esse erro.
+:::
+
+## (c) *Prediction-Powered Inference*
+
+<br/>
+
+Use a amostra-ouro para **medir o viés do LLM** e subtraia (Angelopoulos et al., *Science*, 2023):
+
+$$
+\hat\theta_{PP} = \underbrace{\frac{1}{N}\sum_{i=1}^{N} f(X_i)}_{\text{LLM no não rotulado}} \; - \; \underbrace{\frac{1}{n}\sum_{j=1}^{n}\big(f(X_j) - Y_j\big)}_{\text{viés do LLM medido na amostra-ouro (retificador)}}
+$$
+
+$$
+\widehat{\text{Var}}(\hat\theta_{PP}) = \frac{\hat\sigma^2_{f}}{N} + \frac{\hat\sigma^2_{f-Y}}{n}
+$$
+
+- **Nenhuma hipótese** sobre a qualidade do LLM: um LLM ruim gera retificador com variância alta → **IC largo**, não **IC errado**
+
+## PPI em cinco linhas
+
+```{r}
+#| eval: false
+#| code: !expr trecho("R/funcoes_medicao.R", "est_ppi")
+```
+
+```{r}
+est_ppi(lab$y, lab$f, unl$f)
+```
+
+## PPI passo a passo
+
+```{r}
+retificador <- lab$f - lab$y
+c(media_f_N   = mean(unl$f),
+  vies        = mean(retificador),
+  estimativa  = mean(unl$f) - mean(retificador),
+  ep          = sqrt(var(unl$f) / nrow(unl) + var(retificador) / nrow(lab)))
+```
+
+::: {.pequeno}
+O viés estimado é subtraído; o erro-padrão soma a incerteza do LLM no não rotulado e a do retificador na amostra-ouro.
+:::
+
+## (d) PPI++: quanto confiar no LLM?
+
+<br/>
+
+PPI++ (Angelopoulos, Duchi & Zrnic, 2023) pondera o LLM por $\lambda \in [0, 1]$, escolhido para **minimizar a variância**:
+
+$$
+\hat\theta_{PP}^{\lambda} = \bar Y_n + \lambda\big(\bar f_N - \bar f_n\big), \qquad
+\hat\lambda = \frac{\widehat{\text{Cov}}(Y, f)}{(1 + n/N)\,\widehat{\text{Var}}(f)}
+$$
+
+- LLM inútil → $\hat\lambda \to 0$: volta a ser o "só humanos"
+- LLM muito bom → $\hat\lambda \to 1$: aproxima-se do PPI
+
+## PPI++ em R
+
+```{r}
+#| eval: false
+#| code: !expr trecho("R/funcoes_medicao.R", "est_ppi_plus")
+```
+
+```{r}
+est_ppi_plus(lab$y, lab$f, unl$f)
+```
+
+## Os quatro estimadores
+
+```{r}
+est <- compara_estimadores(lab$y, lab$f, unl$f) |>
+  mutate(largura = ls - li, cobre_verdade = li <= verdade & verdade <= ls)
+est |> mutate(across(where(is.double), \(x) round(x, 3)))
+```
+
+::: {.pequeno}
+Valor na referência completa: **`r pc(verdade, 1)`**. Conferência com o pipeline: `r if (isTRUE(all.equal(est$estimativa, read_csv("resultados/tabelas/estimativas_punir.csv")$estimativa))) "estimativas idênticas às de resultados/tabelas/estimativas_punir.csv" else "atenção: diferem de resultados/tabelas/"`.
+:::
+
+## A figura
+
+```{r}
+#| fig-height: 4.2
+est |>
+  mutate(estimador = factor(estimador, levels = rev(unique(estimador)))) |>
+  ggplot(aes(estimativa, estimador)) +
+  geom_vline(xintercept = verdade, colour = CINZA_ESCURO, linewidth = .8, linetype = 2) +
+  geom_linerange(aes(xmin = li, xmax = ls, colour = estimador), linewidth = 2) +
+  geom_point(aes(colour = estimador), size = 3.5) +
+  scale_colour_manual(values = COR_EST, guide = "none") +
+  scale_x_continuous(labels = scales::percent) +
+  labs(title = "Que proporção dos projetos sobre IA quer PUNIR?",
+       subtitle = "IC 95% · linha tracejada: valor na referência completa", x = NULL, y = NULL) +
+  tema_minicurso()
+```
+
+## Um resultado pode ser sorte
+
+<br/>
+
+Um único sorteio da amostra-ouro não diz se o método é bom. Então:
+
+1. Sorteie uma amostra-ouro de tamanho $n$ (30, 60 ou 120)
+2. Calcule os quatro estimadores e seus ICs
+3. Verifique se cada IC **contém** o valor verdadeiro
+4. Repita **1.000 vezes**
+
+**Cobertura** = proporção de repetições em que o IC contém a verdade. Um bom IC de 95% acerta em ~95%.
+
+## A simulação em R
+
+```{r}
+#| cache: true
+simula <- function(n_ouro, B = 1000, semente = 1) {
+  set.seed(semente)
+  map(seq_len(B), \(b) {
+    idx <- sample(nrow(dados), n_ouro)                         # nova amostra-ouro
+    y_n <- as.integer(dados$categoria_ref[idx] == "PUNIR")
+    compara_estimadores(y_n, dados$f[idx], dados$f[-idx])
+  }) |>
+    list_rbind() |>
+    group_by(estimador) |>
+    summarise(cobertura = mean(li <= verdade & verdade <= ls),
+              largura_media = mean(ls - li), vies = mean(estimativa) - verdade) |>
+    mutate(n_ouro = n_ouro)
+}
+tempo <- system.time(sim <- map(c(30, 60, 120), simula) |> list_rbind())
+tempo[["elapsed"]]
+```
+
+## Cobertura e largura
+
+```{r}
+sim |>
+  mutate(across(c(cobertura, largura_media, vies), \(x) round(x, 3))) |>
+  select(n_ouro, estimador, cobertura, largura_media, vies) |>
+  arrange(n_ouro) |>
+  print(n = 12)
+```
+
+## O IC ingênuo engana
+
+```{r}
+#| fig-height: 4.8
+sim |>
+  mutate(estimador = factor(estimador, levels = unique(est$estimador))) |>
+  ggplot(aes(factor(n_ouro), cobertura, colour = estimador, group = estimador)) +
+  geom_hline(yintercept = .95, colour = TINTA2, linetype = 2) +
+  geom_line(linewidth = 1) + geom_point(size = 3) +
+  scale_colour_manual(values = COR_EST) +
+  scale_y_continuous(labels = scales::percent, limits = c(0, 1)) +
+  labs(title = "Com que frequência o IC de 95% contém a verdade?",
+       x = "Tamanho da amostra-ouro", y = "Cobertura", colour = NULL) +
+  guides(colour = guide_legend(nrow = 2)) + tema_minicurso()
+```
+
+## O preço da honestidade
+
+```{r}
+#| fig-height: 4.8
+sim |>
+  mutate(estimador = factor(estimador, levels = unique(est$estimador))) |>
+  ggplot(aes(factor(n_ouro), largura_media, colour = estimador, group = estimador)) +
+  geom_line(linewidth = 1) + geom_point(size = 3) +
+  scale_colour_manual(values = COR_EST) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(title = "Largura média do IC de 95%",
+       subtitle = "O ingênuo é estreito porque ignora o erro do LLM",
+       x = "Tamanho da amostra-ouro", y = "Largura média", colour = NULL) +
+  guides(colour = guide_legend(nrow = 2)) + tema_minicurso()
+```
+
+## E entre campos políticos?
+
+```{r}
+por_campo <- dados |>
+  filter(campo %in% c("Esquerda", "Centro", "Direita")) |>
+  group_by(campo) |>
+  group_modify(\(d, ...) {
+    l <- filter(d, na_ouro); u <- filter(d, !na_ouro)
+    compara_estimadores(l$y, l$f, u$f) |>
+      mutate(n_ouro = nrow(l), verdade = mean(d$categoria_ref == "PUNIR"))
+  }) |> ungroup()
+por_campo |> select(campo, estimador, n_ouro, estimativa, li, ls, verdade) |>
+  mutate(across(where(is.double), \(x) round(x, 3))) |> print(n = 12)
+```
+
+## Por campo: a figura
+
+```{r}
+#| fig-height: 5.6
+por_campo |>
+  filter(estimador != "PPI++") |>
+  mutate(estimador = factor(estimador, levels = c("Só humanos (amostra-ouro)", "Ingênuo (LLM = verdade)", "PPI"))) |>
+  ggplot(aes(estimativa, estimador, colour = estimador)) +
+  geom_vline(aes(xintercept = verdade), colour = CINZA_ESCURO, linewidth = .7, linetype = 2) +
+  geom_linerange(aes(xmin = pmax(li, 0), xmax = ls), linewidth = 2) +
+  geom_point(size = 3) +
+  facet_wrap(~ campo, ncol = 1) +
+  scale_colour_manual(values = COR_EST, guide = "none") +
+  scale_x_continuous(labels = scales::percent) + scale_y_discrete(limits = rev) +
+  labs(x = NULL, y = NULL) + tema_minicurso()
+```
+
+## O que os números dizem
+
+<br/>
+
+::: {.incremental}
+- **O ingênuo superestima** a proporção punitiva (`r pc(est$estimativa[2], 1)` × `r pc(verdade, 1)`) e seu IC cobriu a verdade em **`r pc(sim$cobertura[sim$estimador == "Ingênuo (LLM = verdade)" & sim$n_ouro == 120])`** das simulações
+- **PPI e PPI++ corrigem o viés**: cobertura de `r pc(sim$cobertura[sim$estimador == "PPI" & sim$n_ouro == 120], 1)` e `r pc(sim$cobertura[sim$estimador == "PPI++" & sim$n_ouro == 120], 1)` com $n$ = 120
+- **PPI++ é mais estreito** que o "só humanos": `r pc(1 - sim$largura_media[sim$estimador == "PPI++" & sim$n_ouro == 120] / sim$largura_media[sim$estimador == "Só humanos (amostra-ouro)" & sim$n_ouro == 120])` a menos de largura, em média
+- Com $n$ = 30, todos ficam abaixo de 95%: amostras-ouro muito pequenas comprometem a aproximação normal
+- **Por campo**, `r min(por_campo$n_ouro)` a `r max(por_campo$n_ouro)` ementas na ouro: intervalos largos e sobrepostos. **Não há evidência** de diferença entre campos
+:::
+
+## A resposta substantiva
+
+<br/>
+
+::: {.callout-important title="Ilustrativa, enquanto a referência for preliminar"}
+Pelo **PPI++**, cerca de **`r pc(est$estimativa[4])`** dos projetos sobre IA no Congresso querem **punir** (IC 95% de `r pc(est$li[4])` a `r pc(est$ls[4])`). Cerca de metade **regula** (`r pc(mean(ref$categoria == "REGULAR"))` na referência).
+:::
+
+<br/>
+
+E a resposta metodológica: **o LLM ajudou**, mas só porque medimos seu erro e o levamos para dentro do intervalo de confiança.
+
+## Resumo do bloco 6
+
+<br/>
+
+::: {.columns}
+::: {.column width="50%"}
+**Executamos**
+
+- os quatro estimadores, passo a passo
+- conferência com a referência completa
+- simulação de cobertura (`r format(round(tempo[["elapsed"]]), big.mark = ".")` s)
+- estimativas por campo político
+:::
+::: {.column width="50%"}
+**A lição**
+
+- rótulo de LLM **não é** dado observado
+- a amostra-ouro tem **dois papéis**: validar e **corrigir**
+- relatar $n$ da amostra-ouro **em cada grupo**
+:::
+:::

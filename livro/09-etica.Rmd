@@ -1,0 +1,69 @@
+# Ética, limites e debate {#etica}
+
+O minicurso termina onde a pesquisa encontra a política. Em 2026, a inteligência artificial é ao mesmo tempo **objeto** de regulação no Brasil e **instrumento** usado por quem estuda essa regulação. A situação descrita abaixo foi levantada em 08/10/2026 e **atualizada em 06/11/2026**; datas e status mudam rápido.
+
+## Eleições de 2026: regras do TSE
+
+A Resolução TSE nº 23.755, de 2 de março de 2026 [@tse2026], alterou a Resolução nº 23.610/2019 (propaganda eleitoral), consolidando e ampliando o que já valia para as eleições municipais de 2024.
+
+```{r tab-tse}
+tibble::tribble(
+  ~Tema, ~`O que a norma estabelece (resumo)`,
+  "Rotulagem", "Conteúdo de propaganda criado ou substancialmente alterado por IA deve informar, de forma explícita e destacada, que foi fabricado ou manipulado e qual tecnologia foi usada.",
+  "Deepfakes", "Proibidos quando beneficiam ou prejudicam candidaturas, mesmo com autorização de uso de imagem ou voz.",
+  "Janela final", "Vedada a publicação de novos conteúdos sintéticos com imagem, voz ou manifestação de candidatos entre 72 horas antes e 24 horas depois do encerramento da votação.",
+  "Sistemas de IA", "Não podem recomendar voto, ranquear, sugerir ou priorizar candidaturas.",
+  "Plataformas", "Dever de agir, canais de denúncia, remoção de conteúdo ilícito, suspensão de impulsionamento.",
+  "Sanções", "Multa, cassação de registro ou mandato em casos graves, crimes previstos no Código Eleitoral."
+) |> knitr::kable(caption = "Principais regras da Res. TSE nº 23.755/2026 sobre IA.") |> larguras(c(18, 82))
+```
+
+A fiscalização de deepfakes por tribunais e plataformas também usa **classificadores automáticos**. Quem mede o erro desses classificadores? Os conceitos deste livro (sensibilidade, especificidade, viés diferencial entre candidatos ou campos) valem ali exatamente da mesma forma.
+
+## O Marco Legal da IA: PL 2338/2023
+
+```{r tab-pl}
+tibble::tribble(
+  ~Data, ~Evento,
+  "03/05/2023", "Apresentado no Senado",
+  "10/12/2024", "Aprovado no Plenário do Senado (substitutivo)",
+  "17/03/2025", "Chega à Câmara dos Deputados",
+  "20/05/2025", "Instalada a Comissão Especial na Câmara",
+  "nov/2025 a jun/2026", "Pelo menos cinco datas de votação anunciadas e não cumpridas",
+  "24/08/2026", "Relator afirma que a votação fica para depois das eleições",
+  "04/10 e 25/10/2026", "1º e 2º turnos das eleições gerais",
+  "27/10/2026", "Última movimentação (apensação de PLs); situação na API da Câmara segue \"Aguardando Parecer\""
+) |> knitr::kable(caption = "Tramitação do PL 2338/2023 (consulta à API da Câmara em 06/11/2026).") |> larguras(c(20, 80))
+```
+
+Passadas as eleições, o projeto continua sem parecer na Comissão Especial. O texto aprovado no Senado classifica sistemas de IA por **risco**, estabelece direitos das pessoas afetadas (informação, explicação, contestação e revisão humana), cria o Sistema Nacional de Regulação e Governança de IA (SIA) e prevê sanções de até R$ 50 milhões por infração, com inspiração direta no *AI Act* europeu. Enquanto ele aguarda, o Congresso produziu `r sum(corpus$ano >= 2023)` projetos sobre IA desde 2023, muitos deles **punitivos** e **fragmentados**.
+
+## O que o corpus não pode mostrar
+
+1. A busca por palavra-chave depende de um indexador: há falsos positivos e, possivelmente, omissões.
+2. A ementa é um resumo; o inteiro teor pode ter outro enquadramento.
+3. "Campo político" classifica partidos, não parlamentares, e partidos mudam.
+4. Apresentar um projeto é barato: medir **produção legislativa** não é medir **política pública**.
+
+## Quando **não** usar um LLM
+
+- O conceito não tem **definição operacional** clara: o LLM vai inventar uma.
+- Não há como montar uma **amostra-ouro**: então não há como validar.
+- O erro do modelo é **correlacionado** com a variável explicativa de interesse e não pode ser corrigido.
+- Há **poucos documentos**: codificar à mão é mais barato e mais confiável.
+- Os dados **não podem sair da instituição** e não há modelo local adequado.
+
+## Para debater
+
+1. Se um LLM classifica `r nrow(corpus)` ementas em poucos minutos com kappa próximo de 0,7, ainda precisamos de codificadores humanos? **Para quê, exatamente?**
+2. Um modelo **local** (reprodutível, gratuito, com dados que não saem da máquina) com kappa menor é preferível a uma API **comercial** com kappa maior, que muda sem aviso?
+3. O **viés político** dos LLMs [@motoki2024; @rozado2024] pode contaminar comparações entre campos políticos? Como testar?
+4. A rotulagem obrigatória de conteúdo sintético é **verificável**? Quem audita o detector?
+5. O que deve constar num **pacote de replicação** de um artigo que usou LLM?
+6. Este livro foi escrito com o auxílio de uma IA, declarada como coautora. **Que tipo de declaração é suficiente** para que o leitor avalie esse uso? E quem responde pelo conteúdo?
+
+## Mensagem final
+
+::: {.caixa}
+A IA amplia as formas de responder, mas **não substitui** a boa pergunta, o desenho de pesquisa e a **validação estatística**. E, como qualquer instrumento, ela não tira de quem a usa a **responsabilidade** pelo que é medido e publicado.
+:::

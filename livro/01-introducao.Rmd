@@ -1,0 +1,59 @@
+# Quem mede a régua? {#intro}
+
+> "O futuro traz novas perguntas. Os dados ampliam nossas formas de responder."
+> ...mas **quem mede a régua?**
+
+## Duas perguntas
+
+Este livro persegue duas perguntas ao mesmo tempo.
+
+A **pergunta substantiva**: quando o Congresso Nacional legisla sobre inteligência artificial, ele quer **punir**, **regular** ou **promover**? E isso varia entre campos políticos?
+
+A **pergunta metodológica**: se usarmos um LLM para responder à primeira pergunta, **como sabemos se a resposta está certa**? E como garantir que outra pessoa chegue à mesma resposta daqui a dois anos?
+
+A segunda pergunta é a que realmente interessa. A primeira é o pretexto que nos obriga a levá-la a sério. Na I edição do DataPOL, os participantes viram como **usar** IA para analisar textos; aqui, vamos **medir** com ela e, principalmente, **medir o erro dela**.
+
+## Por que agora?
+
+- **Eleições de 2026.** São as primeiras eleições gerais sob a Resolução TSE nº 23.755/2026, que exige rotulagem de conteúdo sintético, proíbe deepfakes de candidatos e veda que sistemas de IA recomendem voto.
+- **Marco Legal da IA.** O PL 2338/2023 foi aprovado no Senado em dezembro de 2024 e, na data da coleta, aguardava parecer na Câmara, com votação adiada para depois das eleições.
+- **Explosão legislativa.** Nosso corpus reúne `r nrow(corpus)` projetos de lei sobre IA, `r sum(corpus$ano == 2026)` deles apresentados só em 2026 (até a coleta).
+- **LLMs viraram infraestrutura de pesquisa**, mas são instáveis, sensíveis ao prompt e potencialmente enviesados [@gilardi2023; @motoki2024].
+
+```{r fig-projetos, fig.cap="Projetos de lei sobre IA apresentados na Câmara e no Senado, por ano e categoria (codificação de referência)."}
+fig("00_projetos_por_ano")
+```
+
+## A "fase atual" da estatística
+
+@breiman2001 descreveu duas culturas: a de **modelar** o processo que gera os dados, para explicá-lo e medir a incerteza (a tradição da estatística clássica), e a de **prever** bem, mesmo sem entender o mecanismo (a tradição do aprendizado de máquina). Na última década, essas culturas se aproximaram, e o aprendizado de máquina passou a ser usado **a serviço da inferência**: as previsões viram matéria-prima para estimar efeitos e proporções **com intervalos de confiança válidos**. Quatro exemplos, em uma frase cada:
+
+- ***Double/debiased machine learning*** [@chernozhukov2018]: usa ML para "limpar" a influência de muitas variáveis de controle e estima um **efeito causal** com intervalo de confiança válido, mesmo quando há centenas de controles;
+- **predição conformal** [@vovk2005]: transforma a previsão de qualquer modelo num **intervalo** (ou num conjunto de rótulos possíveis) que contém a resposta certa com a frequência prometida, por exemplo 95%;
+- ***Prediction-Powered Inference*** [@angelopoulos2023ppi; @angelopoulos2023ppiplus]: junta **muitas previsões** e **poucos rótulos verdadeiros**, mede o viés das previsões nos dados rotulados e o desconta da estimativa. **É o método usado no Capítulo \@ref(inferencia)**;
+- ***Design-based Supervised Learning*** [@egami2023]: aplica a mesma correção a **regressões** que usam rótulos de LLM, a partir de uma amostra codificada por especialistas e sorteada com probabilidades conhecidas.
+
+Não é preciso dominar os quatro para acompanhar o livro: usamos apenas o PPI e sua versão PPI++. O fio comum é simples: previsões de modelos podem tornar a inferência **mais precisa**, desde que o erro dessas previsões seja **medido e corrigido**, e não ignorado. Traduzindo para o nosso caso: o LLM rotula todas as ementas (barato, mas com erro); a amostra-ouro mede esse erro; o PPI corrige a estimativa e alarga o intervalo de confiança na medida certa. Usar os rótulos do LLM como se fossem a verdade é justamente **ignorar** o erro.
+
+::: {.caixa}
+[Ideia central]{.titulo-caixa}
+Um LLM é um **instrumento de medição**, como um questionário ou um codificador humano. Instrumentos têm **validade** (medem o que dizem medir?), **confiabilidade** (medem sempre igual?) e **viés** (erram mais para uns grupos do que para outros?). Tudo isso se mede.
+:::
+
+## O caminho deste livro
+
+```{r roteiro}
+tibble::tribble(
+  ~Capítulo, ~Bloco, ~`O que fazemos`, ~`Código`,
+  "\\@ref(dados)", "1. Dados legislativos", "APIs da Câmara e do Senado; armadilhas da coleta", "`R/01_coleta.R` · `python/01_coleta.ipynb`",
+  "\\@ref(codificacao)", "2. Codificar é medir", "Livro de códigos, referência e classes, amostra-ouro", "`CODEBOOK.md` · `R/02_amostra_ouro.R`",
+  "\\@ref(baselines)", "3. Baselines", "Dicionário e TF-IDF + logística", "`R/03_baselines.R` · `python/02_baselines.ipynb`",
+  "\\@ref(llm)", "4. LLM como instrumento", "Ollama, prompts versionados, cache", "`R/04_anotacao_llm.R` · `python/anotar_llm.py`",
+  "\\@ref(validacao)", "5. Validação", "Kappa, viés diferencial, confiabilidade", "`R/05_validacao.R` · `python/04_validacao.ipynb`",
+  "\\@ref(inferencia)", "6. Inferência", "Ingênuo × PPI × PPI++; simulação", "`R/06_inferencia.R` · `python/05_inferencia.ipynb`",
+  "\\@ref(reprodutibilidade)", "7. Reprodutibilidade", "`targets`, cache, versionamento, *drift*", "`_targets.R` · `CHECKLIST.md`",
+  "\\@ref(etica)", "8. Ética e limites", "Eleições de 2026, PL 2338/2023, debate", "`material_apoio/contexto_regulatorio.md`"
+) |> knitr::kable(caption = "Estrutura do livro e correspondência com os blocos do minicurso.")
+```
+
+Em sala, o caminho tem a forma de um pipeline: **APIs → corpus → livro de códigos e amostra-ouro → baselines e LLM → validação → inferência → pipeline reprodutível**. Cada seta é uma decisão de medição, e cada decisão deixa um rastro no código.

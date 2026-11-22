@@ -1,0 +1,26 @@
+book_filename: "ia-instrumento-medicao"
+output_dir: "../docs"
+delete_merged_file: true
+new_session: false
+language:
+  label:
+    fig: "Figura "
+    tab: "Tabela "
+    eq: "Equação "
+  ui:
+    chapter_name: "Capítulo "
+    appendix_name: "Apêndice "
+rmd_files:
+  - index.Rmd
+  - 01-introducao.Rmd
+  - 02-dados.Rmd
+  - 03-codificacao.Rmd
+  - 04-baselines.Rmd
+  - 05-llm.Rmd
+  - 06-validacao.Rmd
+  - 07-inferencia.Rmd
+  - 08-reprodutibilidade.Rmd
+  - 09-etica.Rmd
+  - 095-ambiente.Rmd
+  - 10-apendices.Rmd
+  - 99-referencias.Rmd

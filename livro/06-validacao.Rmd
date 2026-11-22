@@ -1,0 +1,434 @@
+# Validação: o instrumento mede o que diz medir? {#validacao}
+
+Validar um instrumento é responder a quatro perguntas: **ele acerta?** (validade), **onde erra?** (matriz de confusão), **erra igual para todos?** (viés diferencial) e **mede sempre igual?** (confiabilidade). Todas as análises estão em `R/05_validacao.R` e `python/04_validacao.ipynb`.
+
+## Validade: concordância com a amostra-ouro
+
+Comparamos o rótulo de cada instrumento com a referência humana nas `r nrow(ouro)` ementas da amostra-ouro, usando três métricas:
+
+- **Acurácia**: proporção de acertos. Fácil de interpretar, mas enganosa com classes desbalanceadas.
+- **F1 macro**: média do F1 de cada categoria, que dá o mesmo peso às categorias raras.
+- **Kappa de Cohen** [@cohen1960]: acerto **além do acaso**,
+
+$$
+\kappa = \frac{p_o - p_e}{1 - p_e},
+$$
+
+em que $p_o$ é a proporção de concordância observada e $p_e$ a proporção esperada se os dois codificadores rotulassem ao acaso, mantendo suas distribuições marginais. Pela convenção de @landis1977, valores acima de 0,4, 0,6 e 0,8 indicam concordância moderada, substancial e quase perfeita.
+
+O kappa é implementado "na mão", em poucas linhas, para mostrar que não há mágica nas métricas:
+
+```{r, echo=TRUE, eval=FALSE, code=trecho("R/funcoes_medicao.R", "kappa_cohen")}
+```
+
+Com $n = `r nrow(ouro)`$, qualquer métrica tem incerteza considerável. Por isso relatamos o kappa com **intervalo de confiança de 95% por bootstrap percentil** (2.000 reamostragens das ementas).
+
+```{r fig-kappa, fig.cap="Kappa de Cohen de cada instrumento contra a amostra-ouro, com IC 95% bootstrap."}
+fig("01_validade_kappa")
+```
+
+```{r tab-validade}
+val |>
+  transmute(Instrumento = instrumento, `Falhas de formato` = pc(falhas_formato, 1),
+            Acurácia = pc(acuracia), `F1 macro` = nf(f1_macro),
+            `Kappa [IC 95%]` = paste0(nf(kappa), " [", nf(kappa_li), "; ", nf(kappa_ls), "]")) |>
+  knitr::kable(align = "lcccc", caption = "Validade de todos os instrumentos na amostra-ouro.")
+```
+
+Três leituras dessa tabela:
+
+1. **O prompt importa.** O melhor LLM (`r melhor_llm$instrumento`, kappa `r nf(melhor_llm$kappa)`) supera com folga a versão sem definições (v1, kappa `r nf(k("LLM v1 (t=0)"))`).
+2. **`r if (melhor_llm$kappa > k("Dicionário (regex)")) "O LLM ficou à frente do dicionário só na estimativa pontual" else "O LLM não venceu o dicionário"`** (kappa `r nf(k("Dicionário (regex)"))`), e o dicionário ainda "viu a prova" (Capítulo \@ref(baselines)). Os intervalos se sobrepõem amplamente: com 120 ementas, não há evidência de diferença entre os dois.
+3. **O LLM supera o TF-IDF** (kappa `r nf(k("TF-IDF + logística (CV 10)"))`), que precisaria de muito mais exemplos rotulados para aprender.
+
+## Onde o instrumento erra
+
+```{r fig-confusao, fig.cap=paste("Matriz de confusão do melhor LLM com temperatura 0 (", melhor_llm$instrumento, "). Linhas: referência humana; colunas: LLM.")}
+fig("02_matriz_confusao")
+```
+
+A matriz de confusão mostra **quais** erros o instrumento comete. Erros não são todos iguais: confundir REGULAR com PUNIR infla a proporção punitiva que queremos estimar; confundir REGULAR com PROMOVER não a afeta.
+
+## Viés diferencial
+
+Acurácia alta **na média** não garante comparações válidas **entre grupos**. Se o LLM erra mais nas ementas de um campo político, qualquer comparação entre campos feita com seus rótulos estará enviesada, mesmo com kappa alto no geral. Isso é especialmente relevante dado o viés político documentado em LLMs [@motoki2024; @rozado2024].
+
+```{r fig-vies, fig.cap="Acurácia do melhor LLM na amostra-ouro por campo político do autor, com IC 95%."}
+fig("03_vies_diferencial")
+```
+
+```{r tab-vies}
+vies |>
+  transmute(Campo = campo, n, Acurácia = pc(acuracia),
+            `PUNIR (humano)` = pc(prop_punir_humano, 1), `PUNIR (LLM)` = pc(prop_punir_llm, 1),
+            `Viés em PUNIR (p.p.)` = nf(100 * vies_punir, 1)) |>
+  knitr::kable(align = "lcccccc", caption = "Viés diferencial do melhor LLM por campo político.")
+```
+
+Os pontos estimados sugerem que o LLM acerta menos nas ementas de autores de centro (`r pc(vies$acuracia[vies$campo == "Centro"])`) do que nas de esquerda (`r pc(vies$acuracia[vies$campo == "Esquerda"])`). Na proporção punitiva, que é o que vamos estimar, o viés por campo vai de `r nf(100 * min(vies$vies_punir), 1)` a `r nf(100 * max(vies$vies_punir), 1)` pontos percentuais. Mas os intervalos são largos (com `r min(vies$n)` a `r max(vies$n)` ementas por campo) e se sobrepõem. A lição não é "o LLM é enviesado contra este ou aquele campo", e sim: **com esta amostra-ouro, não é possível descartar viés diferencial**, e isso precisa ser levado em conta na inferência por grupo.
+
+## Confiabilidade
+
+Um instrumento confiável dá a mesma resposta quando medido de novo. Avaliamos duas fontes de instabilidade, nenhuma das quais precisa de rótulo humano:
+
+- **Teste-reteste:** o mesmo prompt (v2), a mesma ementa, temperatura 0,8 e **três sementes diferentes**.
+- **Sensibilidade ao prompt:** o mesmo modelo, temperatura 0, **três redações** (v1, v2, v3) do mesmo livro de códigos.
+
+A concordância entre as execuções é medida pelo **alfa de Krippendorff** [@krippendorff2018], que generaliza o kappa para qualquer número de codificadores e aceita dados faltantes:
+
+$$
+\alpha = 1 - \frac{D_o}{D_e},
+$$
+
+em que $D_o$ é a discordância observada e $D_e$ a discordância esperada ao acaso.
+
+```{r tab-confiab}
+conf |>
+  transmute(Comparação = comparacao, `Alfa de Krippendorff` = nf(alfa_krippendorff),
+            `Ementas que mudam de rótulo` = pc(prop_ementas_que_mudam, 1)) |>
+  knitr::kable(align = "lcc", caption = "Confiabilidade do instrumento.")
+```
+
+**O prompt importa muito mais que o acaso.** Trocar a semente muda o rótulo de `r pc(conf$prop_ementas_que_mudam[1], 0)` das ementas; trocar a redação do prompt muda `r pc(conf$prop_ementas_que_mudam[2], 0)`. E a mudança não é só ruído: ela altera a **distribuição agregada** das categorias.
+
+```{r fig-prompt, fig.cap=paste("Distribuição das categorias nas", nrow(corpus), "ementas segundo cada prompt, comparada à referência humana.")}
+fig("04_sensibilidade_prompt")
+```
+
+## A variável eleitoral
+
+```{r tab-eleitoral}
+ele |>
+  transmute(Prompt = prompt_id, `Eleitorais (humano)` = n_eleitoral_humano,
+            `Eleitorais (LLM)` = n_eleitoral_llm,
+            Sensibilidade = pc(sensibilidade), Especificidade = pc(especificidade, 1)) |>
+  knitr::kable(align = "lcccc", caption = "Validade da variável eleitoral na amostra-ouro.")
+```
+
+Para uma variável rara, acurácia não informa quase nada. **Sensibilidade** (dos projetos eleitorais, quantos o LLM identificou?) e **especificidade** (dos não eleitorais, quantos ele descartou?) são as métricas relevantes. Com apenas `r ele$n_eleitoral_humano[1]` ementas eleitorais na amostra-ouro, a sensibilidade é estimada com muito pouca precisão.
+
+## Humano × humano
+
+A comparação mais honesta que podemos fazer é esta: **o LLM concorda com a referência tanto quanto os humanos concordam entre si?** Neste material ela ainda não é possível, porque a referência foi produzida por outra IA e não há dois codificadores humanos (Seção \@ref(referencia)). Quando houver, basta salvar as codificações em `material_apoio/respostas/`: o mesmo `R/05_validacao.R` calcula o alfa de Krippendorff entre elas. Até lá, o kappa acima deve ser lido como concordância **entre duas IAs**, não como validade contra humanos.
+
+::: {.caixa}
+[Síntese da validação]{.titulo-caixa}
+O melhor LLM tem concordância **substancial** com a referência, é **estável** entre sementes, mas é **sensível ao prompt**, e não se pode descartar que erre de forma diferente entre campos políticos. Ele é um bom instrumento, mas imperfeito. O próximo capítulo mostra como usá-lo **sem esconder** essa imperfeição.
+:::
+
+## Mão na massa: validar o instrumento {#mao-validacao}
+
+::: {.caixa .executar}
+[Como executar]{.titulo-caixa}
+
+- **Em R**: `Rscript R/05_validacao.R` (cerca de 1 minuto, por causa do bootstrap). Grava as tabelas `validade_instrumentos.csv`, `confiabilidade.csv`, `vies_diferencial_campo.csv` e `validade_eleitoral.csv` e as figuras 01 a 04 em `resultados/`. Depende de `R/03_baselines.R` ter rodado antes (usa `dados/anotacoes/predicoes_baselines.csv`).
+- **Em Python**: notebook `python/04_validacao.ipynb` (grava em `resultados/python/`).
+- Os blocos abaixo refazem as contas principais **sem gravar** nada. Não é preciso GPU nem Ollama: tudo vem do cache.
+:::
+
+### Juntar o LLM à amostra-ouro
+
+::: {.abas}
+::: {.aba data-nome="R"}
+```{r, echo=TRUE, message=FALSE}
+source("R/funcoes_medicao.R")
+corpus <- carrega_corpus()
+ouro   <- carrega_ouro()
+llm    <- carrega_llm()
+
+# Nome legível de cada execução: "LLM v2 (t=0)", "LLM v2 (t=0.8, s=1)", ...
+rotulo_run <- function(run_id) {
+  p <- str_match(run_id, "__(v\\d)__t([0-9.]+)__s(\\d+)")
+  ifelse(p[, 3] == "0.0" & p[, 4] == "42", paste0("LLM ", p[, 2], " (t=0)"),
+         paste0("LLM ", p[, 2], " (t=", p[, 3], ", s=", p[, 4], ")"))
+}
+llm  <- llm |> mutate(instrumento = rotulo_run(run_id))
+aval <- llm |> inner_join(select(ouro, doc_id, categoria), by = "doc_id")
+count(aval, instrumento)
+```
+:::
+::: {.aba data-nome="Python"}
+```{python, echo=TRUE}
+import numpy as np
+from medicao import (carrega_corpus, carrega_ouro, carrega_llm, rotulo_run,
+                     resumo_metricas, boot_ic, kappa_cohen, alfa_krippendorff)
+corpus = carrega_corpus(".")
+ouro = carrega_ouro(".")
+llm = carrega_llm(".")
+llm["instrumento"] = llm["run_id"].map(rotulo_run)
+aval = llm.merge(ouro[["doc_id", "categoria"]], on="doc_id")
+aval["instrumento"].value_counts().sort_index()
+```
+:::
+:::
+
+**O que está sendo executado.** O cache tem `r nrow(corpus)` respostas por execução; a junção (`inner_join`/`merge`) com a amostra-ouro mantém só as `r nrow(ouro)` ementas que têm rótulo humano. Cada execução do LLM vira um "instrumento" com nome próprio, para ser comparado com os outros.
+
+### Validade com intervalo bootstrap
+
+Antes de calcular tudo de uma vez, vale ver o bootstrap funcionando para um instrumento: reamostramos as 120 ementas **com reposição**, recalculamos o kappa e repetimos 2.000 vezes. Os percentis 2,5% e 97,5% dessas 2.000 réplicas formam o intervalo de 95%.
+
+::: {.abas}
+::: {.aba data-nome="R"}
+```{r mao-boot-r, echo=TRUE, cache=TRUE, fig.width=6.5, fig.height=2.8, out.width="80%"}
+d <- filter(aval, instrumento == "LLM v2 (t=0)")
+kappa_cohen(d$categoria, d$categoria_llm)          # estimativa pontual
+
+set.seed(2026)
+kappas <- replicate(2000, {
+  i <- sample.int(nrow(d), nrow(d), replace = TRUE) # uma amostra bootstrap
+  kappa_cohen(d$categoria[i], d$categoria_llm[i])
+})
+quantile(kappas, c(.025, .975))                     # IC 95% percentil
+
+library(ggplot2)
+ggplot(data.frame(kappa = kappas), aes(kappa)) +
+  geom_histogram(bins = 40, fill = "#7ba4de") +
+  geom_vline(xintercept = quantile(kappas, c(.025, .975)), linetype = 2) +
+  labs(x = "Kappa nas 2.000 amostras bootstrap", y = NULL) + theme_minimal(11)
+```
+:::
+::: {.aba data-nome="Python"}
+```{python mao-boot-py, echo=TRUE, fig.width=6.5, fig.height=2.8, out.width="80%"}
+import matplotlib.pyplot as plt
+d = aval[aval["instrumento"] == "LLM v2 (t=0)"]
+print(round(kappa_cohen(d["categoria"], d["categoria_llm"]), 4))   # estimativa pontual
+
+rng = np.random.default_rng(2026)
+v, p = d["categoria"].to_numpy(), d["categoria_llm"].to_numpy()
+kappas = []
+for _ in range(2000):
+    i = rng.integers(0, len(d), len(d))           # uma amostra bootstrap
+    kappas.append(kappa_cohen(v[i], p[i]))
+print(np.quantile(kappas, [0.025, 0.975]).round(4))                  # IC 95% percentil
+
+fig, ax = plt.subplots(figsize=(6.5, 2.8))
+ax.hist(kappas, bins=40, color="#7ba4de")
+for q in np.quantile(kappas, [0.025, 0.975]):
+    ax.axvline(q, color="black", ls="--", lw=1)
+ax.set_xlabel("Kappa nas 2.000 amostras bootstrap")
+plt.show()
+```
+:::
+:::
+
+O IC sai um pouco diferente nas duas linguagens (na terceira casa decimal): a semente é a mesma, mas os geradores de números aleatórios não são. Agora, todos os instrumentos de uma vez, com a função `boot_ic()`, que faz exatamente o que fizemos acima:
+
+::: {.abas}
+::: {.aba data-nome="R"}
+```{r mao-validade-r, echo=TRUE, cache=TRUE}
+metricas <- aval |>
+  group_by(instrumento) |>
+  group_modify(\(d, ...) {
+    ic <- boot_ic(d$categoria, d$categoria_llm)
+    resumo_metricas(d$categoria, d$categoria_llm) |>
+      mutate(kappa_li = ic[1], kappa_ls = ic[2])
+  }) |>
+  ungroup() |>
+  arrange(desc(kappa))
+metricas |>
+  select(-n, -falhas_formato) |>
+  mutate(across(where(is.double), \(x) round(x, 3)))
+```
+:::
+::: {.aba data-nome="Python"}
+```{python mao-validade-py, echo=TRUE}
+linhas = []
+for nome, g in aval.groupby("instrumento"):
+    li, ls = boot_ic(g["categoria"], g["categoria_llm"])
+    m = resumo_metricas(g["categoria"], g["categoria_llm"])
+    linhas.append({"instrumento": nome, **m, "kappa_li": li, "kappa_ls": ls})
+metricas = pd.DataFrame(linhas).sort_values("kappa", ascending=False)
+metricas.drop(columns=["n", "falhas_formato"]).round(3)
+```
+:::
+:::
+
+**O que está sendo executado.** Para cada instrumento, `group_modify()` (R) ou o laço sobre `groupby()` (Python) separa as 120 linhas daquele instrumento, calcula acurácia, F1 macro e kappa com `resumo_metricas()` e o IC bootstrap do kappa com `boot_ic()`. A tabela publicada (Tabela \@ref(tab:tab-validade)) acrescenta os dois baselines do capítulo anterior.
+
+### Onde o melhor instrumento erra
+
+::: {.abas}
+::: {.aba data-nome="R"}
+```{r, echo=TRUE}
+melhor <- metricas |> filter(str_detect(instrumento, "t=0\\)")) |>
+  slice_max(kappa, n = 1) |> pull(instrumento)
+melhor
+d <- filter(aval, instrumento == melhor)
+table(humano = d$categoria, llm = d$categoria_llm)
+
+# Alguns erros, para ler com calma
+d |>
+  filter(as.character(categoria) != as.character(categoria_llm)) |>
+  left_join(select(corpus, doc_id, ementa), by = "doc_id") |>
+  head(5) |>
+  with(cat(sprintf("%s  humano: %-8s LLM: %-8s %s", doc_id, categoria, categoria_llm,
+                   substr(ementa, 1, 70)), sep = "\n"))
+```
+:::
+::: {.aba data-nome="Python"}
+```{python, echo=TRUE}
+llm_t0 = metricas[metricas["instrumento"].str.contains(r"t=0\)")]
+melhor = llm_t0.iloc[0]["instrumento"]
+print(melhor)
+d = aval[aval["instrumento"] == melhor]
+print(pd.crosstab(d["categoria"], d["categoria_llm"],
+                  rownames=["humano"], colnames=["llm"]))
+
+# Alguns erros, para ler com calma
+erros = (d[d["categoria"] != d["categoria_llm"]]
+         .merge(corpus[["doc_id", "ementa"]], on="doc_id"))
+for r in erros.head(5).itertuples():
+    print(f"{r.doc_id}  humano: {r.categoria:8} LLM: {r.categoria_llm:8} {r.ementa[:70]}")
+```
+:::
+:::
+
+**O que está sendo executado.** O melhor instrumento com temperatura 0 é escolhido pelo maior kappa. A tabela cruzada é a matriz de confusão da Figura \@ref(fig:fig-confusao), em números absolutos. A lista de erros é o passo que costuma ser pulado e não deveria: ler as ementas em que o instrumento discorda da referência mostra se o erro é do LLM, da referência ou do livro de códigos (casos que as regras não resolvem).
+
+### Viés diferencial por campo político
+
+::: {.abas}
+::: {.aba data-nome="R"}
+```{r, echo=TRUE}
+dif <- d |>
+  left_join(select(corpus, doc_id, campo), by = "doc_id") |>
+  filter(campo != "Sem partido/Outro") |>
+  mutate(acerto = as.character(categoria) == as.character(categoria_llm),
+         punir_h = categoria == "PUNIR", punir_l = categoria_llm %in% "PUNIR")
+dif |>
+  group_by(campo) |>
+  summarise(n = n(), acuracia = mean(acerto),
+            punir_humano = mean(punir_h), punir_llm = mean(punir_l)) |>
+  mutate(vies_punir = punir_llm - punir_humano)
+
+# O acerto depende do campo? Regressão logística + teste da razão de verossimilhança
+anova(glm(acerto ~ campo, family = binomial, data = dif), test = "Chisq")
+```
+:::
+::: {.aba data-nome="Python"}
+```{python, echo=TRUE}
+from scipy.stats import chi2_contingency
+dif = d.merge(corpus[["doc_id", "campo"]], on="doc_id")
+dif = dif[dif["campo"] != "Sem partido/Outro"].assign(
+    acerto=lambda x: x["categoria"] == x["categoria_llm"],
+    punir_h=lambda x: x["categoria"] == "PUNIR",
+    punir_l=lambda x: x["categoria_llm"] == "PUNIR")
+tab = dif.groupby("campo").agg(n=("acerto", "size"), acuracia=("acerto", "mean"),
+                               punir_humano=("punir_h", "mean"),
+                               punir_llm=("punir_l", "mean"))
+tab["vies_punir"] = tab["punir_llm"] - tab["punir_humano"]
+print(tab.round(3))
+
+# O acerto depende do campo? Teste qui-quadrado de independência
+qui = chi2_contingency(pd.crosstab(dif["campo"], dif["acerto"]))
+print(f"Qui-quadrado = {qui.statistic:.2f}, gl = {qui.dof}, p = {qui.pvalue:.3f}")
+```
+:::
+:::
+
+**O que está sendo executado.** Para cada campo, calculamos a acurácia do LLM e a proporção de PUNIR segundo o humano e segundo o LLM; a diferença entre as duas é o viés do LLM **na quantidade que vamos estimar**. O teste pergunta se a taxa de acerto varia entre os campos mais do que o acaso explicaria. Em R usamos uma regressão logística (o mesmo modelo permitiria controlar por casa ou ano); em Python, o qui-quadrado de uma tabela campo × acerto. Os dois respondem à mesma pergunta, e um p-valor alto aqui **não** prova ausência de viés: com 31 a 52 ementas por campo, o teste tem pouco poder.
+
+### Confiabilidade: sementes e prompts
+
+::: {.abas}
+::: {.aba data-nome="R"}
+```{r, echo=TRUE}
+library(tidyr)
+muda <- function(m) mean(apply(m, 1, \(x) length(unique(na.omit(x))) > 1))
+
+# (a) Teste-reteste: prompt v2, temperatura 0,8, sementes 1, 2 e 3
+largo_seed <- llm |>
+  filter(prompt_id == "v2", temperatura > 0) |>
+  select(doc_id, semente, categoria_llm) |>
+  mutate(categoria_llm = as.character(categoria_llm)) |>
+  pivot_wider(names_from = semente, values_from = categoria_llm)
+head(largo_seed, 3)
+m_seed <- select(largo_seed, -doc_id)
+c(alfa = alfa_krippendorff(m_seed), muda = muda(m_seed))
+
+# (b) Sensibilidade ao prompt: v1, v2, v3 com temperatura 0
+largo_prompt <- llm |>
+  filter(temperatura == 0, semente == 42) |>
+  select(doc_id, prompt_id, categoria_llm) |>
+  mutate(categoria_llm = as.character(categoria_llm)) |>
+  pivot_wider(names_from = prompt_id, values_from = categoria_llm)
+m_prompt <- select(largo_prompt, -doc_id)
+c(alfa = alfa_krippendorff(m_prompt), muda = muda(m_prompt))
+```
+:::
+::: {.aba data-nome="Python"}
+```{python, echo=TRUE}
+def muda(m):
+    return np.mean([len(set(x.dropna())) > 1 for _, x in m.iterrows()])
+
+# (a) Teste-reteste: prompt v2, temperatura 0,8, sementes 1, 2 e 3
+largo_seed = (llm[(llm["prompt_id"] == "v2") & (llm["temperatura"] > 0)]
+              .pivot(index="doc_id", columns="semente", values="categoria_llm"))
+print(largo_seed.head(3))
+print(f"alfa = {alfa_krippendorff(largo_seed):.4f}  muda = {muda(largo_seed):.4f}")
+
+# (b) Sensibilidade ao prompt: v1, v2, v3 com temperatura 0
+largo_prompt = (llm[(llm["temperatura"] == 0) & (llm["semente"] == 42)]
+                .pivot(index="doc_id", columns="prompt_id", values="categoria_llm"))
+print(f"alfa = {alfa_krippendorff(largo_prompt):.4f}  muda = {muda(largo_prompt):.4f}")
+```
+:::
+:::
+
+Quais ementas mudam de rótulo quando só a redação do prompt muda?
+
+::: {.abas}
+::: {.aba data-nome="R"}
+```{r, echo=TRUE}
+largo_prompt |>
+  filter(v1 != v2 | v2 != v3) |>
+  left_join(select(corpus, doc_id, ementa), by = "doc_id") |>
+  head(5) |>
+  with(cat(sprintf("%s  v1: %-8s v2: %-8s v3: %-8s %s", doc_id, v1, v2, v3,
+                   substr(ementa, 1, 55)), sep = "\n"))
+```
+:::
+::: {.aba data-nome="Python"}
+```{python, echo=TRUE}
+mudam = largo_prompt[(largo_prompt["v1"] != largo_prompt["v2"]) |
+                     (largo_prompt["v2"] != largo_prompt["v3"])]
+mudam = mudam.reset_index().merge(corpus[["doc_id", "ementa"]], on="doc_id")
+for r in mudam.head(5).itertuples():
+    print(f"{r.doc_id}  v1: {r.v1:8} v2: {r.v2:8} v3: {r.v3:8} {r.ementa[:55]}")
+```
+:::
+:::
+
+**O que está sendo executado.** `pivot_wider()`/`pivot()` transforma a tabela longa do cache (uma linha por ementa e execução) numa matriz **ementas × execuções**, o formato que o alfa de Krippendorff espera: cada execução faz o papel de um "codificador". A função `muda()` conta a proporção de ementas que receberam mais de um rótulo diferente. Nenhum rótulo humano é usado aqui: confiabilidade é sobre a **estabilidade** do instrumento, não sobre seu acerto.
+
+### A variável eleitoral
+
+::: {.abas}
+::: {.aba data-nome="R"}
+```{r, echo=TRUE}
+llm |>
+  filter(temperatura == 0, semente == 42) |>
+  inner_join(select(ouro, doc_id, eleitoral), by = "doc_id") |>
+  group_by(prompt_id) |>
+  summarise(eleitorais_humano = sum(eleitoral),
+            eleitorais_llm = sum(eleitoral_llm, na.rm = TRUE),
+            sensibilidade = mean(eleitoral_llm[eleitoral == 1], na.rm = TRUE),
+            especificidade = mean(!eleitoral_llm[eleitoral == 0], na.rm = TRUE))
+```
+:::
+::: {.aba data-nome="Python"}
+```{python, echo=TRUE}
+e = llm[(llm["temperatura"] == 0) & (llm["semente"] == 42)].merge(
+    ouro[["doc_id", "eleitoral"]], on="doc_id")
+e["eleitoral_llm"] = e["eleitoral_llm"].astype(bool)
+e.groupby("prompt_id").apply(lambda g: pd.Series({
+    "eleitorais_humano": g["eleitoral"].sum(),
+    "eleitorais_llm": g["eleitoral_llm"].sum(),
+    "sensibilidade": g.loc[g["eleitoral"] == 1, "eleitoral_llm"].mean(),
+    "especificidade": (~g.loc[g["eleitoral"] == 0, "eleitoral_llm"]).mean()})).round(3)
+```
+:::
+:::
+
+**O que está sendo executado.** A sensibilidade é a média do rótulo do LLM **entre as ementas que o humano marcou como eleitorais**; a especificidade, a média do "não eleitoral" do LLM **entre as que o humano marcou como não eleitorais**. Com só `r sum(ouro$eleitoral)` ementas eleitorais na amostra-ouro, cada acerto ou erro move a sensibilidade em mais de 10 pontos percentuais.

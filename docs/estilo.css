@@ -1,0 +1,962 @@
+/* ==========================================================================
+   Template do livro do minicurso (bookdown::gitbook) — Azul & Ardósia
+   II DataPOL · UFPE · 2026
+
+   IMPORTANTE: o gitbook define `html { font-size: 62.5% }`, ou seja, 1rem = 10px.
+   Por isso este arquivo usa px (tamanhos fixos) e em (relativos ao texto),
+   nunca rem. Versão anterior: backup_template/estilo_v2_anterior.css
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap');
+
+:root {
+  /* Azuis */
+  --azul-noite:   #0f2440;
+  --azul-escuro:  #1c3f6e;
+  --azul-medio:   #2b5b9e;
+  --azul:         #3d7ccc;
+  --azul-claro:   #7ba4de;
+  --azul-borda:   #c9dcf5;
+  --azul-fundo:   #f2f7fd;
+
+  /* Ardósia */
+  --tinta:        #182026;
+  --tinta-sec:    #334155;
+  --cinza-escuro: #475569;
+  --cinza:        #64748b;
+  --cinza-claro:  #94a3b8;
+  --borda:        #e2e8f0;
+  --borda-suave:  #edf2f7;
+  --cinza-fundo:  #f4f6f9;
+  --lateral:      #f6f8fb;
+  --papel:        #fcfcfb;
+  --branco:       #ffffff;
+
+  /* Tipografia */
+  --fonte-sans:   'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --fonte-serif:  'Source Serif 4', 'Noto Serif', Georgia, serif;
+  --fonte-mono:   'JetBrains Mono', 'DejaVu Sans Mono', 'Liberation Mono', Consolas, monospace;
+
+  --largura-menu: 320px;
+}
+
+/* --- Estrutura geral ------------------------------------------------------ */
+.book {
+  font-family: var(--fonte-sans);
+  background-color: var(--papel);
+  color: var(--tinta);
+  -webkit-font-smoothing: antialiased;
+}
+
+.book .book-body,
+.book .book-body .page-wrapper {
+  background-color: var(--papel);
+}
+
+.book .book-body .page-wrapper .page-inner {
+  max-width: 820px !important;
+  padding: 32px 36px 64px 36px;
+}
+
+/* Texto principal: 17px por padrão; o botão "A" do gitbook troca o tamanho */
+.book .book-body .page-wrapper .page-inner section.normal {
+  font-family: var(--fonte-sans);
+  color: var(--tinta);
+  font-size: 17px;
+  line-height: 1.72;
+  letter-spacing: -0.005em;
+  background-color: transparent;
+}
+
+.book.font-size-0 .book-body .page-inner section.normal { font-size: 14.5px; }
+.book.font-size-1 .book-body .page-inner section.normal { font-size: 15.5px; }
+.book.font-size-2 .book-body .page-inner section.normal { font-size: 17px; }
+.book.font-size-3 .book-body .page-inner section.normal { font-size: 19px; }
+.book.font-size-4 .book-body .page-inner section.normal { font-size: 21px; }
+
+/* Opção "Serif" do menu de fonte */
+.book.font-family-0 .book-body .page-wrapper .page-inner section.normal {
+  font-family: var(--fonte-serif);
+  line-height: 1.76;
+}
+
+/* --- Barra superior ------------------------------------------------------- */
+.book .book-header {
+  background-color: rgba(252, 252, 251, 0.94) !important;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--borda);
+  height: 50px;
+  line-height: 50px;
+  padding: 0 8px;
+}
+
+.book .book-header .btn {
+  font-size: 17px;
+  height: 50px;
+  line-height: 50px;
+  padding: 0 10px;
+  color: var(--cinza-escuro) !important;
+  transition: color 0.15s ease;
+}
+
+.book .book-header .btn:hover {
+  color: var(--azul-escuro) !important;
+}
+
+.book .book-header h1 {
+  font-family: var(--fonte-sans);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 50px;
+  color: var(--cinza-escuro) !important;
+  letter-spacing: 0;
+  opacity: 1;
+}
+
+.book .book-header h1 a,
+.book .book-header h1 a:hover {
+  color: var(--cinza-escuro) !important;
+}
+
+/* Menu suspenso de fonte (botão "A") */
+.book .book-header .dropdown-menu {
+  font-size: 14px;
+}
+
+.book .book-header .dropdown-menu .buttons .button {
+  font-size: 14px;
+}
+
+/* --- Menu lateral (sumário) ----------------------------------------------- */
+.book .book-summary {
+  background-color: var(--lateral);
+  border-right: 1px solid var(--borda);
+  font-family: var(--fonte-sans);
+  width: var(--largura-menu);
+  left: calc(-1 * var(--largura-menu));
+}
+
+.book.with-summary .book-summary {
+  left: 0;
+}
+
+@media (min-width: 600px) {
+  .book.with-summary .book-body,
+  .book.with-summary .book-header {
+    left: var(--largura-menu);
+  }
+}
+
+.book .book-summary ul.summary {
+  padding: 8px 0 32px 0;
+}
+
+/* Bloco de título no topo do menu */
+.book .book-summary ul.summary li.toc-titulo {
+  padding: 22px 22px 4px 22px;
+}
+
+.book .book-summary ul.summary li.toc-titulo a {
+  padding: 0 !important;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.3;
+  letter-spacing: -0.015em;
+  color: var(--azul-noite) !important;
+  white-space: normal;
+  border-left: none !important;
+  background: none !important;
+}
+
+.book .book-summary ul.summary li.toc-sub {
+  padding: 4px 22px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--cinza);
+  white-space: normal;
+}
+
+.book .book-summary ul.summary li.toc-sub a {
+  display: inline !important;
+  padding: 0 !important;
+  font-size: inherit !important;
+  color: var(--azul-medio) !important;
+  border-left: none !important;
+  background: none !important;
+}
+
+.book .book-summary ul.summary li.toc-sub a:hover {
+  text-decoration: underline;
+}
+
+/* Botões de acesso rápido no rodapé do menu */
+.book .book-summary ul.summary li.toc-links {
+  padding: 8px 22px 4px 22px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.book .book-summary ul.summary li.toc-links a {
+  display: inline-block !important;
+  padding: 6px 12px !important;
+  font-size: 13.5px !important;
+  font-weight: 600;
+  color: var(--azul-escuro) !important;
+  background-color: var(--branco) !important;
+  border: 1px solid var(--azul-borda) !important;
+  border-radius: 999px;
+  line-height: 1.3;
+}
+
+.book .book-summary ul.summary li.toc-links a:hover {
+  background-color: var(--azul-fundo) !important;
+  border-color: var(--azul-claro) !important;
+  text-decoration: none;
+}
+
+.book .book-summary ul.summary li.divider {
+  height: 1px;
+  margin: 14px 22px;
+  background-color: var(--borda);
+}
+
+/* Itens do sumário */
+.book .book-summary ul.summary li a,
+.book .book-summary ul.summary li span {
+  display: block;
+  padding: 9px 22px 9px 19px;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--tinta-sec);
+  border-left: 3px solid transparent;
+  white-space: normal;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+/* Títulos longos quebram a linha alinhados ao texto, não ao número */
+.book .book-summary ul.summary li.chapter > a {
+  display: flex;
+  align-items: baseline;
+}
+
+/* Números dos capítulos */
+.book .book-summary ul.summary li a b {
+  flex: 0 0 auto;
+  display: inline-block;
+  min-width: 1.6em;
+  font-weight: 700;
+  color: var(--azul);
+}
+
+/* Seções (segundo nível) */
+.book .book-summary ul.summary li ul li a,
+.book .book-summary ul.summary li ul li span {
+  padding: 6px 22px 6px 38px;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--cinza-escuro);
+}
+
+.book .book-summary ul.summary li ul li a b {
+  min-width: 2.3em;
+  font-weight: 600;
+  color: var(--cinza);
+}
+
+.book .book-summary ul.summary li a:hover {
+  color: var(--azul-escuro) !important;
+  background-color: rgba(61, 124, 204, 0.07);
+  text-decoration: none;
+}
+
+.book .book-summary ul.summary li.active > a {
+  color: var(--azul-noite) !important;
+  font-weight: 700;
+  background-color: #e8f0fb;
+  border-left: 3px solid var(--azul-escuro);
+}
+
+/* Rótulo "Apêndices" */
+.book .book-summary ul.summary li.part > span,
+.book .book-summary ul.summary li.appendix > span {
+  font-size: 12.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--cinza);
+  padding-top: 20px;
+  padding-bottom: 6px;
+  opacity: 1;
+}
+
+/* Busca */
+.book .book-summary .book-search {
+  padding: 12px 16px;
+  background-color: var(--lateral);
+  border-bottom: 1px solid var(--borda);
+}
+
+.book .book-summary .book-search input,
+.book .book-summary .book-search input:focus {
+  width: 100%;
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  padding: 8px 12px;
+  background-color: var(--branco);
+  font-size: 15px;
+  color: var(--tinta);
+}
+
+.book .book-summary .book-search input:focus {
+  border-color: var(--azul-claro);
+  outline: 2px solid rgba(61, 124, 204, 0.18);
+}
+
+/* Celular: o menu ocupa a tela toda quando aberto */
+@media (max-width: 600px) {
+  .book .book-summary {
+    width: calc(100% - 56px);
+    left: calc(-100% + 56px);
+  }
+  /* no celular o gitbook usa body-inner estático: compensa a barra fixa */
+  .book .book-body .page-wrapper .page-inner {
+    padding: 72px 16px 48px 16px;
+  }
+  .book .book-body .page-wrapper .page-inner section.normal {
+    font-size: 16.5px;
+  }
+}
+
+/* --- Títulos -------------------------------------------------------------- */
+.book .book-body .page-wrapper .page-inner section.normal h1,
+.book .book-body .page-wrapper .page-inner section.normal h2,
+.book .book-body .page-wrapper .page-inner section.normal h3,
+.book .book-body .page-wrapper .page-inner section.normal h4 {
+  font-family: var(--fonte-sans);
+  color: var(--azul-escuro);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.book .book-body .page-wrapper .page-inner section.normal h1 {
+  font-size: 2em;
+  font-weight: 800;
+  color: var(--azul-noite);
+  margin-top: 0.4em;
+  margin-bottom: 0.85em;
+  padding-bottom: 0.45em;
+  border-bottom: 2px solid var(--borda);
+  position: relative;
+}
+
+.book .book-body .page-wrapper .page-inner section.normal h1::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: 72px;
+  height: 3px;
+  background-color: var(--azul);
+  border-radius: 2px;
+}
+
+/* "Capítulo 6" vira um rótulo acima do título */
+.book .book-body .page-wrapper .page-inner section.normal h1 .header-section-number {
+  display: block;
+  margin: 0 0 0.35em 0;
+  font-size: 0.45em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--azul);
+}
+
+.book .book-body .page-wrapper .page-inner section.normal h2 {
+  font-size: 1.45em;
+  color: var(--azul-escuro);
+  margin-top: 2em;
+  margin-bottom: 0.7em;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--borda-suave);
+}
+
+.book .book-body .page-wrapper .page-inner section.normal h2 .header-section-number {
+  color: var(--cinza);
+  font-weight: 600;
+  margin-right: 0.35em;
+}
+
+.book .book-body .page-wrapper .page-inner section.normal h3 {
+  font-size: 1.18em;
+  color: var(--tinta-sec);
+  margin-top: 1.6em;
+  margin-bottom: 0.55em;
+}
+
+.book .book-body .page-wrapper .page-inner section.normal h4 {
+  font-size: 1.05em;
+  color: var(--tinta-sec);
+}
+
+/* --- Cabeçalho da página inicial (título, autores, data) ------------------ */
+#header {
+  margin: 8px 0 32px 0;
+  padding: 28px 30px;
+  background: linear-gradient(135deg, #eef4fc 0%, #f8fafc 100%);
+  border: 1px solid var(--borda);
+  border-left: 5px solid var(--azul-escuro);
+  border-radius: 10px;
+}
+
+#header h1.title {
+  font-size: 32px !important;
+  font-weight: 800;
+  line-height: 1.2 !important;
+  color: var(--azul-noite);
+  border-bottom: none !important;
+  margin: 0 0 8px 0 !important;
+  padding: 0 !important;
+}
+
+#header h1.title::after {
+  display: none;
+}
+
+#header h2.subtitle,
+#header p.subtitle {
+  font-size: 19px !important;
+  font-weight: 500;
+  color: var(--azul-medio) !important;
+  margin: 0 0 18px 0 !important;
+  border: none !important;
+  padding: 0 !important;
+}
+
+#header p.author,
+#header h4.author {
+  font-size: 15.5px !important;
+  font-weight: 500;
+  font-style: normal;
+  color: var(--tinta-sec) !important;
+  margin: 2px 0 !important;
+}
+
+#header p.author em,
+#header h4.author em,
+#header p.date em,
+#header h4.date em,
+#header h2.subtitle em {
+  font-style: normal;
+}
+
+#header p.date,
+#header h4.date {
+  font-size: 14.5px !important;
+  font-weight: 600;
+  color: var(--cinza) !important;
+  margin: 14px 0 0 0 !important;
+  padding-top: 12px;
+  border-top: 1px solid var(--borda);
+}
+
+/* Bloco inicial: capa + acesso rápido (index.Rmd, só no HTML) */
+.inicio {
+  display: flex;
+  gap: 32px;
+  align-items: center;
+  margin: 8px 0 36px 0;
+}
+
+.inicio .inicio-capa {
+  flex: 0 0 240px;
+}
+
+.inicio .inicio-capa img {
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  border: 1px solid var(--borda);
+  box-shadow: 0 12px 30px rgba(15, 36, 64, 0.16);
+}
+
+.inicio .inicio-texto {
+  flex: 1 1 auto;
+}
+
+.book .book-body .page-wrapper .page-inner section.normal .inicio .inicio-texto p {
+  font-size: 1em;
+  margin-bottom: 18px;
+}
+
+.inicio .botoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.book .book-body .page-wrapper .page-inner section.normal .inicio .botoes a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-decoration: none;
+  color: var(--azul-escuro);
+  background-color: var(--branco);
+  border: 1px solid var(--azul-borda);
+  border-radius: 8px;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.book .book-body .page-wrapper .page-inner section.normal .inicio .botoes a:hover {
+  background-color: var(--azul-fundo);
+  border-color: var(--azul-claro);
+}
+
+.book .book-body .page-wrapper .page-inner section.normal .inicio .botoes a.principal {
+  color: var(--branco);
+  background-color: var(--azul-escuro);
+  border-color: var(--azul-escuro);
+}
+
+.book .book-body .page-wrapper .page-inner section.normal .inicio .botoes a.principal:hover {
+  background-color: var(--azul-noite);
+}
+
+@media (max-width: 700px) {
+  .inicio {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 22px;
+  }
+  .inicio .inicio-capa {
+    flex: none;
+    width: 200px;
+    margin: 0 auto;
+  }
+  #header {
+    padding: 20px 18px;
+  }
+  #header h1.title {
+    font-size: 25px !important;
+  }
+  #header h2.subtitle,
+  #header p.subtitle {
+    font-size: 16.5px !important;
+  }
+}
+
+/* --- Parágrafos, links e listas ------------------------------------------- */
+.book .book-body .page-wrapper .page-inner section.normal p {
+  margin-top: 0;
+  margin-bottom: 1em;
+}
+
+.book .book-body .page-wrapper .page-inner section.normal a {
+  color: var(--azul-medio);
+  text-decoration: underline;
+  text-decoration-color: rgba(61, 124, 204, 0.35);
+  text-underline-offset: 3px;
+  transition: color 0.15s ease, text-decoration-color 0.15s ease;
+}
+
+.book .book-body .page-wrapper .page-inner section.normal a:hover {
+  color: var(--azul-noite);
+  text-decoration-color: var(--azul-escuro);
+}
+
+.book .book-body .page-wrapper .page-inner section.normal ul,
+.book .book-body .page-wrapper .page-inner section.normal ol {
+  margin-bottom: 1.1em;
+  padding-left: 1.5em;
+}
+
+.book .book-body .page-wrapper .page-inner section.normal li {
+  margin-bottom: 0.3em;
+}
+
+.book .book-body .page-wrapper .page-inner section.normal li::marker {
+  color: var(--azul);
+  font-weight: 600;
+}
+
+/* --- Citações ------------------------------------------------------------- */
+.book .book-body .page-wrapper .page-inner section.normal blockquote {
+  margin: 1.4em 0;
+  padding: 0.85em 1.2em;
+  border-left: 4px solid var(--azul-claro);
+  background-color: var(--cinza-fundo);
+  color: var(--tinta-sec);
+  border-radius: 0 6px 6px 0;
+  font-size: 0.97em;
+}
+
+.book .book-body .page-wrapper .page-inner section.normal blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+/* --- Caixas de destaque (::: {.caixa}, .aviso, .ia) ----------------------- */
+.caixa {
+  border: 1px solid var(--azul-borda);
+  border-left: 4px solid var(--azul-escuro);
+  background-color: var(--azul-fundo);
+  padding: 1em 1.25em;
+  margin: 1.5em 0;
+  border-radius: 6px;
+}
+
+.caixa > :first-child { margin-top: 0; }
+.caixa > :last-child { margin-bottom: 0 !important; }
+
+.caixa .titulo-caixa {
+  font-family: var(--fonte-sans);
+  font-weight: 700;
+  font-size: 0.95em;
+  letter-spacing: 0.01em;
+  color: var(--azul-escuro);
+  display: block;
+  margin-bottom: 0.35em;
+}
+
+.caixa.aviso {
+  border-color: #cbd5e1;
+  border-left-color: var(--cinza-escuro);
+  background-color: var(--cinza-fundo);
+}
+
+.caixa.aviso .titulo-caixa { color: var(--tinta); }
+
+.caixa.ia {
+  border-color: #cdddf2;
+  border-left-color: var(--azul);
+  background-color: #f4f7fb;
+}
+
+.caixa.ia .titulo-caixa { color: var(--azul-medio); }
+
+/* --- Tabelas -------------------------------------------------------------- */
+.book .book-body .page-wrapper .page-inner section.normal table {
+  display: table;
+  width: 100%;
+  margin: 1.5em 0;
+  border-collapse: collapse;
+  font-family: var(--fonte-sans);
+  font-size: 0.88em;
+  line-height: 1.45;
+  border-top: 2px solid var(--azul-escuro);
+  border-bottom: 2px solid var(--azul-escuro);
+}
+
+/* Tabelas largas rolam na horizontal em telas pequenas */
+@media (max-width: 700px) {
+  .book .book-body .page-wrapper .page-inner section.normal table {
+    display: block;
+    overflow-x: auto;
+  }
+}
+
+.book .book-body .page-wrapper .page-inner section.normal table caption {
+  caption-side: top;
+  text-align: left;
+  font-size: 0.95em;
+  color: var(--cinza-escuro);
+  margin-bottom: 0.6em;
+  line-height: 1.45;
+}
+
+.book .book-body .page-wrapper .page-inner section.normal table th {
+  background-color: #eff4fa;
+  color: var(--azul-noite);
+  font-weight: 700;
+  padding: 0.6em 0.75em;
+  border: none;
+  border-bottom: 1.5px solid var(--azul-escuro);
+}
+
+.book .book-body .page-wrapper .page-inner section.normal table td {
+  padding: 0.55em 0.75em;
+  border: none;
+  border-bottom: 1px solid var(--borda);
+  color: var(--tinta);
+  background-color: transparent !important;
+}
+
+.book .book-body .page-wrapper .page-inner section.normal table tbody tr:nth-child(even) {
+  background-color: #f8fafc !important;
+}
+
+.book .book-body .page-wrapper .page-inner section.normal table tbody tr:hover {
+  background-color: var(--azul-fundo) !important;
+}
+
+/* --- Código --------------------------------------------------------------- */
+.book .book-body .page-wrapper .page-inner section.normal code {
+  font-family: var(--fonte-mono);
+  font-size: 0.86em;
+  color: var(--azul-escuro);
+  background-color: #eef2f7;
+  padding: 0.12em 0.38em;
+  border-radius: 4px;
+}
+
+.book .book-body .page-wrapper .page-inner section.normal div.sourceCode,
+.book .book-body .page-wrapper .page-inner section.normal pre {
+  background-color: var(--cinza-fundo) !important;
+  border: 1px solid var(--borda) !important;
+  border-left: 3.5px solid var(--azul-escuro) !important;
+  border-radius: 6px;
+  margin: 1.2em 0;
+}
+
+.book .book-body .page-wrapper .page-inner section.normal pre {
+  padding: 14px 18px;
+  font-size: 14px;
+  line-height: 1.55;
+  overflow-x: auto;
+  word-wrap: normal;
+}
+
+.book .book-body .page-wrapper .page-inner section.normal div.sourceCode pre {
+  border: none !important;
+  margin: 0;
+  background: transparent !important;
+}
+
+.book .book-body .page-wrapper .page-inner section.normal pre code {
+  display: block;
+  background-color: transparent !important;
+  padding: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--tinta);
+  white-space: pre;
+}
+
+/* O pandoc envolve cada linha num <span> inline-block: altura de linha uniforme */
+.book .book-body .page-wrapper .page-inner section.normal pre > code.sourceCode > span {
+  line-height: 1.55;
+}
+
+/* Realce de sintaxe (Azul & Cinza) */
+.book code span.kw,
+.book code span.cf,
+.book code span.op { color: var(--azul-escuro); font-weight: 600; }
+.book code span.fu,
+.book code span.bu { color: var(--azul-medio); font-weight: 500; }
+.book code span.st,
+.book code span.ch,
+.book code span.ss,
+.book code span.vs { color: #2b6cb0; }
+.book code span.dv,
+.book code span.fl,
+.book code span.cn,
+.book code span.bn,
+.book code span.at { color: #1e4e8c; }
+.book code span.co,
+.book code span.do,
+.book code span.an,
+.book code span.cv,
+.book code span.in { color: var(--cinza); font-style: italic; }
+.book code span.va,
+.book code span.ot,
+.book code span.sc { color: var(--tinta); }
+
+/* --- Figuras e legendas --------------------------------------------------- */
+.book .book-body .page-wrapper .page-inner section.normal .figure {
+  margin: 1.6em 0;
+  text-align: center;
+}
+
+.book .book-body .page-wrapper .page-inner section.normal .figure img,
+.book .book-body .page-wrapper .page-inner section.normal img {
+  max-width: 100%;
+  height: auto;
+}
+
+.book .book-body .page-wrapper .page-inner section.normal .figure img {
+  border-radius: 6px;
+  border: 1px solid var(--borda-suave);
+}
+
+.book .book-body .page-wrapper .page-inner section.normal p.caption {
+  font-family: var(--fonte-sans);
+  font-size: 0.88em;
+  color: var(--cinza-escuro);
+  margin-top: 0.6em;
+  text-align: left;
+  line-height: 1.5;
+}
+
+/* --- Referências bibliográficas ------------------------------------------- */
+.book .book-body .page-wrapper .page-inner section.normal #refs > div,
+.book .book-body .page-wrapper .page-inner section.normal div.csl-entry {
+  margin-bottom: 0.7em;
+  padding-left: 1.5em;
+  text-indent: -1.5em;
+}
+
+/* --- Navegação entre capítulos -------------------------------------------- */
+.book .book-body .navigation {
+  color: var(--cinza-claro);
+  font-size: 40px;
+  transition: color 0.15s ease;
+}
+
+.book .book-body .navigation:hover {
+  color: var(--azul-escuro);
+}
+
+/* --- Tema "Night" do menu de fonte ---------------------------------------- */
+.book.color-theme-2 .book-body,
+.book.color-theme-2 .book-body .page-wrapper,
+.book.color-theme-2 .book-header {
+  background-color: #141a22 !important;
+}
+
+.book.color-theme-2 .book-header { border-bottom-color: #2a3442; }
+
+.book.color-theme-2 .book-body .page-wrapper .page-inner section.normal,
+.book.color-theme-2 .book-body .page-wrapper .page-inner section.normal table td {
+  color: #d5dde8;
+}
+
+.book.color-theme-2 .book-body .page-wrapper .page-inner section.normal h1,
+.book.color-theme-2 .book-body .page-wrapper .page-inner section.normal h2,
+.book.color-theme-2 .book-body .page-wrapper .page-inner section.normal h3,
+.book.color-theme-2 .book-body .page-wrapper .page-inner section.normal h4,
+.book.color-theme-2 #header h1.title {
+  color: #c9dcf5;
+  border-bottom-color: #2a3442;
+}
+
+.book.color-theme-2 .book-body .page-wrapper .page-inner section.normal a { color: #7ba4de; }
+
+.book.color-theme-2 #header,
+.book.color-theme-2 .caixa,
+.book.color-theme-2 .book-body .page-wrapper .page-inner section.normal blockquote,
+.book.color-theme-2 .book-body .page-wrapper .page-inner section.normal div.sourceCode,
+.book.color-theme-2 .book-body .page-wrapper .page-inner section.normal pre {
+  background: #1b2430 !important;
+  border-color: #2a3442 !important;
+  color: #d5dde8;
+}
+
+.book.color-theme-2 .book-body .page-wrapper .page-inner section.normal pre code,
+.book.color-theme-2 .book code span.va,
+.book.color-theme-2 .book code span.ot { color: #d5dde8; }
+
+.book.color-theme-2 .book-body .page-wrapper .page-inner section.normal code {
+  background-color: #222d3b;
+  color: #a9c6ee;
+}
+
+.book.color-theme-2 .book-body .page-wrapper .page-inner section.normal table th {
+  background-color: #1f2a38;
+  color: #c9dcf5;
+}
+
+.book.color-theme-2 .book-body .page-wrapper .page-inner section.normal table tbody tr:nth-child(even) {
+  background-color: #18202b !important;
+}
+
+.book.color-theme-2 .book-body .page-wrapper .page-inner section.normal table tbody tr:hover {
+  background-color: #1f2a38 !important;
+}
+
+/* --- Impressão ------------------------------------------------------------ */
+@media print {
+  .book .book-summary,
+  .book .book-header,
+  .book .book-body .navigation { display: none !important; }
+  .book .book-body { left: 0 !important; position: static; }
+  .inicio .botoes { display: none; }
+}
+
+/* O gitbook insere espaços (::before/::after) em volta do código inline */
+.book .book-body .page-wrapper .page-inner section.normal code::before,
+.book .book-body .page-wrapper .page-inner section.normal code::after {
+  content: none;
+}
+
+/* --- Abas R | Python (abas.html) e caixas "Como executar" ------------------- */
+.abas {
+  margin: 1.1em 0 1.4em;
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  background: var(--branco);
+  padding: 0 0.9em 0.4em;
+}
+.abas-barra {
+  display: flex;
+  gap: 0.3em;
+  border-bottom: 1px solid var(--borda);
+  margin: 0 -0.9em 0.6em;
+  padding: 0.45em 0.9em 0;
+  background: var(--lateral);
+  border-radius: 8px 8px 0 0;
+}
+.abas-barra button {
+  font-family: var(--fonte-sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--cinza);
+  background: transparent;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  padding: 0.35em 1.1em;
+  margin-bottom: -1px;
+  cursor: pointer;
+}
+.abas-barra button:hover { color: var(--azul-escuro); }
+.abas-barra button.ativo {
+  color: var(--azul-noite);
+  background: var(--branco);
+  border-color: var(--borda);
+}
+.aba[hidden] { display: none !important; }
+.caixa.executar {
+  background-color: var(--cinza-fundo);
+  border-left-color: var(--azul-medio);
+}
+.caixa.executar code { white-space: nowrap; }
+.saida-registrada {
+  font-family: var(--fonte-sans);
+  font-size: 12.5px;
+  color: var(--cinza);
+  margin: 0.2em 0 -0.2em;
+}
+
+/* --- Saídas de código (knitr: <pre> sem classe): fundo branco e borda tracejada,
+       para distinguir do código que se digita ------------------------------- */
+.book .book-body .page-wrapper .page-inner section.normal pre:not([class]) {
+  position: relative;
+  background-color: var(--branco) !important;
+  border: 1px dashed var(--azul-borda) !important;
+  border-left: 3.5px solid var(--azul-claro) !important;
+  margin-top: -0.6em;
+  padding-top: 20px;
+}
+.book .book-body .page-wrapper .page-inner section.normal pre:not([class])::before {
+  content: "saída";
+  position: absolute;
+  top: 3px;
+  right: 10px;
+  font-family: var(--fonte-sans);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--cinza-claro);
+}
+.book .book-body .page-wrapper .page-inner section.normal pre:not([class]) code {
+  color: var(--tinta-sec);
+  font-size: 13px;
+  line-height: 1.45;
+}

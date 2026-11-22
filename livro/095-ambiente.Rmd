@@ -1,0 +1,147 @@
+# (APPENDIX) Apêndices {-}
+
+# Preparando o ambiente {#ambiente}
+
+Este apêndice reúne tudo o que é preciso para executar o código do livro e do minicurso, em R ou em Python, no seu computador ou no Google Colab. A regra geral: **todo o código roda a partir da pasta raiz do material** (`minicurso_IA_medicao/`), com caminhos relativos como `dados/processado/corpus.csv`.
+
+## O que você precisa
+
+```{r tab-requisitos}
+tibble::tribble(
+  ~Para, ~`O que instalar`, ~`Obrigatório?`,
+  "Trilha em R", "R (4.3 ou mais recente) e, de preferência, RStudio ou Positron; pacotes de `R/00_pacotes.R`", "Sim (ou Python)",
+  "Trilha em Python", "Python 3.11 com os pacotes de `requirements.txt`, **ou** só uma conta Google (Colab)", "Sim (ou R)",
+  "Anotar com o LLM", "Ollama + modelo S5-nano (~3,5 GB); GPU com 6 GB ajuda, mas não é obrigatória", "Não: o cache já traz as respostas",
+  "Refazer a coleta", "Conexão com a internet", "Não: os dados estão congelados",
+  "Compilar slides e livro", "Quarto, pacotes `bookdown`/`rmarkdown`, LaTeX (para PDF)", "Não"
+) |> knitr::kable(caption = "Requisitos para executar o material.") |> larguras(c(20, 58, 22))
+```
+
+Sem GPU, sem Ollama e sem internet, **tudo** a partir do Capítulo \@ref(codificacao) roda com os arquivos do material: o corpus congelado, a referência e o cache de respostas do LLM.
+
+## O material
+
+Baixe o arquivo `.zip` do material (link na Apresentação) e descompacte, ou clone o repositório com o Git. Abra a pasta como **projeto** (no RStudio: *File → Open Project* ou *New Project → Existing Directory*; no Positron ou no VS Code: *Open Folder*), para que a pasta raiz seja o diretório de trabalho. Para conferir, em R:
+
+```{r, echo=TRUE}
+basename(getwd())                         # a pasta raiz do material
+file.exists("dados/processado/corpus.csv")  # TRUE: os caminhos relativos funcionam
+```
+
+## R
+
+Os pacotes estão listados em `R/00_pacotes.R`, que instala só os que faltam:
+
+```{r, echo=TRUE, eval=FALSE, code=readLines(file.path(RAIZ, "R/00_pacotes.R"))}
+```
+
+Para conferir se está tudo instalado:
+
+```{r, echo=TRUE}
+pacotes <- c("httr2", "jsonlite", "dplyr", "tidyr", "purrr", "readr", "stringr",
+             "tibble", "forcats", "ggplot2", "scales", "tm", "SnowballC", "glmnet",
+             "digest", "targets")
+setNames(pacotes %in% rownames(installed.packages()), pacotes)
+```
+
+Dois pacotes são opcionais: `visNetwork` (só para desenhar o grafo do pipeline com `tar_visnetwork()`) e `ellmer` (só para chamar APIs comerciais). Para congelar as versões no seu projeto, use `renv::init()` e `renv::snapshot()`.
+
+**Rodando cada bloco.** Os scripts de `R/` são independentes e numerados na ordem do curso. Rode no terminal (`Rscript R/03_baselines.R`) ou no console do R com `source("R/03_baselines.R")`. Para refazer tudo de uma vez, respeitando as dependências: `targets::tar_make()`.
+
+## Python
+
+### No seu computador
+
+Crie um ambiente virtual e instale as dependências de `requirements.txt` (no Windows, troque a segunda linha por `.venv\Scripts\activate`):
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+jupyter lab            # abre o Jupyter; os notebooks estão em python/
+```
+
+Com o Anaconda, `conda create -n minicurso python=3.11` seguido de `conda activate minicurso` e do mesmo `pip install`. O arquivo de dependências:
+
+```{r, comment=""}
+cat(readLines(file.path(RAIZ, "requirements.txt")), sep = "\n")
+```
+
+O `scipy`, usado no teste qui-quadrado do notebook 04, é instalado junto com o `scikit-learn`. Para conferir:
+
+```{python, echo=TRUE}
+import sys, pandas, numpy, sklearn, matplotlib, requests, scipy
+print("Python", sys.version.split()[0])
+for m in (pandas, numpy, sklearn, matplotlib, requests, scipy):
+    print(f"{m.__name__:12} {m.__version__}")
+```
+
+O código Python do material está em dois módulos, importados pelos notebooks: `python/medicao.py` (coleta, métricas, estimadores e gráficos, espelho de `R/funcoes_*.R`) e `python/anotar_llm.py` (anotação com o LLM, também usável na linha de comando). Se você rodar código fora dos notebooks, acrescente a pasta ao caminho de importação:
+
+```{python, echo=TRUE, eval=FALSE}
+import sys
+sys.path.insert(0, "python")          # a partir da raiz do material
+from medicao import carrega_corpus, kappa_cohen, compara_estimadores
+```
+
+### No Google Colab
+
+Não é preciso instalar nada. Abra um notebook de `python/` no Colab (*Arquivo → Abrir notebook → GitHub*, colando o endereço do repositório, ou *Arquivo → Fazer upload*). A primeira célula de cada notebook detecta o Colab, clona o repositório do minicurso e muda para a pasta dele; daí em diante, os caminhos são os mesmos do seu computador. Só o notebook `03_anotacao_llm.ipynb` precisa de GPU (*Ambiente de execução → Alterar o tipo de ambiente → T4 GPU*), e só se você quiser rodar o modelo.
+
+## Ollama e o S5-nano (opcional)
+
+O LLM só é necessário para **gerar novas anotações**. Instale o Ollama a partir de [ollama.com](https://ollama.com) (no Linux: `curl -fsSL https://ollama.com/install.sh | sh`) e, num terminal, baixe e registre o modelo:
+
+```bash
+ollama pull hf.co/maritaca-ai/S5-nano-GGUF:Q4_K_M                     # ~3,5 GB
+ollama create s5-nano-instruct -f modelos/Modelfile.s5-nano-instruct  # nome local
+ollama list                                                           # confere
+```
+
+Para testar a conexão a partir do R ou do Python (com o Ollama rodando):
+
+::: {.abas}
+::: {.aba data-nome="R"}
+```{r, echo=TRUE, eval=FALSE}
+library(httr2)
+request("http://localhost:11434/api/version") |> req_perform() |> resp_body_json()
+request("http://localhost:11434/api/tags") |> req_perform() |> resp_body_json() |>
+  purrr::pluck("models") |> purrr::map_chr("name")
+```
+:::
+::: {.aba data-nome="Python"}
+```{python, echo=TRUE, eval=FALSE}
+import requests
+print(requests.get("http://localhost:11434/api/version").json())
+modelos = requests.get("http://localhost:11434/api/tags").json()["models"]
+print([m["name"] for m in modelos])
+```
+:::
+:::
+
+A resposta deve incluir a versão do Ollama e o modelo `s5-nano-instruct:latest`. Os dados do material foram gerados com o Ollama 0.40.15; versões diferentes podem produzir respostas ligeiramente diferentes (Capítulo \@ref(reprodutibilidade)).
+
+## Qual arquivo roda cada bloco
+
+```{r tab-blocos}
+tibble::tribble(
+  ~Bloco, ~`Em R`, ~`Em Python`, ~`Precisa de`, ~`Grava em`,
+  "1. Coleta (Cap. \\@ref(dados))", "`R/01_coleta.R`", "`python/01_coleta.ipynb`", "Internet", "`dados/bruto/`, `dados/processado/`",
+  "2. Amostra-ouro (Cap. \\@ref(codificacao))", "`R/02_amostra_ouro.R`", "(lê o arquivo do R)", "-", "`dados/anotacoes/`, `material_apoio/`",
+  "3. Baselines (Cap. \\@ref(baselines))", "`R/03_baselines.R`", "`python/02_baselines.ipynb`", "-", "`resultados/`, `dados/anotacoes/`",
+  "4. LLM (Cap. \\@ref(llm))", "`R/04_anotacao_llm.R`", "`python/anotar_llm.py`, `python/03_anotacao_llm.ipynb`", "Ollama (ou API)", "`dados/cache_llm/`",
+  "5. Validação (Cap. \\@ref(validacao))", "`R/05_validacao.R`", "`python/04_validacao.ipynb`", "-", "`resultados/`",
+  "6. Inferência (Cap. \\@ref(inferencia))", "`R/06_inferencia.R`", "`python/05_inferencia.ipynb`", "-", "`resultados/`",
+  "7. Pipeline (Cap. \\@ref(reprodutibilidade))", "`targets::tar_make()`", "notebooks 01 a 05, em ordem", "-", "`resultados/`"
+) |> knitr::kable(caption = "Arquivos de cada bloco do minicurso. Em Python, os resultados vão para `resultados/python/`.") |>
+  larguras(c(22, 18, 26, 12, 22))
+```
+
+## Problemas comuns
+
+- **"cannot open file 'dados/...': No such file or directory"** (R) ou **`FileNotFoundError`** (Python): o diretório de trabalho não é a raiz do material. Abra a pasta como projeto ou use `setwd()`/`os.chdir()` para a raiz.
+- **Acentos estranhos no Windows**: salve e leia os arquivos como UTF-8 (`read_csv()` e `pd.read_csv()` já usam UTF-8 por padrão).
+- **`ModuleNotFoundError: No module named 'medicao'`**: rode o notebook a partir da pasta `python/` ou acrescente `sys.path.insert(0, "python")`, como acima.
+- **"pandoc version 1.12.3 or higher is required"** ao compilar o livro: aponte o R para o pandoc do Quarto, por exemplo `Sys.setenv(RSTUDIO_PANDOC = "/opt/quarto/bin/tools/x86_64")` (veja `COMO_COMPILAR.txt`).
+- **O Ollama não responde**: confira se o serviço está rodando (`ollama serve` num terminal) e se a porta é a 11434; em outra máquina, defina a variável `OLLAMA_HOST`.
+- **Seus testes com o LLM aparecem na validação**: uma semente diferente de 42 cria um arquivo novo em `dados/cache_llm/`, lido como instrumento à parte. Apague o arquivo de teste ou use `--pasta` para gravar em outro lugar.

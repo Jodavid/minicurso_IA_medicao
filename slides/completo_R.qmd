@@ -1,0 +1,77 @@
+---
+title: "Inteligência Artificial como Instrumento de Medição"
+subtitle: "Minicurso completo em slides · trilha R"
+author: "Prof. Dr. Jodavid Ferreira · Departamento de Estatística · UFPE"
+institute: "II DataPOL · 24 a 26 de novembro de 2026 · CCEN/UFPE"
+lang: pt-BR
+format:
+  revealjs:
+    theme: [default, estilo.scss, estilo_codigo.scss]
+    title-slide-attributes:
+      data-background-color: "#0f2440"
+    slide-number: true
+    progress: true
+    embed-resources: true
+    code-copy: true
+    code-line-numbers: false
+    highlight-style: github
+    width: 1280
+    height: 720
+    footer: "II DataPOL · IA como Instrumento de Medição · Minicurso completo (R)"
+knitr:
+  opts_knit:
+    # o código roda a partir da raiz do projeto, como na máquina do participante
+    root.dir: ".."
+  opts_chunk:
+    comment: "#>"
+    fig.align: "center"
+    fig.width: 10
+    fig.height: 4.6
+    out.width: "85%"
+    dpi: 150
+execute:
+  echo: true
+  warning: false
+  message: false
+---
+
+```{r}
+#| include: false
+# Configuração dos slides (não aparece): largura das saídas e funções auxiliares
+options(width = 100, pillar.width = 100, tibble.print_max = 10, tibble.print_min = 6,
+        readr.show_col_types = FALSE, dplyr.summarise.inform = FALSE, pillar.min_title_chars = 8)
+suppressPackageStartupMessages({
+  source("R/funcoes_coleta.R"); source("R/funcoes_medicao.R")
+  source("R/tema_graficos.R");  source("R/04_anotacao_llm.R")
+  library(ggplot2); library(knitr)
+})
+# Extrai uma função de nível superior de um arquivo do material (o código que roda de fato)
+trecho <- function(arquivo, funcao) {
+  linhas <- readLines(arquivo, encoding = "UTF-8")
+  ini <- grep(paste0("^", funcao, " <- function"), linhas)[1]
+  if (!grepl("\\{\\s*$", linhas[ini])) return(linhas[ini])   # função de uma linha
+  fim <- ini - 1 + which(grepl("^\\}", linhas[ini:length(linhas)]))[1]
+  linhas[ini:fim]
+}
+pc <- function(x, d = 0) paste0(format(round(100 * x, d), nsmall = d, decimal.mark = ","), "%")
+nf <- function(x, d = 2) format(round(x, d), nsmall = d, decimal.mark = ",")
+corpus_ <- read_csv("dados/processado/corpus.csv")
+```
+
+{{< include partes_R/_0_abertura.qmd >}}
+
+{{< include partes_R/_1_dados.qmd >}}
+
+{{< include partes_R/_2_codificacao.qmd >}}
+
+{{< include partes_R/_3_baselines.qmd >}}
+
+{{< include partes_R/_4_llm.qmd >}}
+
+{{< include partes_R/_5_validacao.qmd >}}
+
+{{< include partes_R/_6_inferencia.qmd >}}
+
+{{< include partes_R/_7_reprodutibilidade.qmd >}}
+
+{{< include partes_R/_8_etica.qmd >}}

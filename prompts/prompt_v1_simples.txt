@@ -1,0 +1,5 @@
+Classifique a ementa de projeto de lei abaixo em UMA categoria: PUNIR, REGULAR, PROMOVER ou OUTRO.
+Indique também se o tema é eleitoral (true/false).
+Responda apenas em JSON no formato {"categoria": "...", "eleitoral": true/false}.
+
+Ementa: {{ementa}}

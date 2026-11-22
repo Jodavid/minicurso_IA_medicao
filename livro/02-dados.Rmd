@@ -1,0 +1,307 @@
+# Dados legislativos {#dados}
+
+Toda medição começa antes do instrumento: começa na **coleta**. Neste capítulo montamos o corpus a partir das APIs de dados abertos do Congresso e mostramos que cada passo da coleta já é uma decisão de medição.
+
+## As APIs de dados abertos
+
+A Câmara dos Deputados (`dadosabertos.camara.leg.br/api/v2`) e o Senado Federal (`legis.senado.leg.br/dadosabertos`) oferecem APIs públicas e gratuitas. Uma única chamada, em R, já devolve proposições:
+
+```r
+library(httr2)
+request("https://dadosabertos.camara.leg.br/api/v2/proposicoes") |>
+  req_url_query(keywords = "inteligência artificial", ano = 2026,
+                siglaTipo = "PL", itens = 100) |>
+  req_headers(Accept = "application/json") |>
+  req_perform() |>
+  resp_body_json()
+```
+
+No material, todas as chamadas passam por uma função que identifica o cliente, tenta de novo em caso de falha e limita a taxa de requisições, boas práticas com qualquer API pública:
+
+```{r, echo=TRUE, eval=FALSE, code=trecho("R/funcoes_coleta.R", "req_json")}
+```
+
+A coleta (`R/01_coleta.R`) busca quatro termos (*inteligência artificial*, *deepfake*, *deep fake* e *conteúdo sintético*) em projetos de lei de 2019 a 2026, nas duas casas, e une tudo num corpus com uma linha por proposição. O resultado final, coletado em **06/11/2026**, tem `r nrow(corpus)` proposições: `r sum(corpus$casa == "Câmara")` da Câmara e `r sum(corpus$casa == "Senado")` do Senado.
+
+```{r tab-corpus}
+corpus |>
+  count(Casa = casa, campo) |>
+  tidyr::pivot_wider(names_from = campo, values_from = n, values_fill = 0) |>
+  mutate(Total = rowSums(across(-Casa))) |>
+  knitr::kable(caption = "Proposições do corpus por casa legislativa e campo político do autor.")
+```
+
+## A coleta também é medição
+
+Quatro armadilhas apareceram na construção deste corpus, e todas mudam a medida final:
+
+1. **Limite de datas.** A API da Câmara aceita intervalos de no máximo três meses no filtro de data. A solução foi filtrar por `ano`, que não tem essa restrição.
+2. **Partido "na data".** Queremos o partido do autor **na data de apresentação**, não o atual. O histórico de cada deputado traz registros "partido no início da legislatura" **datados de 2023 para legislaturas antigas**. Sem filtrá-los, um deputado do PL em 2023 aparecia como PMDB ou PFL. O código documenta a correção:
+
+```{r, echo=TRUE, eval=FALSE, code=trecho("R/funcoes_coleta.R", "camara_partido_na_data")}
+```
+
+3. **Busca por palavra-chave.** A busca depende de um indexador que não controlamos. Isso gera falsos positivos (a busca por "inteligência artificial" devolveu, por exemplo, a Lei Geral de Atividades Nucleares) e possíveis omissões. Os falsos positivos viram a categoria **OUTRO** no livro de códigos; a Seção \@ref(classes) mostra quantos são e que tipos de projeto entraram nela.
+4. **Duplicatas.** Um PL do Senado remetido à Câmara aparece nas duas casas.
+
+Há ainda uma quinta decisão, menos visível: o **campo político** (esquerda, centro, direita) é atribuído ao **partido**, seguindo a classificação de @bolognesi2023. Ela própria é uma medida, com seus erros, e partidos mudam ao longo do tempo.
+
+::: {.caixa}
+[Por que congelar os dados]{.titulo-caixa}
+APIs públicas mudam: proposições são arquivadas, ementas são reescritas, índices de busca são refeitos. Por isso o material guarda as respostas brutas (`dados/bruto/`) e o corpus processado (`dados/processado/corpus.csv`) **com a data de coleta**. Em sala, e em qualquer replicação, partimos desses arquivos. Refazer a coleta é possível (`Rscript R/01_coleta.R`, cerca de 5 a 10 minutos), mas o resultado será outro corpus.
+:::
+
+```{r recoleta}
+antigo <- le("dados/processado/historico/corpus_2026-10-08.csv")
+comum  <- inner_join(antigo, corpus, by = "identificacao", suffix = c("_a", "_n"))
+difere <- \(v) {
+  a <- comum[[paste0(v, "_a")]]; b <- comum[[paste0(v, "_n")]]
+  sum(xor(is.na(a), is.na(b)) | (!is.na(a) & !is.na(b) & a != b))
+}
+novos  <- anti_join(corpus, antigo, by = "identificacao")
+```
+
+**Um exemplo real.** O corpus deste livro foi coletado primeiro em 08/10/2026 (guardado em `dados/processado/historico/`) e de novo em 06/11/2026. Em menos de um mês, entraram `r nrow(novos)` projetos novos (`r sum(novos$casa == "Câmara")` da Câmara e `r sum(novos$casa == "Senado")` do Senado, apresentados entre `r format(min(novos$data_apresentacao), "%d/%m")` e `r format(max(novos$data_apresentacao), "%d/%m/%Y")`), `r if (nrow(anti_join(antigo, corpus, by = "identificacao")) == 0) "nenhum saiu" else paste(nrow(anti_join(antigo, corpus, by = "identificacao")), "saíram")`, `r if (difere("ementa") + difere("partido") == 0) "nenhuma ementa nem partido mudou" else paste(difere("ementa"), "ementas e", difere("partido"), "partidos mudaram")`, mas a **situação de tramitação** mudou em `r difere("situacao")` dos `r nrow(comum)` projetos antigos. Os `doc_id` dos projetos antigos foram preservados, porque o corpus é ordenado pela data de apresentação. A recoleta também mostrou uma quinta armadilha: a API da Câmara respondeu com erro 504 (*gateway timeout*) no meio da coleta, e o `req_retry()` do `httr2`, por padrão, não repete esse erro. A função `req_json()` acima agora repete também os erros 500, 502, 503 e 504.
+
+## Mão na massa: do JSON da API ao corpus {#mao-dados}
+
+::: {.caixa .executar}
+[Como executar]{.titulo-caixa}
+
+- **Em R**, na raiz do projeto: `Rscript R/01_coleta.R` (5 a 10 minutos, precisa de internet e **sobrescreve** `dados/processado/corpus.csv`). As funções ficam em `R/funcoes_coleta.R`.
+- **Em Python**: notebook `python/01_coleta.ipynb` (no Jupyter ou no Google Colab). Com `MODO_TESTE = True`, ele coleta só um termo e um ano e grava em `resultados/python/`, sem tocar no corpus congelado.
+- **Em sala**, não refazemos a coleta: partimos do corpus congelado de 06/11/2026. Os blocos abaixo mostram as chamadas à API (sem executá-las) e, em seguida, executam tudo o que não depende da rede.
+- Antes de começar, prepare o ambiente (Apêndice \@ref(ambiente)).
+:::
+
+Todos os trechos deste capítulo e dos seguintes rodam **a partir da raiz do projeto**, com os mesmos caminhos que você usa no seu computador. Em cada bloco, escolha a aba da sua linguagem; a escolha vale para o livro todo.
+
+### Uma chamada à API
+
+A chamada abaixo pede à Câmara os projetos de lei de 2024 que contêm "deepfake". Ela **não é executada** ao compilar o livro (depende da rede), mas é exatamente o que `camara_proposicoes()` faz em cada página de resultados.
+
+::: {.abas}
+::: {.aba data-nome="R"}
+```{r, echo=TRUE, eval=FALSE}
+source("R/funcoes_coleta.R")
+
+res <- req_json(
+  "https://dadosabertos.camara.leg.br/api/v2/proposicoes",
+  list(keywords = "deepfake", ano = 2024, siglaTipo = "PL", itens = 100,
+       pagina = 1, ordem = "ASC", ordenarPor = "id")
+)
+length(res$dados)        # quantas proposições vieram nesta página
+res$dados[[1]]$ementa    # a ementa da primeira
+
+# ou, já paginado e convertido em tabela:
+camara_proposicoes("deepfake", 2024)
+```
+:::
+::: {.aba data-nome="Python"}
+```{python, echo=TRUE, eval=FALSE}
+from medicao import req_json, camara_proposicoes, URL_CAMARA
+
+res = req_json(f"{URL_CAMARA}/proposicoes",
+               dict(keywords="deepfake", ano=2024, siglaTipo="PL", itens=100,
+                    pagina=1, ordem="ASC", ordenarPor="id"))
+len(res["dados"])          # quantas proposições vieram nesta página
+res["dados"][0]["ementa"]  # a ementa da primeira
+
+# ou, já paginado e convertido em tabela:
+camara_proposicoes("deepfake", 2024)
+```
+:::
+:::
+
+A resposta de cada chamada foi guardada em `dados/bruto/camara_raw.csv` (uma linha por proposição, já com autor, situação e partido na data). Em vez de chamar a API, lemos esse arquivo:
+
+[Saída registrada: lida de `dados/bruto/camara_raw.csv` (coleta de 06/11/2026)]{.saida-registrada}
+
+::: {.abas}
+::: {.aba data-nome="R"}
+```{r, echo=TRUE}
+library(readr); library(dplyr)
+bruto <- read_csv("dados/bruto/camara_raw.csv", show_col_types = FALSE)
+dim(bruto)
+bruto |>
+  filter(ano == 2024, grepl("deepfake", ementa, ignore.case = TRUE)) |>
+  select(id, sigla, numero, ano, autor, partido) |>
+  head(5)
+```
+:::
+::: {.aba data-nome="Python"}
+```{python, echo=TRUE}
+import pandas as pd
+bruto = pd.read_csv("dados/bruto/camara_raw.csv")
+print(bruto.shape)
+(bruto[(bruto["ano"] == 2024) & bruto["ementa"].str.contains("deepfake", case=False)]
+ [["id", "sigla", "numero", "ano", "autor", "partido"]]
+ .head(5))
+```
+:::
+:::
+
+**O que está sendo executado.** `req_json()` monta a URL com os parâmetros de busca, envia a requisição identificando o cliente (`User-Agent`), repete a tentativa em caso de erro temporário (429 e 5xx) e limita a taxa a cerca de 5 requisições por segundo. `camara_proposicoes()` chama `req_json()` página a página (100 itens por página) até que uma página venha incompleta, e converte a lista de JSONs numa tabela. O arquivo bruto tem `r nrow(read_csv(file.path(RAIZ, "dados/bruto/camara_raw.csv"), show_col_types = FALSE))` proposições da Câmara antes da limpeza e da remoção de duplicatas.
+
+### Partido do Senado e limpeza da ementa
+
+Duas funções da coleta não dependem da rede e podem ser testadas diretamente. No Senado, o partido do autor na data vem dentro do texto da autoria; a limpeza descarta a "NOVA EMENTA" acrescentada durante a tramitação, para que todos os projetos sejam codificados pela ementa original.
+
+::: {.abas}
+::: {.aba data-nome="R"}
+```{r, echo=TRUE, message=FALSE}
+source("R/funcoes_coleta.R")
+extrai_partido_senado(c("Senador Styvenson Valentim (PODEMOS/RN)",
+                        "Senador Veneziano Vital do Rêgo (MDB/PB)",
+                        "Comissão de Comunicação e Direito Digital"))
+
+ementa <- bruto$ementa[1]
+ementa                 # como veio da API
+limpa_ementa(ementa)   # como entra no corpus
+```
+:::
+::: {.aba data-nome="Python"}
+```{python, echo=TRUE}
+from medicao import extrai_partido_senado, limpa_ementa
+for a in ["Senador Styvenson Valentim (PODEMOS/RN)",
+          "Senador Veneziano Vital do Rêgo (MDB/PB)",
+          "Comissão de Comunicação e Direito Digital"]:
+    print(extrai_partido_senado(a))
+
+ementa = bruto["ementa"][0]
+print(ementa)                 # como veio da API
+print(limpa_ementa(ementa))   # como entra no corpus
+```
+:::
+:::
+
+**O que está sendo executado.** `extrai_partido_senado()` aplica uma expressão regular que procura o padrão `(PARTIDO/UF)` no fim do texto; quando a autoria é uma comissão, não há partido e o resultado é `NA` (`None` em Python). `limpa_ementa()` junta quebras de linha, corta tudo a partir de "NOVA EMENTA:" e normaliza os espaços. Repare: essas duas linhas de código são **decisões de medição**. Se mantivéssemos a nova ementa, o mesmo projeto poderia mudar de categoria.
+
+### O corpus congelado
+
+::: {.abas}
+::: {.aba data-nome="R"}
+```{r, echo=TRUE}
+corpus <- read_csv("dados/processado/corpus.csv", show_col_types = FALSE)
+glimpse(corpus)
+```
+:::
+::: {.aba data-nome="Python"}
+```{python, echo=TRUE}
+corpus = pd.read_csv("dados/processado/corpus.csv")
+corpus.info()
+```
+:::
+:::
+
+Cada linha é uma proposição, identificada por `doc_id` (ordenado pela data de apresentação). As colunas `partido` e `campo` vêm da coleta; `ementa` é o texto que será codificado.
+
+::: {.abas}
+::: {.aba data-nome="R"}
+```{r, echo=TRUE}
+count(corpus, casa)
+count(corpus, ano)
+count(corpus, campo, sort = TRUE)
+```
+:::
+::: {.aba data-nome="Python"}
+```{python, echo=TRUE}
+print(corpus["casa"].value_counts(), "\n")
+print(corpus["ano"].value_counts().sort_index(), "\n")
+print(corpus["campo"].value_counts())
+```
+:::
+:::
+
+### O campo político
+
+O campo é atribuído ao partido do autor por uma regra simples, escrita no código. Ela é uma medida, e convém conferir o que ficou de fora:
+
+::: {.abas}
+::: {.aba data-nome="R"}
+```{r, echo=TRUE}
+corpus |>
+  count(campo, partido, sort = TRUE) |>
+  group_by(campo) |>
+  slice_head(n = 4)
+corpus |> filter(campo == "Sem partido/Outro") |> count(tipo_autor, partido)
+```
+:::
+::: {.aba data-nome="Python"}
+```{python, echo=TRUE}
+print(corpus.groupby("campo")["partido"].value_counts().groupby(level=0).head(4))
+sem_campo = corpus[corpus["campo"] == "Sem partido/Outro"]
+sem_campo[["tipo_autor", "partido"]].value_counts(dropna=False)
+```
+:::
+:::
+
+**O que está sendo executado.** No script de coleta, o campo é criado com `case_when()` (R) ou `campo_politico()` (Python): se o partido está na lista da esquerda, vira "Esquerda", e assim por diante; o que não está em lista nenhuma (comissões, Poder Executivo, partidos não classificados) vira "Sem partido/Outro" e fica fora das comparações entre campos.
+
+### A explosão legislativa, em gráfico
+
+A Figura \@ref(fig:fig-projetos), do Capítulo \@ref(intro), é gerada por `R/06_inferencia.R`. A versão mínima abaixo, só com a contagem por ano e casa, mostra o padrão que motiva o minicurso:
+
+::: {.abas}
+::: {.aba data-nome="R"}
+```{r mao-graf-ano, echo=TRUE, fig.width=7, fig.height=3.2, out.width="85%"}
+library(ggplot2)
+source("R/tema_graficos.R")
+corpus |>
+  count(ano, casa) |>
+  ggplot(aes(factor(ano), n, fill = casa)) +
+  geom_col(width = .7) +
+  scale_fill_manual(values = c("Câmara" = AZUIS[3], "Senado" = CINZA)) +
+  labs(x = NULL, y = "Projetos de lei", fill = NULL,
+       title = "Projetos de lei sobre IA por ano de apresentação") +
+  tema_minicurso(11)
+```
+:::
+::: {.aba data-nome="Python"}
+```{python mao-graf-ano-py, echo=TRUE, fig.width=7, fig.height=3.2, out.width="85%"}
+import matplotlib.pyplot as plt
+from medicao import estilo_graficos, AZUIS, CINZA
+estilo_graficos()
+tab = corpus.groupby(["ano", "casa"]).size().unstack(fill_value=0)
+fig, ax = plt.subplots(figsize=(7, 3.2))
+ax.bar(tab.index.astype(str), tab["Câmara"], color=AZUIS[2], label="Câmara", width=.7)
+ax.bar(tab.index.astype(str), tab["Senado"], bottom=tab["Câmara"], color=CINZA,
+       label="Senado", width=.7)
+ax.set_ylabel("Projetos de lei"); ax.legend(frameon=False)
+ax.set_title("Projetos de lei sobre IA por ano de apresentação")
+plt.show()
+```
+:::
+:::
+
+### A recoleta: o que muda em um mês
+
+O código abaixo refaz, em poucas linhas, a comparação entre a coleta de 08/10/2026 e a de 06/11/2026 descrita na seção anterior.
+
+::: {.abas}
+::: {.aba data-nome="R"}
+```{r, echo=TRUE}
+antigo <- read_csv("dados/processado/historico/corpus_2026-10-08.csv",
+                   show_col_types = FALSE)
+novos  <- anti_join(corpus, antigo, by = "identificacao")
+novos |> select(doc_id, casa, identificacao, data_apresentacao)
+
+comum <- inner_join(antigo, corpus, by = "identificacao", suffix = c("_out", "_nov"))
+# em quantos projetos a situação de tramitação mudou?
+sum(comum$situacao_out != comum$situacao_nov, na.rm = TRUE)
+```
+:::
+::: {.aba data-nome="Python"}
+```{python, echo=TRUE}
+antigo = pd.read_csv("dados/processado/historico/corpus_2026-10-08.csv")
+novos = corpus[~corpus["identificacao"].isin(antigo["identificacao"])]
+print(novos[["doc_id", "casa", "identificacao", "data_apresentacao"]])
+
+comum = antigo.merge(corpus, on="identificacao", suffixes=("_out", "_nov"))
+ok = comum["situacao_out"].notna() & comum["situacao_nov"].notna()
+(comum.loc[ok, "situacao_out"] != comum.loc[ok, "situacao_nov"]).sum()   # situação mudou
+```
+:::
+:::
+
+**O que está sendo executado.** `anti_join()` (R) e `~isin()` (Python) listam os projetos que só existem na coleta nova; o `inner_join()`/`merge()` alinha os projetos presentes nas duas coletas e compara a coluna `situacao`. A contagem aqui ignora os casos em que a situação está ausente numa das coletas, por isso pode diferir um pouco do número citado no texto, que também conta mudanças de "ausente" para "presente".
