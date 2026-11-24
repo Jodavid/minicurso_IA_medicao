@@ -1,6 +1,6 @@
 ---
 title: "Inteligência Artificial como Instrumento de Medição"
-subtitle: "Minicurso completo em slides · trilha R"
+subtitle: "Minicurso completo em slides · Trilha R"
 author: "Prof. Dr. Jodavid Ferreira · Departamento de Estatística · UFPE"
 institute: "II DataPOL · 24 a 26 de novembro de 2026 · CCEN/UFPE"
 lang: pt-BR

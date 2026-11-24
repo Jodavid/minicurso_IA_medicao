@@ -1,8 +1,8 @@
 # 8 · Ética, limites e debate {background-color="#1c3f6e"}
 
-::: {style="color:#c9d7ec"}
+<!-- ::: {style="color:#c9d7ec"}
 `material_apoio/contexto_regulatorio.md`
-:::
+::: -->
 
 ## IA na política brasileira em 2026
 
@@ -26,6 +26,8 @@
 
 ## O que o nosso corpus diz sobre eleições
 
+<br/>
+
 ```{r}
 corpus |>
   left_join(select(ref, doc_id, categoria, eleitoral), by = "doc_id") |>
@@ -33,6 +35,8 @@ corpus |>
         eleitoral = if_else(eleitoral == 1, "tema eleitoral", "outro tema")) |>
   tidyr::pivot_wider(names_from = eleitoral, values_from = n)
 ```
+
+<br/>
 
 ::: {.pequeno}
 Referência preliminar. Para uma afirmação sobre o Congresso, o mesmo cuidado do bloco 6: rótulo do LLM + amostra-ouro + PPI, e não contagem ingênua.
@@ -43,8 +47,11 @@ Referência preliminar. Para uma afirmação sobre o Congresso, o mesmo cuidado 
 <br/>
 
 1. Se um LLM classifica `r nrow(corpus)` ementas em poucos minutos, ainda precisamos de codificadores humanos? **Para quê, exatamente?**
+
 2. Modelo **local** (reprodutível) com kappa menor × API **comercial** com kappa maior?
+
 3. O **viés político** dos LLMs (Motoki et al., 2024) pode contaminar comparações entre campos? Como testar com o que fizemos hoje?
+
 4. Rotulagem obrigatória de conteúdo sintético é **verificável**? Quem audita o detector, e com que amostra-ouro?
 
 ## Quando **não** usar um LLM
@@ -57,7 +64,10 @@ Referência preliminar. Para uma afirmação sobre o Congresso, o mesmo cuidado 
 - Poucos documentos: codificar à mão é mais barato e mais confiável
 - Os dados não podem sair da instituição e não há modelo local adequado
 
-## O que fizemos hoje, em código
+## O que fizemos em código
+
+<br/>
+<br/>
 
 ::: {.menor}
 | Bloco | Funções executadas | Saída principal |
@@ -81,9 +91,9 @@ A IA amplia as formas de responder,<br>mas **não substitui** a boa pergunta, o 
 
 <br/>
 
-- **Material completo:** R + Python + dados + cache do LLM + livro
-- **Para refazer em casa:** `source("R/00_pacotes.R")` e `targets::tar_make()`
-- **Checklist** para o seu próximo artigo: `CHECKLIST.md`
+- **Material completo:** R + dados + cache do LLM
+<!-- - **Para refazer em casa:** `source("R/00_pacotes.R")` e `targets::tar_make()` -->
+<!-- - **Checklist** para o seu próximo artigo: `CHECKLIST.md` -->
 
 <br>
 

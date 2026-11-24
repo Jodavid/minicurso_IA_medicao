@@ -1,18 +1,18 @@
 # 2 · Codificar é medir {background-color="#1c3f6e"}
 
-::: {style="color:#c9d7ec"}
+<!-- ::: {style="color:#c9d7ec"}
 `CODEBOOK.md` · `R/02_amostra_ouro.R` · `dados/anotacoes/referencia_completa.csv`
-:::
+::: -->
 
 ## O que vamos executar neste bloco
 
 <br/>
 
-1. Ler o **livro de códigos**: categorias, regras de decisão, variável eleitoral
-2. Olhar **ementas difíceis** e discutir como codificá-las
-3. Abrir a **codificação de referência**: quem a fez, como, e seu status
+1. **Livro de Códigos**: categorias, regras de decisão, variável eleitoral
+2. **Ementas difíceis** e discutir como codificá-las
+3. **Codificação de referência**: quem a fez, como, e seu status
 4. Contar **quantos de cada classe** e ver **o que foi parar em OUTRO**
-5. **Sortear a amostra-ouro** com semente fixa e conferir que o sorteio é reproduzível
+5. **Selecionar a amostra-ouro** com semente fixa e conferir que o sorteio é reproduzível
 
 ::: {.callout-note title="Por que este bloco vem antes do LLM"}
 Um LLM só pode ser avaliado contra uma **referência**. E uma referência só existe se o conceito tiver uma **definição operacional** escrita.
@@ -24,8 +24,8 @@ Um LLM só pode ser avaliado contra uma **referência**. E uma referência só e
 
 | Código | Instrumento central | Exemplo |
 |---|---|---|
-| **PUNIR** | penal: crime, pena, Código Penal, parte penal do ECA | "tipifica o crime de deepfake sexual" |
-| **REGULAR** | regras não penais: deveres, rotulagem, direitos, responsabilidade civil | "obriga identificar conteúdo gerado por IA" |
+| **PUNIR** | *penal:* crime, pena, Código Penal, parte penal do ECA | "tipifica o crime de deepfake sexual" |
+| **REGULAR** | *regras não penais:* deveres, rotulagem, direitos, responsabilidade civil | "obriga identificar conteúdo gerado por IA" |
 | **PROMOVER** | fomento, ensino, adoção de IA pelo Estado | "inclui IA no currículo do ensino médio" |
 | **OUTRO** | não trata de IA, algoritmos ou conteúdo sintético | falsos positivos da busca |
 
@@ -47,23 +47,27 @@ Um LLM só pode ser avaliado contra uma **referência**. E uma referência só e
 
 **Segunda variável:** `eleitoral` (0/1), independente da categoria: eleições, campanhas, candidatos, Código Eleitoral, violência política.
 
-## Ementas para pensar
+<!-- ## Ementas para pensar
+
 
 ```{r}
 dificeis <- c("doc0177", "doc0179")
 corpus |>
-  filter(doc_id %in% dificeis |
-           str_detect(str_to_lower(ementa), "penalidade|responsabiliza")) |>
-  slice_head(n = 5) |>
+  filter(doc_id %in% dificeis) |> 
+  slice_head(n = 2) |> 
   transmute(doc_id, ementa = str_trunc(ementa, 150)) |>
   knitr::kable()
 ```
 
 ::: {.pequeno}
-**Pergunta para a turma:** PUNIR ou REGULAR? Qual regra do livro de códigos decide?
+**Perguntas:** PUNIR ou REGULAR? Qual regra do livro de códigos decide?
 :::
+-->
 
 ## A codificação de referência
+
+<br/>
+<br/>
 
 ```{r}
 ref <- read_csv("dados/anotacoes/referencia_completa.csv")
@@ -73,14 +77,19 @@ ref |> count(codificador, revisado)
 
 ## De onde vêm os rótulos de referência?
 
+<br/>
+
+
 ::: {.columns}
 ::: {.column width="56%"}
 ::: {.pequeno}
-- As `r nrow(ref)` ementas têm um rótulo de **referência** (`dados/anotacoes/referencia_completa.csv`): é a "régua" do minicurso
+- As `r nrow(ref)` ementas têm um rótulo de **referência**: é a "régua" do minicurso
+<!-- (`dados/anotacoes/referencia_completa.csv`) -->
 - **Quem codificou:** outra IA, o **Claude Opus 5.5** (Anthropic), coautor deste material. **Não** é o S5-nano, o instrumento que vamos avaliar
-- **Como:** aplicando o **livro de códigos** ementa por ementa, lendo **só a ementa** (sem autor, sem inteiro teor); os casos ambíguos ficaram anotados para discussão (ex.: doc0121, doc0185, doc0233)
+- **Como:** aplicando o **livro de códigos** ementa por ementa, lendo **só a ementa** (sem autor, sem inteiro teor); 
+<!-- os casos ambíguos ficaram anotados para discussão (ex.: doc0121, doc0185, doc0233) -->
 - **Quando:** 298 ementas da coleta de 08/10/2026 e as 6 novas da coleta de 06/11/2026
-- **Status:** **preliminar**, ainda **sem revisão humana** (`codificador = "preliminar"`, `revisado = FALSE`)
+<!-- - **Status:** **preliminar**, ainda **sem revisão humana** (`codificador = "preliminar"`, `revisado = FALSE`) -->
 :::
 :::
 ::: {.column width="44%"}
@@ -98,6 +107,8 @@ Por que não aceitar o rótulo do Claude como "verdade" e dispensar os humanos?
 
 ## Quantos de cada classe?
 
+<br/>
+
 ```{r}
 corpus |>
   inner_join(ref, by = "doc_id") |>
@@ -105,12 +116,15 @@ corpus |>
   tidyr::pivot_wider(names_from = casa, values_from = n) |>
   mutate(Total = Câmara + Senado, `%` = round(100 * Total / sum(Total), 1))
 
-ref |> count(eleitoral) |> mutate(`%` = round(100 * n / sum(n), 1))
 ```
+
+<br/>
+
+<!-- ref |> count(eleitoral) |> mutate(`%` = round(100 * n / sum(n), 1)) -->
 
 ::: {.pequeno}
 - **Total:** `r nrow(ref)` ementas · **REGULAR é metade** do corpus: chutar sempre REGULAR é o **piso** de qualquer instrumento
-- **Eleitoral = 1** é **rara** (`r sum(ref$eleitoral)` ementas): métricas para ela serão imprecisas
+<!-- - **Eleitoral = 1** é **rara** (`r sum(ref$eleitoral)` ementas): métricas para ela serão imprecisas -->
 :::
 
 ## O que foi parar em OUTRO?
@@ -147,7 +161,7 @@ Sobre `r nrow(ref)`: `r pc(mean(ref$categoria == "PUNIR"), 1)` · sobre `r sum(r
 :::
 :::
 
-## Um aviso que o próprio código emite
+<!-- ## Um aviso que o próprio código emite
 
 ```{r}
 #| warning: true
@@ -158,9 +172,11 @@ ouro <- carrega_ouro()
 
 ::: {.callout-warning title="Referência preliminar"}
 Enquanto `revisado` for `FALSE`, os scripts lembram que a referência ainda não passou por **codificadores humanos independentes** e que **os números são ilustrativos**.
-:::
+::: -->
 
 ## A amostra-ouro: um sorteio
+
+<br/>
 
 ```{r}
 N_OURO <- 120      # ~40% do corpus: custo humano × precisão
@@ -179,6 +195,8 @@ identical(sort(ouro_ids), sort(ouro$doc_id))
 
 ## A amostra-ouro representa o corpus?
 
+<br/>
+
 ```{r}
 bind_rows(
   corpus      = ref,
@@ -189,19 +207,35 @@ bind_rows(
   tidyr::pivot_wider(names_from = conjunto, values_from = c(n, prop))
 ```
 
+<br/>
+
 ::: {.pequeno}
-Proporções parecidas, como se espera de um sorteio. Diferenças existem, e é por isso que a inferência leva a amostra em conta (bloco 6).
+Proporções parecidas, como se espera de um sorteio. Diferenças existem, e é por isso que a inferência leva a amostra em conta.
 :::
 
 ## Quanto **nós** concordamos?
 
+<br/>
+<br/>
+
 **Levantem a mão:** PUNIR, REGULAR, PROMOVER ou OUTRO?
 
 1. *"Estabelece condições, deveres e restrições ao uso de óculos inteligentes com recursos de inteligência artificial, altera o Código de Trânsito Brasileiro e o Código Penal..."* (doc0185)
+
 2. *"Dispõe sobre medidas de prevenção, combate e responsabilização relacionadas à criação e disseminação de manipulação digital de conteúdo sexual (deepfakes)..."* (doc0233)
 
+<br/>
+
+. . .
+
 ::: {.fragment .pequeno}
-Referência: 1 → **PUNIR** (altera o Código Penal; PUNIR precede REGULAR) · 2 → **REGULAR** ("responsabilização" sem crime nem pena; regra 2). A sala se dividiu? É essa divergência que o **alfa entre codificadores** mede.
+**Referência:**
+
+1 → **PUNIR** (altera o Código Penal; PUNIR precede REGULAR) 
+
+2 → **REGULAR** ("responsabilização" sem crime nem pena;regra 2).
+
+<!-- A sala se dividiu? É essa divergência que o **alfa entre codificadores** mede. -->
 :::
 
 ## Por que isso importa
@@ -215,9 +249,10 @@ Se humanos treinados não concordam entre si, o LLM **não tem um alvo**. A conc
 <br/>
 
 - Kappa de 0,65 entre LLM e referência é **ruim** se humanos concordam a 0,90...
-- ...e é **excelente** se eles concordam a 0,60
+  - ...e é **excelente** se eles concordam a 0,60
 - Por isso o livro de códigos é testado **com humanos** antes de ir para o LLM
-- Neste material ainda não há dois codificadores humanos: o teto humano é **desconhecido**
+- Neste material ainda não há dois codificadores humanos:
+  * o teto humano é **desconhecido**
 
 ## Resumo do bloco 2
 
@@ -235,8 +270,10 @@ Se humanos treinados não concordam entre si, o LLM **não tem um alvo**. A conc
 ::: {.column width="50%"}
 **Levamos para os próximos blocos**
 
-- `ouro`: `r nrow(ouro)` ementas com rótulo de referência (preliminar, de outra IA)
+- `ouro`:
+  - `r nrow(ouro)` ementas com rótulo de referência (preliminar, de outra IA)
 - o livro de códigos, que vira **prompt** no bloco 4
-- a pergunta: **qual é o teto de concordância?**
+- a pergunta:
+  * **qual é o teto de concordância?**
 :::
 :::

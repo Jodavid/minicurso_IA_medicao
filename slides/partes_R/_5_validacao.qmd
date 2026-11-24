@@ -1,8 +1,8 @@
 # 5 · Validação: o instrumento mede o que diz medir? {background-color="#1c3f6e"}
 
-::: {style="color:#c9d7ec"}
+<!-- ::: {style="color:#c9d7ec"}
 `R/05_validacao.R` · `R/funcoes_medicao.R`
-:::
+::: -->
 
 ## O que vamos executar neste bloco
 
@@ -28,10 +28,16 @@
 <br/>
 
 ::: {.pequeno}
-As duas primeiras precisam de rótulo humano. A última, **não**: estabilidade se mede comparando o instrumento com ele mesmo.
+As duas primeiras precisam de rótulo humano.
+
+A última, **não**:
+
+  - estabilidade se mede comparando o instrumento com ele mesmo.
 :::
 
 ## Juntando LLM e amostra-ouro
+
+<br/>
 
 ```{r}
 rotulo_run <- function(run_id) {
@@ -47,6 +53,8 @@ aval |> count(instrumento)
 
 ## Métricas pontuais de cada instrumento
 
+<br/>
+
 ```{r}
 aval |>
   group_by(instrumento) |>
@@ -56,11 +64,15 @@ aval |>
   mutate(across(acuracia:kappa, \(x) round(x, 3)))
 ```
 
+<br/>
+
 ::: {.pequeno}
 Com $n$ = 120, qual diferença entre essas linhas é **real**? Precisamos de intervalos.
 :::
 
 ## Bootstrap: a incerteza de uma métrica
+
+<br/>
 
 ```{r}
 #| eval: false
@@ -75,6 +87,8 @@ Com $n$ = 120, qual diferença entre essas linhas é **real**? Precisamos de int
 4. O IC 95% vai do percentil 2,5 ao 97,5
 
 ## O bootstrap do LLM v2, por dentro
+
+<br/>
 
 ```{r}
 #| output-location: column
@@ -97,6 +111,8 @@ ggplot(tibble(kappa = boot), aes(kappa)) +
 ```
 
 ## A tabela de validade
+
+<br/>
 
 ```{r}
 #| cache: true
@@ -121,11 +137,16 @@ metricas <- bind_rows(metricas_base, metricas_llm) |> arrange(desc(kappa))
 
 ## A tabela de validade: o resultado
 
+<br/>
+<br/>
+
 ```{r}
 metricas |> select(-n) |> mutate(across(where(is.double), \(x) round(x, 2))) |> print(width = 110)
 ```
 
 ## Confere com o pipeline?
+
+<br/>
 
 ```{r}
 oficial <- read_csv("resultados/tabelas/validade_instrumentos.csv")
@@ -135,11 +156,17 @@ inner_join(select(metricas, instrumento, kappa, kappa_li, kappa_ls),
   mutate(across(where(is.double), \(x) round(x, 3)))
 ```
 
+<br/>
+
 ::: {.pequeno}
-Mesmas sementes, mesmos números: o slide refez o que `R/05_validacao.R` grava em `resultados/tabelas/`.
+Mesmas sementes, mesmos números.
+ <!-- o slide refez o que `R/05_validacao.R` grava em `resultados/tabelas/`. -->
 :::
 
 ## Validade: a figura
+
+<br/>
+<br/>
 
 ```{r}
 #| output-location: slide
@@ -164,10 +191,17 @@ metricas |>
 ## Três leituras da tabela
 
 <br/>
+<br/>
 
 ::: {.incremental}
 1. **O prompt importa:** o melhor LLM (`r melhor`, kappa `r nf(max(metricas_llm$kappa[metricas_llm$instrumento == melhor]))`) supera a versão sem definições (v1, kappa `r nf(metricas$kappa[metricas$instrumento == "LLM v1 (t=0)"])`)
+
+<br/>
+
 2. **LLM × dicionário:** kappa `r nf(metricas$kappa[metricas$instrumento == melhor])` × `r nf(metricas$kappa[metricas$instrumento == "Dicionário (regex)"])`, com **intervalos sobrepostos**: com 120 ementas, não há evidência de diferença. E o dicionário viu a prova
+
+<br/>
+
 3. **LLM × TF-IDF:** o modelo clássico (`r nf(metricas$kappa[metricas$instrumento == "TF-IDF + logística (CV 10)"])`) precisaria de muito mais exemplos rotulados
 :::
 
@@ -184,6 +218,9 @@ Erros não são iguais: confundir REGULAR com PUNIR **infla** a proporção puni
 :::
 
 ## Matriz de confusão: a figura
+
+<br/>
+<br/>
 
 ```{r}
 #| output-location: slide
@@ -221,8 +258,11 @@ erro |>
 ## Viés diferencial: a ideia
 
 <br/>
+<br/>
 
 Acurácia alta **na média** não garante comparações válidas **entre grupos**.
+
+<br/>
 
 ::: {.incremental}
 - Se o LLM erra mais nas ementas de um campo político, qualquer comparação **entre campos** feita com seus rótulos estará enviesada
@@ -231,6 +271,8 @@ Acurácia alta **na média** não garante comparações válidas **entre grupos*
 :::
 
 ## Viés por campo político
+
+<br/>
 
 ```{r}
 dif <- erro |>
@@ -261,6 +303,8 @@ ggplot(vies_campo, aes(acuracia, reorder(campo, acuracia))) +
 
 ## Um teste formal
 
+<br/>
+
 ```{r}
 mod <- glm(acerto ~ campo, family = binomial, data = filter(dif, campo != "Sem partido/Outro"))
 anova(mod, test = "Chisq")
@@ -283,6 +327,8 @@ Duas fontes de instabilidade, **sem precisar de rótulo humano**:
 
 $$\alpha = 1 - \frac{D_o}{D_e} \qquad D_o: \text{discordância observada} \quad D_e: \text{esperada ao acaso}$$
 
+<!--
+
 ## O alfa "na mão"
 
 ```{r}
@@ -290,8 +336,13 @@ $$\alpha = 1 - \frac{D_o}{D_e} \qquad D_o: \text{discordância observada} \quad 
 #| class-source: menor
 #| code: !expr trecho("R/funcoes_medicao.R", "alfa_krippendorff")
 ```
+-->
+
+
 
 ## O alfa num exemplo pequeno
+
+<br/>
 
 Três codificadores fictícios, seis ementas:
 
@@ -307,10 +358,12 @@ alfa_krippendorff(m[, 1:2])
 ```
 
 ::: {.pequeno}
-A matriz de **coincidências** `o` conta pares de rótulos dentro de cada ementa; a diagonal são concordâncias. Sem o terceiro codificador, a concordância muda.
+`m` é a matriz de rótulos (ementas × codificadores). Dentro de `alfa_krippendorff()`, ela vira a matriz de **coincidências**, que conta pares de rótulos dentro de cada ementa; a diagonal são concordâncias. Sem o terceiro codificador, a concordância muda.
 :::
 
 ## Teste-reteste: trocar a semente
+
+<br/>
 
 ```{r}
 largo_seed <- llm |>
@@ -326,6 +379,9 @@ c(alfa = alfa_reteste, prop_que_muda = muda_seed)
 
 ## Sensibilidade ao prompt: trocar a redação
 
+
+<br/>
+
 ```{r}
 largo_prompt <- llm |>
   filter(temperatura == 0, semente == 42) |>
@@ -338,11 +394,15 @@ tibble(comparacao = c("Teste-reteste (v2, t=0,8, 3 sementes)", "Sensibilidade ao
        alfa = c(alfa_reteste, alfa_prompt), prop_ementas_que_mudam = c(muda_seed, muda_prompt))
 ```
 
+<br/>
+
 ::: {.callout-important}
 **O prompt importa muito mais que o acaso:** trocar a semente muda `r pc(muda_seed)` das ementas; trocar o prompt muda `r pc(muda_prompt)`.
 :::
 
 ## Ementas que mudam com o prompt
+
+<br/>
 
 ```{r}
 largo_prompt |>
@@ -354,6 +414,8 @@ largo_prompt |>
 ```
 
 ## A medida agregada também muda
+
+<br/>
 
 ```{r}
 #| output-location: slide
@@ -378,6 +440,8 @@ ggplot(dist_all, aes(prop, fonte, fill = fonte)) +
 
 ## A variável eleitoral
 
+<br/>
+
 ```{r}
 llm |> filter(temperatura == 0, semente == 42) |>
   inner_join(select(ouro, doc_id, eleitoral), by = "doc_id") |>
@@ -388,10 +452,19 @@ llm |> filter(temperatura == 0, semente == 42) |>
 ```
 
 ::: {.pequeno}
-Variável **rara**: acurácia não informa quase nada. **Sensibilidade** (dos eleitorais, quantos o LLM achou?) e **especificidade** (dos não eleitorais, quantos descartou?). Com tão poucos casos eleitorais, a sensibilidade é muito imprecisa.
+Variável **rara**: acurácia não informa quase nada.
+
+**Sensibilidade** (dos eleitorais, quantos o LLM achou?) e 
+
+**especificidade** (dos não eleitorais, quantos descartou?).
+
+Com tão poucos casos eleitorais, a sensibilidade é muito imprecisa.
 :::
 
 ## Humano × humano: a comparação que falta
+
+
+<br/>
 
 Quando a referência for revisada por **dois codificadores humanos**, este trecho calcula o alfa entre eles:
 
@@ -405,6 +478,8 @@ m <- resp |> select(doc_id, codificador, categoria) |>
   tidyr::pivot_wider(names_from = codificador, values_from = categoria)
 alfa_krippendorff(select(m, -doc_id))     # alfa entre os codificadores
 ```
+
+<br/>
 
 ::: {.columns}
 ::: {.column width="50%"}

@@ -55,7 +55,8 @@ minicurso_IA_medicao/
 │   ├── parte1_conceitos.qmd   ← formato A, Parte 1: conceitos, sem resultados (2h)
 │   ├── completo_R.qmd         ← formato B: minicurso inteiro com código R e saídas (4h)
 │   ├── completo_python.qmd    ← formato B: o mesmo, com código Python
-│   └── partes_R/              ← blocos incluídos em completo_R.qmd
+│   ├── partes_R/              ← blocos incluídos em completo_R.qmd (+ images/)
+│   └── partes_python/         ← blocos incluídos em completo_python.qmd
 ├── livro/                     ← fontes do livro (bookdown) · compilar: setwd("livro"); source("build.R")
 ├── docs/                      ← livro compilado em HTML (pronto para o GitHub Pages)
 └── material_apoio/            ← contexto regulatório, exercício de codificação

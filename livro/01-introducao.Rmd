@@ -3,6 +3,14 @@
 > "O futuro traz novas perguntas. Os dados ampliam nossas formas de responder."
 > ...mas **quem mede a régua?**
 
+Ou seja: quem estabelece os critérios utilizados para avaliar os resultados? Quem define o que é sucesso? Qual métrica devemos utilizar? O que consideramos uma resposta correta? Quem determina os padrões? Quando um LLM passa a produzir as medidas de uma pesquisa, essas perguntas deixam de ser retóricas: alguém precisa respondê-las, por escrito, antes de confiar nos números.
+
+## Volume não é ciência
+
+A trilha principal da AAAI-26, uma das maiores conferências de inteligência artificial do mundo, recebeu cerca de **29 mil submissões**, quase o dobro do ano anterior [@aaai2026]. E a avaliação desses trabalhos também já passa por LLMs: estima-se que entre **6,5% e 16,9%** do texto das revisões submetidas a conferências de IA em 2023 e 2024 tenha sido substancialmente modificado por modelos de linguagem [@liang2024]. Repare que até essa constatação é um **problema de estimação**: ninguém rotulou revisão por revisão; a proporção foi estimada, com incerteza, a partir de um modelo estatístico da frequência das palavras.
+
+Volume não é ciência. Produzir mais artigos, mais rótulos e mais análises ficou barato; o que continua caro é saber se o que foi produzido **mede o que diz medir**. É disso que trata este livro.
+
 ## Duas perguntas
 
 Este livro persegue duas perguntas ao mesmo tempo.
@@ -15,10 +23,10 @@ A segunda pergunta é a que realmente interessa. A primeira é o pretexto que no
 
 ## Por que agora?
 
-- **Eleições de 2026.** São as primeiras eleições gerais sob a Resolução TSE nº 23.755/2026, que exige rotulagem de conteúdo sintético, proíbe deepfakes de candidatos e veda que sistemas de IA recomendem voto.
-- **Marco Legal da IA.** O PL 2338/2023 foi aprovado no Senado em dezembro de 2024 e, na data da coleta, aguardava parecer na Câmara, com votação adiada para depois das eleições.
-- **Explosão legislativa.** Nosso corpus reúne `r nrow(corpus)` projetos de lei sobre IA, `r sum(corpus$ano == 2026)` deles apresentados só em 2026 (até a coleta).
-- **LLMs viraram infraestrutura de pesquisa**, mas são instáveis, sensíveis ao prompt e potencialmente enviesados [@gilardi2023; @motoki2024].
+- **Eleições de 2026.** São as primeiras eleições gerais sob a Resolução TSE nº 23.755/2026 [@tse2026], que exige rotulagem de conteúdo sintético, proíbe deepfakes de candidatos e veda que sistemas de IA recomendem voto. As novas regras estabelecem limites para o uso de inteligência artificial na comunicação eleitoral.
+- **Marco Legal da IA.** O PL 2338/2023 foi aprovado no Senado em dezembro de 2024 e, na data da coleta, aguardava parecer na Câmara, com votação adiada para depois das eleições. A proposta busca estabelecer regras para o desenvolvimento e o uso da inteligência artificial no Brasil.
+- **Explosão legislativa.** Nosso corpus reúne `r nrow(corpus)` projetos de lei sobre IA, `r sum(corpus$ano == 2026)` deles apresentados só em 2026 (até a coleta). O volume de propostas mostra o crescente interesse legislativo pela regulamentação da IA.
+- **LLMs viraram infraestrutura de pesquisa**, mas são instáveis, sensíveis ao prompt e potencialmente enviesados [@gilardi2023; @motoki2024]. Seus resultados exigem validação, avaliação crítica e atenção à qualidade das respostas.
 
 ```{r fig-projetos, fig.cap="Projetos de lei sobre IA apresentados na Câmara e no Senado, por ano e categoria (codificação de referência)."}
 fig("00_projetos_por_ano")
@@ -33,7 +41,11 @@ fig("00_projetos_por_ano")
 - ***Prediction-Powered Inference*** [@angelopoulos2023ppi; @angelopoulos2023ppiplus]: junta **muitas previsões** e **poucos rótulos verdadeiros**, mede o viés das previsões nos dados rotulados e o desconta da estimativa. **É o método usado no Capítulo \@ref(inferencia)**;
 - ***Design-based Supervised Learning*** [@egami2023]: aplica a mesma correção a **regressões** que usam rótulos de LLM, a partir de uma amostra codificada por especialistas e sorteada com probabilidades conhecidas.
 
-Não é preciso dominar os quatro para acompanhar o livro: usamos apenas o PPI e sua versão PPI++. O fio comum é simples: previsões de modelos podem tornar a inferência **mais precisa**, desde que o erro dessas previsões seja **medido e corrigido**, e não ignorado. Traduzindo para o nosso caso: o LLM rotula todas as ementas (barato, mas com erro); a amostra-ouro mede esse erro; o PPI corrige a estimativa e alarga o intervalo de confiança na medida certa. Usar os rótulos do LLM como se fossem a verdade é justamente **ignorar** o erro.
+Não é preciso dominar os quatro para acompanhar o livro: usamos apenas o PPI e sua versão PPI++. O fio comum é simples: previsões de modelos podem tornar a inferência **mais precisa**, desde que o erro dessas previsões seja **medido e corrigido**, e não ignorado. Traduzindo para o nosso caso (Figura \@ref(fig:fig-traduzindo)): o LLM rotula todas as ementas (barato, mas com erro); a amostra-ouro mede esse erro; o PPI corrige a estimativa e alarga o intervalo de confiança na medida certa. Usar os rótulos do LLM como se fossem a verdade é justamente **ignorar** o erro.
+
+```{r fig-traduzindo, fig.cap="Traduzindo para o nosso caso: o LLM rotula todas as ementas (barato, mas com erro), a amostra-ouro mede esse erro e o PPI corrige a estimativa, alargando o intervalo de confiança na medida certa.", out.width="55%"}
+knitr::include_graphics("imagens/traduzindo_erro_llm.png", error = FALSE)
+```
 
 ::: {.caixa}
 [Ideia central]{.titulo-caixa}
@@ -56,4 +68,8 @@ tibble::tribble(
 ) |> knitr::kable(caption = "Estrutura do livro e correspondência com os blocos do minicurso.")
 ```
 
-Em sala, o caminho tem a forma de um pipeline: **APIs → corpus → livro de códigos e amostra-ouro → baselines e LLM → validação → inferência → pipeline reprodutível**. Cada seta é uma decisão de medição, e cada decisão deixa um rastro no código.
+Em sala, o caminho tem a forma de um pipeline (Figura \@ref(fig:fig-caminho)): **APIs → corpus → livro de códigos e amostra-ouro → baselines e LLM → validação → inferência → pipeline reprodutível**. Cada seta é uma decisão de medição, e cada decisão deixa um rastro no código.
+
+```{r fig-caminho, fig.cap="O caminho do minicurso: das APIs da Câmara e do Senado ao pipeline reprodutível. Em destaque, o LLM local, o instrumento que vamos avaliar; a validação junta o LLM, os baselines e a amostra-ouro, e a inferência (PPI) usa o erro medido na validação."}
+knitr::include_graphics("imagens/fluxo_validacao.png", error = FALSE)
+```

@@ -15,6 +15,49 @@ As expressões `REGEX$punir`, `REGEX$ia` e `REGEX$promover` estão em `R/funcoes
 
 O segundo baseline é um modelo de aprendizado supervisionado clássico: as ementas viram vetores TF-IDF (após remover pontuação, números e *stopwords* e aplicar *stemming*), e uma **regressão logística multinomial com penalização elastic-net** (`glmnet`) é ajustada. Como a amostra-ouro é pequena, o desempenho é estimado por **validação cruzada com 10 dobras**: cada ementa é classificada por um modelo que não a viu no treino.
 
+## Como medir o acerto {#metricas}
+
+Para comparar um instrumento com a referência, organizamos os rótulos numa **matriz de confusão**. Com $C$ categorias (aqui, $C = 4$), as linhas são a classe real (a referência) e as colunas, a classe predita pelo instrumento:
+
+$$
+\begin{array}{c|cccc|c}
+ & \hat{C}_1 & \hat{C}_2 & \cdots & \hat{C}_C & \text{Total}\\
+\hline
+C_1 & n_{11} & n_{12} & \cdots & n_{1C} & n_{1\cdot}\\
+C_2 & n_{21} & n_{22} & \cdots & n_{2C} & n_{2\cdot}\\
+\vdots & \vdots & \vdots & \ddots & \vdots & \vdots\\
+C_C & n_{C1} & n_{C2} & \cdots & n_{CC} & n_{C\cdot}\\
+\hline
+\text{Total} & n_{\cdot 1} & n_{\cdot 2} & \cdots & n_{\cdot C} & N
+\end{array}
+$$
+
+em que $n_{ij}$ é o número de ementas da classe real $C_i$ preditas como $C_j$; $n_{i\cdot} = \sum_j n_{ij}$ é o total da classe real $C_i$; $n_{\cdot j} = \sum_i n_{ij}$ é o total predito como $\hat{C}_j$; e $N = \sum_i \sum_j n_{ij}$ é o total de ementas. A **diagonal principal** ($n_{11}, n_{22}, \dots$) reúne as classificações corretas; tudo fora dela é erro.
+
+Para cada classe $C_c$, tratando as demais como uma única classe ("uma contra todas"), contamos os verdadeiros positivos, os falsos positivos (ementas de outras classes que o instrumento pôs em $C_c$) e os falsos negativos (ementas de $C_c$ que ele pôs em outra classe):
+
+$$
+TP_c = n_{cc}, \qquad FP_c = n_{\cdot c} - n_{cc}, \qquad FN_c = n_{c\cdot} - n_{cc}.
+$$
+
+A partir daí, definimos as métricas usadas no livro:
+
+- **Acurácia**: a proporção de acertos, $\text{Acc} = \sum_{c=1}^{C} n_{cc} / N$. Fácil de interpretar, mas enganosa quando as classes são desbalanceadas.
+- **Precisão** da classe $c$: $P_c = TP_c / (TP_c + FP_c)$. Das ementas que o instrumento pôs em $C_c$, quantas são de fato $C_c$?
+- **Revocação** (*recall*) da classe $c$: $R_c = TP_c / (TP_c + FN_c)$. Das ementas de $C_c$, quantas o instrumento encontrou?
+- **F1 macro**: a média, entre as classes, da média harmônica entre precisão e revocação,
+$$
+F1_{\text{macro}} = \frac{1}{C} \sum_{c=1}^{C} \frac{2 P_c R_c}{P_c + R_c}.
+$$
+Por ser uma média simples entre as classes, o F1 macro atribui **o mesmo peso a todas as categorias**, inclusive às raras. (Quando uma classe não tem nenhum acerto, seu F1 é zero.)
+- **Kappa de Cohen** [@cohen1960]: a concordância **além do acaso**. Ele desconta da concordância observada aquela que se esperaria se o instrumento e a referência rotulassem de forma independente, cada um mantendo suas próprias proporções:
+$$
+\kappa = \frac{p_o - p_e}{1 - p_e}, \qquad
+p_o = \frac{\sum_{c=1}^{C} n_{cc}}{N}, \qquad
+p_e = \sum_{c=1}^{C} \frac{n_{c\cdot}}{N} \cdot \frac{n_{\cdot c}}{N}.
+$$
+A concordância observada $p_o$ é a própria acurácia; a esperada ao acaso, $p_e$, combina as proporções marginais das linhas (referência) e das colunas (instrumento). Pela convenção de @landis1977, valores acima de 0,4, 0,6 e 0,8 indicam concordância moderada, substancial e quase perfeita.
+
 ## Resultados
 
 ```{r tab-baselines}
@@ -23,7 +66,7 @@ base |>
   knitr::kable(align = "lccc", caption = "Desempenho dos baselines na amostra-ouro (n = 120).")
 ```
 
-A linha **classe majoritária** é o piso: chutar sempre REGULAR acerta `r pc(base$acuracia[3])` das ementas, mas tem kappa zero, porque não acerta nada além do que o acaso já acertaria. É por isso que a acurácia sozinha engana quando as classes são desbalanceadas.
+A linha **classe majoritária** é o piso: chutar sempre REGULAR acerta `r pc(base$acuracia[3])` das ementas, mas tem kappa zero, porque não acerta nada além do que o acaso já acertaria. Na notação da seção anterior: se todas as previsões são REGULAR, $n_{\cdot c} = 0$ para as demais classes, de modo que $p_e = n_{\text{REGULAR}\cdot}/N = p_o$ e, portanto, $\kappa = 0$. É por isso que a acurácia sozinha engana quando as classes são desbalanceadas.
 
 ::: {.caixa .aviso}
 [O dicionário "viu a prova"]{.titulo-caixa}
@@ -119,6 +162,49 @@ pd.crosstab(ouro["categoria"], ouro["pred_dic"],
 :::
 
 **O que está sendo executado.** `resumo_metricas()` compara o rótulo humano (`categoria`) com o do instrumento e devolve o tamanho da amostra, a taxa de falhas de formato (zero para o dicionário, que sempre responde), a acurácia, o F1 macro e o kappa. A tabela cruzada é a matriz de confusão: as linhas são a referência humana, as colunas, o dicionário; tudo fora da diagonal é erro.
+
+### As métricas, passo a passo
+
+As fórmulas da Seção \@ref(metricas) podem ser aplicadas diretamente à matriz de confusão do dicionário:
+
+::: {.abas}
+::: {.aba data-nome="R"}
+```{r, echo=TRUE}
+mc <- table(humano = factor(ouro$categoria, levels = CATEGORIAS),   # matriz de confusão
+            dic    = factor(ouro$pred_dic,  levels = CATEGORIAS))
+N  <- sum(mc)
+po <- sum(diag(mc)) / N                        # concordância observada (= acurácia)
+pe <- sum(rowSums(mc) * colSums(mc)) / N^2     # concordância esperada ao acaso
+c(po = po, pe = pe, kappa = (po - pe) / (1 - pe))
+kappa_cohen(ouro$categoria, ouro$pred_dic)     # a mesma conta, pela função do material
+
+prec  <- diag(mc) / colSums(mc)                # precisão: acertos / total predito
+revoc <- diag(mc) / rowSums(mc)                # revocação: acertos / total real
+f1 <- 2 * prec * revoc / (prec + revoc)
+round(rbind(precisao = prec, revocacao = revoc, F1 = f1), 3)
+```
+:::
+::: {.aba data-nome="Python"}
+```{python, echo=TRUE}
+import numpy as np
+from medicao import kappa_cohen
+mc = (pd.crosstab(ouro["categoria"], ouro["pred_dic"])     # matriz de confusão
+        .reindex(index=CATEGORIAS, columns=CATEGORIAS, fill_value=0))
+N  = mc.values.sum()
+po = np.trace(mc.values) / N                               # observada (= acurácia)
+pe = (mc.sum(axis=1).values * mc.sum(axis=0).values).sum() / N**2   # ao acaso
+print({"po": round(po, 4), "pe": round(pe, 4), "kappa": round((po - pe) / (1 - pe), 4)})
+print(round(kappa_cohen(ouro["categoria"], ouro["pred_dic"]), 4))
+
+prec  = np.diag(mc) / mc.sum(axis=0).values    # precisão: acertos / total predito
+revoc = np.diag(mc) / mc.sum(axis=1).values    # revocação: acertos / total real
+f1 = 2 * prec * revoc / (prec + revoc)
+pd.DataFrame({"precisao": prec, "revocacao": revoc, "F1": f1}, index=CATEGORIAS).T.round(3)
+```
+:::
+:::
+
+**O que está sendo executado.** `diag(mc)` (ou `np.diag(mc)`), em que `mc` é a matriz de confusão, são os acertos $n_{cc}$; as somas das linhas são os totais reais $n_{c\cdot}$ e as das colunas, os totais preditos $n_{\cdot c}$. Com eles, $p_o$, $p_e$ e o kappa saem em três linhas, e o resultado coincide com o de `kappa_cohen()`. A média da linha `F1` é o F1 macro relatado por `resumo_metricas()`. Repare que a acurácia do dicionário é alta, mas o kappa é menor: parte dos acertos aconteceria mesmo ao acaso, porque REGULAR é, de longe, a classe mais frequente.
 
 ### TF-IDF e regressão logística com validação cruzada
 

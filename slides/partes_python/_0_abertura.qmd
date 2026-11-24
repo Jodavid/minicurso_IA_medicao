@@ -1,0 +1,326 @@
+## {background-color="#1c3f6e"}
+
+<br/>
+<br/>
+
+::: {style="color:white; font-size:1.6em; margin-top:2em"}
+"O futuro traz novas perguntas.<br>Os dados ampliam nossas formas de responder."
+:::
+
+::: {style="color:#c9d7ec; margin-top:1.5em"}
+...mas **quem mede a régua?**
+:::
+
+. . .
+
+<br/>
+
+> ou seja, quem estabelece os critérios utilizados para avaliar os resultados? Quem define o que é sucesso? Qual métrica devemos utilizar? O que consideramos uma resposta correta? Quem determina os padrões?
+
+
+## Uma conferência, 29 mil artigos: volume não é ciência {background-color="#1c3f6e"}
+
+<hr/>
+<br/>
+
+<div style="font-size: 100px;">[≈ 29 mil]{.hero .verm}</div>
+
+[submissões à trilha principal da AAAI-26, quase o dobro de 2025]{.hero-leg}
+
+<div style="color: gray;">
+[AAAI; OpenReview (2026)]{.hero-fonte}
+</div>
+
+<br/>
+
+<div style="font-size: 100px;">[6,5–16,9%]{.hero .m .cinza}</div>
+
+do texto de revisões em conferências de IA (2023–24) modificado por LLMs.
+
+
+<br/>
+
+
+::: notes
+**0:30** · "A AAAI de 2026 recebeu quase 29 mil artigos na trilha principal, quase o dobro do ano anterior. E estima-se que uma fração relevante das próprias revisões já é escrita com ajuda de LLMs; até essa detecção é um problema de estimação. Volume não é ciência."
+
+Primeiro corte se estiver atrasado.
+:::
+
+
+## Como ler estes slides
+
+<br/>
+
+Este é o minicurso **inteiro** em slides: conceitos, **código Python** e **saídas**.
+
+::: {.columns}
+::: {.column width="55%"}
+- Cada etapa segue o mesmo ritmo: **o que vamos executar → o código → a saída → o que ela significa**
+- Todo código com saída foi **executado ao compilar os slides**, a partir dos dados congelados do material
+- Chamadas às **APIs** e ao **LLM** não são refeitas ao compilar: o código aparece, e a saída vem dos arquivos gravados quando elas rodaram
+:::
+::: {.column width="45%"}
+```{python}
+#| eval: false
+# código: fundo cinza, borda azul-escura
+x = 1 + 1
+```
+
+```
+saída: fundo branco, borda azul-clara
+```
+
+::: {.registrada}
+```
+saída de uma execução anterior
+```
+:::
+:::
+:::
+
+::: {.pequeno}
+Há uma versão equivalente em **R** e uma versão só com conceitos.
+:::
+
+## Duas perguntas para hoje
+
+<br/>
+
+::: {.columns}
+::: {.column width="49%"}
+### Substantiva
+
+<br/>
+
+Quando o Congresso legisla sobre **IA**, ele quer **punir**, **regular** ou **promover**?
+
+<br/>
+
+E isso varia entre campos políticos?
+
+:::
+::: {.column width="2%"}
+
+
+
+:::
+::: {.column width="49%"}
+
+### Metodológica
+
+<br/>
+
+Se usarmos um **LLM** para responder, **como sabemos se a resposta está certa**?
+
+<br/>
+
+E como **reproduzir** a resposta daqui a dois anos?
+:::
+:::
+
+<!-- . . .
+
+> Na I edição do DataPOL vocês viram como **usar** IA para analisar textos. Hoje vamos **medir** com ela e medir o erro dela. -->
+
+## Por que agora?
+
+<br/>
+
+- **Eleições de 2026**: primeiras eleições gerais sob a Res. TSE nº 23.755/2026 (rotulagem obrigatória, deepfakes proibidos, IA não pode recomendar voto).
+  <span style="color: #808080; font-size: 0.85em;">Novas regras estabelecem limites para o uso de inteligência artificial na comunicação eleitoral.</span>
+
+- **Marco Legal da IA (PL 2338/2023)**: aprovado no Senado em dez/2024, **aguardando parecer** na Câmara.
+  <span style="color: #808080; font-size: 0.85em;">A proposta busca estabelecer regras para o desenvolvimento e o uso da inteligência artificial no Brasil.</span>
+
+- **`{python} len(corpus_)` projetos de lei** sobre IA no Congresso, `{python} int((corpus_["ano"] == 2026).sum())` só em 2026.
+  <span style="color: #808080; font-size: 0.85em;">O volume de propostas mostra o crescente interesse legislativo pela regulamentação da IA.</span>
+
+- LLMs viraram infraestrutura de pesquisa, mas são **instáveis, sensíveis ao prompt e enviesados**.
+  <span style="color: #808080; font-size: 0.85em;">Seus resultados exigem validação, avaliação crítica e atenção à qualidade das respostas.</span>
+
+
+## A "fase atual" da estatística
+
+::: {.columns}
+::: {.column width="55%"}
+- **Breiman (2001)**: duas culturas, *modelar* × *prever*
+
+::: {.pequeno}
+*Modelar* = explicar como os dados são gerados e medir a incerteza (a estatística clássica).
+
+*Prever* = acertar a resposta, mesmo sem entender o mecanismo (o aprendizado de máquina).
+:::
+
+- **2018–2026**: a síntese, com ML **a serviço da inferência**
+
+::: {.pequeno}
+As previsões do ML viram matéria-prima para estimar efeitos e proporções **com intervalo de confiança válido**
+<!-- (quatro exemplos no próximo slide). -->
+:::
+:::
+::: {.column width="45%"}
+::: {.callout-note title="O fio comum"}
+Previsões de modelos podem tornar a inferência **mais precisa**, desde que o erro delas seja **medido e corrigido**, e não ignorado.
+:::
+
+::: {.pequeno}
+<!-- **Traduzindo para hoje:** o LLM rotula todas as ementas (barato, mas com erro) → a amostra-ouro mede esse erro → o PPI corrige a estimativa e alarga o IC na medida certa. Usar os rótulos do LLM como se fossem a verdade é **ignorar** o erro. -->
+
+![](partes_R/images/Traduzindo o erro dos rótulos LLM.png){width="55%"}
+:::
+:::
+:::
+
+<!-- ## A síntese em quatro exemplos
+
+::: {style="font-size:1.02em"}
+| Método | O que faz, em uma frase |
+|---|---|
+| *Double ML*<br>(Chernozhukov et al., 2018) | Usa ML para "limpar" a influência de muitas variáveis de controle e estima um **efeito causal** com IC válido |
+| Predição conformal<br>(Vovk et al., 2005) | Transforma a previsão de qualquer modelo num **intervalo** (ou num conjunto de rótulos possíveis) que contém a resposta certa com a frequência prometida, p. ex. 95% |
+| ***Prediction-Powered Inference***<br>(Angelopoulos et al., *Science*, 2023) | Junta **muitas previsões** e **poucos rótulos verdadeiros**: mede o viés das previsões nos rotulados e o desconta. **É o que usamos no bloco 6** |
+| *Design-based Supervised Learning*<br>(Egami et al., 2023) | A mesma correção para **regressões** com rótulos de LLM, usando uma amostra codificada por especialistas e sorteada com probabilidades conhecidas |
+:::
+
+::: {.pequeno}
+Não é preciso dominar os quatro: hoje usamos só o **PPI** (e sua versão PPI++). Os outros mostram que a ideia é geral.
+::: -->
+
+## O que significa medir um instrumento
+
+<br/>
+
+| Propriedade | Pergunta | Como vamos medir hoje |
+|---|---|---|
+| **Validade** | Mede o que diz medir? | kappa, F1 e acurácia contra a amostra-ouro, com IC bootstrap |
+| **Onde erra** | Que erros comete? | matriz de confusão |
+| **Viés diferencial** | Erra igual para todos? | acurácia e viés por campo político |
+| **Confiabilidade** | Mede sempre igual? | alfa de Krippendorff entre sementes e entre prompts |
+| **Consequência** | O erro muda a conclusão? | ingênuo × PPI × PPI++, simulação de cobertura |
+| **Reprodutibilidade** | Outra pessoa chega ao mesmo número? | cache, hashes, `targets`, repetição |
+
+## O caminho de hoje
+
+<br/>
+
+![](partes_R/images/fluxo_validacao.png){width="90%"}
+
+
+## Organização do material
+
+<br/>
+<br/>
+
+::: {.columns}
+::: {.column width="58%"}
+```text
+minicurso_IA_medicao/
+├── python/       medicao.py, anotar_llm.py + notebooks (Colab)
+├── R/            a mesma trilha em R + funções
+├── _targets.R    pipeline reprodutível (R)
+├── prompts/      v1, v2, v3 + CHANGELOG
+├── modelos/      Modelfile do S5-nano
+├── dados/
+│   ├── bruto/        respostas das APIs (congeladas)
+│   ├── processado/   corpus.csv
+│   ├── anotacoes/    referência, amostra-ouro
+│   ├── cache_llm/    TODAS as respostas do LLM
+│   └── repeticao/    repetição a t = 0
+├── resultados/   tabelas e figuras
+├── slides/  livro/  docs/
+└── CODEBOOK.md  CHECKLIST.md  ROTEIRO.md
+```
+:::
+::: {.column width="42%"}
+- Tudo roda **sem internet e sem GPU**, a partir de `dados/`
+- O código dos slides é o **mesmo** de `python/`
+- Abra o projeto na raiz: os caminhos são relativos a ela
+:::
+:::
+
+## Preparando o ambiente
+
+<br/>
+
+::: {.columns}
+::: {.column width="55%"}
+**Python** (uma vez):
+
+```bash
+pip install -r requirements.txt
+```
+
+::: {.menor}
+```{python}
+#| echo: false
+print(open("requirements.txt", encoding="utf-8").read().strip())
+```
+:::
+
+<br/>
+
+ou abra `python/01_coleta.ipynb` no **Google Colab** (a primeira célula baixa o material).
+:::
+::: {.column width="45%"}
+**R** (alternativa):
+
+```r
+source("R/00_pacotes.R")
+```
+
+<br/>
+
+
+**LLM** (opcional, só para anotar de novo):
+
+```bash
+ollama pull hf.co/maritaca-ai/S5-nano-GGUF:Q4_K_M
+ollama create s5-nano-instruct \
+  -f modelos/Modelfile.s5-nano-instruct
+```
+:::
+:::
+
+## Carregando as funções do minicurso
+
+<br/>
+
+
+```{python}
+import sys
+sys.path.insert(0, "python")     # a pasta python/ do material
+from medicao import *            # APIs, kappa, alfa, F1, bootstrap, PPI, PPI++, tema das figuras
+from anotar_llm import (chama_ollama, extrai_rotulo, anota,   # chamada ao Ollama,
+                        PROMPTS, ESQUEMA, PLANO, sha)         # extração do rótulo, cache
+estilo_graficos()                # tema e paleta das figuras
+
+print(CATEGORIAS)
+print(INSTRUMENTO)
+import medicao, anotar_llm, inspect
+funcoes = sorted(n for m in (medicao, anotar_llm)
+                 for n, f in inspect.getmembers(m, inspect.isfunction)
+                 if f.__module__ == m.__name__ and not n.startswith("_") and n != "main")
+print(textwrap.fill("  ".join(funcoes), 95))
+```
+
+## Os dados que vamos usar
+
+<br/>
+
+```{python}
+from pathlib import Path
+arqs = [p for p in Path("dados").rglob("*") if p.is_file()]
+tab = pd.DataFrame(dict(pasta=[str(p.parent) for p in arqs],
+                        kb=[p.stat().st_size / 1024 for p in arqs]))
+(tab[~tab["pasta"].str.contains("historico_gemma|comparacao_modelos")]
+   .groupby("pasta").agg(arquivos=("kb", "size"), tamanho_kb=("kb", "sum"))
+   .round().astype(int).reset_index())
+```
+
+<br/>
+
+
+::: {.pequeno}
+Esses arquivos **são** a pesquisa: quem tiver esta pasta refaz todas as análises, sem APIs nem LLM.
+:::

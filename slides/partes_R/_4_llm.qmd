@@ -1,8 +1,8 @@
 # 4 · O LLM como instrumento {background-color="#1c3f6e"}
 
-::: {style="color:#c9d7ec"}
+<!-- ::: {style="color:#c9d7ec"}
 `R/04_anotacao_llm.R` · `python/anotar_llm.py` · `prompts/` · `modelos/`
-:::
+::: -->
 
 ## O que vamos executar neste bloco
 
@@ -13,11 +13,11 @@
 3. Ler os **três prompts** e calcular o **hash** de cada um
 4. Testar a **extração do rótulo** em respostas "sujas"
 5. Entender o laço de anotação com **cache e retomada**
-6. Abrir o **cache**: `r 6 * nrow(corpus)` respostas do modelo, com todos os metadados
+<!-- 6. Abrir o **cache**: `r 6 * nrow(corpus)` respostas do modelo, com todos os metadados -->
 
-::: {.callout-tip title="Em sala"}
+<!-- ::: {.callout-tip title="Em sala"}
 Demonstração ao vivo com 5 ementas (se o Ollama estiver rodando). Todo o resto vem do **cache**, que é o que garante a replicação.
-:::
+::: -->
 
 ## Um modelo brasileiro, aberto e local
 
@@ -29,10 +29,12 @@ Demonstração ao vivo com 5 ementas (se o Ollama estiver rodando). Todo o resto
 - **Local:** os dados não saem da máquina, custo zero, e **a versão não muda sem aviso**
 
 ::: {.callout-warning}
-"Brasileiro" **não garante validade**: é uma característica do treinamento. A validade se mede na amostra-ouro (bloco 5).
+"Brasileiro" **não garante validade**: é uma característica do treinamento. A validade se mede na amostra-ouro.
 :::
 
 ## Instalando o instrumento
+
+<br/>
 
 ```bash
 # 1. instalar o Ollama: https://ollama.com
@@ -40,6 +42,8 @@ ollama pull hf.co/maritaca-ai/S5-nano-GGUF:Q4_K_M                       # ~3,5 G
 ollama create s5-nano-instruct -f modelos/Modelfile.s5-nano-instruct    # nome local
 ollama list
 ```
+
+<br/>
 
 O `Modelfile` também é versionado:
 
@@ -55,7 +59,8 @@ cat(mf[c(1:3, 10:14, length(mf))], sep = "\n")
 ::: {.columns}
 ::: {.column width="55%"}
 - Pesos originais: 16 bits por parâmetro (BF16)
-- **Q4_K_M**: ~4 bits por parâmetro → cabe em 6 GB de GPU
+- **Q4_K_M**:
+  - 4 bits por parâmetro → cabe em 6 GB de GPU
 - O modelo quantizado **é outro instrumento**: os resultados publicados pela Maritaca (BF16) não valem automaticamente para ele
 - O que vale é a validação feita **aqui**, com o modelo que de fato usamos
 :::
@@ -121,6 +126,9 @@ tibble(arquivo = basename(arq_prompts), linhas = map_int(arq_prompts, \(a) lengt
 
 ## Prompt v1: só as categorias
 
+<br/>
+<br/>
+
 ```{r}
 cat(readLines("prompts/prompt_v1_simples.txt"), sep = "\n")
 ```
@@ -133,12 +141,16 @@ cat(readLines("prompts/prompt_v1_simples.txt"), sep = "\n")
 
 ## Prompt v2: o livro de códigos no prompt
 
+<br/>
+
 ```{r}
 #| class-output: menor
 cat(strwrap(readLines("prompts/prompt_v2_codebook.txt"), 140), sep = "\n")
 ```
 
 ## Prompt v3: + exemplos fictícios
+
+<br/>
 
 ```{r}
 v3 <- readLines("prompts/prompt_v3_fewshot.txt")
@@ -147,6 +159,8 @@ cat(strwrap(v3[ini:length(v3)], 130), sep = "\n")
 ```
 
 ## O hash do prompt: uma impressão digital
+
+<br/>
 
 ```{r}
 hash_prompt <- function(arq) {
@@ -160,11 +174,16 @@ llm <- carrega_llm()
 hashes |> left_join(distinct(llm, prompt_id, sha_no_cache = prompt_sha), by = "prompt_id")
 ```
 
+
+<br/>
+
 ::: {.pequeno}
 Mudou uma vírgula no prompt → muda o hash → as respostas antigas no cache **não** correspondem ao prompt atual. É assim que se descobre.
 :::
 
 ## Extraindo o rótulo da resposta
+
+<br/>
 
 ```{r}
 #| eval: false
@@ -175,9 +194,12 @@ Mudou uma vírgula no prompt → muda o hash → as respostas antigas no cache *
 
 - Procura o **primeiro objeto JSON** na resposta, mesmo com texto em volta
 - Aceita um nome alternativo de campo (`classificacao`)
-- Categoria fora da lista → `NA`: uma **falha de formato**, que será **contada**
+- Categoria fora da lista → `NA`:
+  - uma **falha de formato**, que será **contada**
 
 ## Testando com respostas "sujas"
+
+<br/>
 
 ```{r}
 respostas <- c(
@@ -192,6 +214,9 @@ map(respostas, extrai_rotulo) |>
 ```
 
 ## O laço de anotação com cache
+
+<br/>
+<br/>
 
 ```{r}
 #| eval: false
@@ -215,12 +240,16 @@ for (i in seq_len(nrow(pendentes))) {
 
 ## Demonstração ao vivo: 5 ementas
 
+<br/>
+
 ```{r}
 #| eval: false
 corpus <- carrega_corpus()
 anota_corpus(head(corpus, 5), prompt_id = "v2", modelo = "s5-nano-instruct",
              temperatura = 0, semente = 7)
 ```
+
+<br/>
 
 ::: {.registrada}
 ```{r}
@@ -231,11 +260,16 @@ llm |> filter(run_id == "s5-nano-instruct__v2__t0.0__s42") |> head(5) |>
 ```
 :::
 
+<br/>
+
 ::: {.pequeno}
-A saída acima vem do cache com semente 42 (as mesmas 5 ementas). Ao vivo, com semente 7, o arquivo novo seria `dados/cache_llm/s5-nano-instruct__v2__t0.0__s7.jsonl`.
+A saída acima vem do cache com semente 42 (as mesmas 5 ementas).
+<!-- Ao vivo, com semente 7, o arquivo novo seria `dados/cache_llm/s5-nano-instruct__v2__t0.0__s7.jsonl`. -->
 :::
 
 ## Um registro do cache, completo
+
+<br/>
 
 ```{r}
 primeiro <- readLines("dados/cache_llm/s5-nano-instruct__v2__t0.0__s42.jsonl", n = 1)
@@ -244,16 +278,24 @@ jsonlite::prettify(primeiro, indent = 2)
 
 ## O cache inteiro
 
+<br/>
+
 ```{r}
 list.files("dados/cache_llm", "\\.jsonl$")
 llm |> count(run_id, prompt_id, temperatura, semente)
 ```
 
+<br/>
+
 ::: {.pequeno}
-Seis execuções: três prompts a temperatura 0 (semente 42) e o prompt v2 a temperatura 0,8 com três sementes (para o teste-reteste).
+Seis execuções:
+
+  - três prompts a temperatura 0 (semente 42) e o prompt v2 a temperatura 0,8 com três sementes (para o teste-reteste).
 :::
 
 ## Quanto custa medir?
+
+<br/>
 
 ```{r}
 llm |>
@@ -263,8 +305,14 @@ llm |>
   mutate(across(where(is.double), \(x) round(x, 2)))
 ```
 
+<br/>
+
 ::: {.pequeno}
-Numa GPU de notebook (RTX 4050, 6 GB): menos de um segundo por ementa. O prompt v3 é maior (exemplos), e por isso um pouco mais lento.
+Numa GPU de notebook (RTX 4050, 6 GB):
+
+  - menos de um segundo por ementa.
+  
+O prompt v3 é maior (exemplos), e por isso um pouco mais lento.
 :::
 
 ## Falhas de formato
@@ -278,10 +326,12 @@ llm |> count(resposta_bruta, sort = TRUE) |> head(3)
 ```
 
 ::: {.pequeno}
-Com saída estruturada (`format = ESQUEMA`), zero falhas aqui. Com outro prompt, modelo ou versão do Ollama, pode não ser zero, e a taxa de falhas é **uma propriedade do instrumento**.
+Com saída estruturada, zero falhas aqui. Com outro prompt, modelo ou versão do Ollama, pode não ser zero, e a taxa de falhas é **uma propriedade do instrumento**.
 :::
 
 ## O mesmo modelo, três prompts
+
+<br/>
 
 ```{r}
 llm |>
@@ -294,11 +344,17 @@ llm |>
               transmute(categoria_llm, referencia = round(n / sum(n), 3)), by = "categoria_llm")
 ```
 
+<br/>
+
 ::: {.pequeno}
-Antes de qualquer métrica, a **distribuição** já mostra: o prompt muda a medida. O bloco 5 diz quanto.
+Antes de qualquer métrica, a **distribuição** já mostra:
+
+- o prompt muda a medida.
 :::
 
 ## E com uma API comercial?
+
+<br/>
 
 ```{r}
 #| eval: false
@@ -332,7 +388,8 @@ chat$chat_structured(prompt, type = tipo)
 ::: {.column width="50%"}
 **Levamos para os próximos blocos**
 
-- `llm`: `r nrow(llm)` respostas, 6 execuções
+- `llm`:
+  - `r nrow(llm)` respostas, 6 execuções
 - instrumento = **modelo + prompt + parâmetros + software**
 - o cache **é dado**: auditoria, retomada e replicação sem GPU
 :::

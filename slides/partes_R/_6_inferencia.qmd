@@ -1,8 +1,10 @@
 # 6 · Inferência com rótulos imperfeitos {background-color="#1c3f6e"}
 
+<!--
 ::: {style="color:#c9d7ec"}
-`R/06_inferencia.R` · `R/funcoes_medicao.R`
+`R/06_inferencia.R` · `R/funcoes_medicao.R` 
 :::
+-->
 
 ## O que vamos executar neste bloco
 
@@ -24,7 +26,7 @@ Queremos $\theta$ = proporção de projetos **PUNIR**. Temos:
 - as outras $N$ = `r nrow(corpus) - nrow(ouro)` ementas, só com o rótulo do LLM $f(X_i)$
 
 ::: {.pequeno}
-"Humano" = o rótulo de referência. Neste material ele ainda é preliminar e veio de outra IA (bloco 2); o método é o mesmo quando a referência for revisada por humanos.
+"Humano" = o rótulo de referência. Neste material ele ainda é preliminar e veio de outra IA; o método é o mesmo quando a referência for revisada por humanos.
 :::
 
 ::: {.columns}
@@ -59,6 +61,9 @@ c(n = nrow(lab), N = nrow(unl))
 
 ## O "valor verdadeiro" (só porque é didático)
 
+<br/>
+<br/>
+
 ```{r}
 verdade <- mean(ref$categoria == "PUNIR")
 verdade
@@ -72,20 +77,32 @@ Este corpus tem referência para **todas** as `r nrow(corpus)` ementas, então c
 
 ## (a) Só humanos
 
+<br/>
+<br/>
+
+
 ```{r}
 #| eval: false
 #| code: !expr trecho("R/funcoes_medicao.R", "est_humano")
 ```
 
+<br/>
+<br/>
+
 ```{r}
 est_humano(lab$y)
 ```
+
+<br/>
+<br/>
 
 ::: {.pequeno}
 Média da amostra-ouro, com erro-padrão $\sqrt{\hat p(1 - \hat p)/n}$. Desperdiça a informação das outras `r nrow(unl)` ementas.
 :::
 
 ## (b) Ingênuo: o LLM como verdade
+
+<br/>
 
 ```{r}
 est_ingenuo(c(lab$f, unl$f))
@@ -116,20 +133,30 @@ $$
 \widehat{\text{Var}}(\hat\theta_{PP}) = \frac{\hat\sigma^2_{f}}{N} + \frac{\hat\sigma^2_{f-Y}}{n}
 $$
 
+<br/>
+
 - **Nenhuma hipótese** sobre a qualidade do LLM: um LLM ruim gera retificador com variância alta → **IC largo**, não **IC errado**
 
 ## PPI em cinco linhas
+
+<br/>
+<br/>
 
 ```{r}
 #| eval: false
 #| code: !expr trecho("R/funcoes_medicao.R", "est_ppi")
 ```
 
+<br/>
+
 ```{r}
 est_ppi(lab$y, lab$f, unl$f)
 ```
 
 ## PPI passo a passo
+
+<br/>
+<br/>
 
 ```{r}
 retificador <- lab$f - lab$y
@@ -139,12 +166,15 @@ c(media_f_N   = mean(unl$f),
   ep          = sqrt(var(unl$f) / nrow(unl) + var(retificador) / nrow(lab)))
 ```
 
+<br/>
+
 ::: {.pequeno}
 O viés estimado é subtraído; o erro-padrão soma a incerteza do LLM no não rotulado e a do retificador na amostra-ouro.
 :::
 
 ## (d) PPI++: quanto confiar no LLM?
 
+<br/>
 <br/>
 
 PPI++ (Angelopoulos, Duchi & Zrnic, 2023) pondera o LLM por $\lambda \in [0, 1]$, escolhido para **minimizar a variância**:
@@ -154,10 +184,16 @@ $$
 \hat\lambda = \frac{\widehat{\text{Cov}}(Y, f)}{(1 + n/N)\,\widehat{\text{Var}}(f)}
 $$
 
+<br/>
+
+
 - LLM inútil → $\hat\lambda \to 0$: volta a ser o "só humanos"
 - LLM muito bom → $\hat\lambda \to 1$: aproxima-se do PPI
 
 ## PPI++ em R
+
+<br/>
+<br/>
 
 ```{r}
 #| eval: false
@@ -170,11 +206,16 @@ est_ppi_plus(lab$y, lab$f, unl$f)
 
 ## Os quatro estimadores
 
+<br/>
+<br/>
+
 ```{r}
 est <- compara_estimadores(lab$y, lab$f, unl$f) |>
   mutate(largura = ls - li, cobre_verdade = li <= verdade & verdade <= ls)
 est |> mutate(across(where(is.double), \(x) round(x, 3)))
 ```
+
+<br/>
 
 ::: {.pequeno}
 Valor na referência completa: **`r pc(verdade, 1)`**. Conferência com o pipeline: `r if (isTRUE(all.equal(est$estimativa, read_csv("resultados/tabelas/estimativas_punir.csv")$estimativa))) "estimativas idênticas às de resultados/tabelas/estimativas_punir.csv" else "atenção: diferem de resultados/tabelas/"`.
@@ -212,6 +253,9 @@ Um único sorteio da amostra-ouro não diz se o método é bom. Então:
 
 ## A simulação em R
 
+<br/>
+<br/>
+
 ```{r}
 #| cache: true
 simula <- function(n_ouro, B = 1000, semente = 1) {
@@ -232,6 +276,8 @@ tempo[["elapsed"]]
 ```
 
 ## Cobertura e largura
+
+<br/>
 
 ```{r}
 sim |>

@@ -4,6 +4,9 @@
 // II DataPOL · UFPE · 2026
 // =============================================================================
 
+.duo { display: grid; grid-template-columns: 1fr 1fr; gap: 1.4em; align-items: start; }
+.duo > div > p, .trio > div > p { margin: 0; }
+
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap');
 
 // Escala de Azuis

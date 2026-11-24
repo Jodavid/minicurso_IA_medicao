@@ -1,0 +1,407 @@
+# 4 · O LLM como instrumento {background-color="#1c3f6e"}
+
+<!-- ::: {style="color:#c9d7ec"}
+`python/anotar_llm.py` · `python/03_anotacao_llm.ipynb` · `prompts/` · `modelos/`
+::: -->
+
+## O que vamos executar neste bloco
+
+<br/>
+
+1. Conhecer o instrumento: **S5-nano** (Maritaca AI), local, via **Ollama**
+2. Montar a **chamada** ao modelo: esquema JSON, temperatura, semente, modo *instruct*
+3. Ler os **três prompts** e calcular o **hash** de cada um
+4. Testar a **extração do rótulo** em respostas "sujas"
+5. Entender o laço de anotação com **cache e retomada**
+<!-- 6. Abrir o **cache**: 6 × 304 respostas do modelo, com todos os metadados -->
+
+<!-- ::: {.callout-tip title="Em sala"}
+Demonstração ao vivo com 5 ementas (se o Ollama estiver rodando). Todo o resto vem do **cache**, que é o que garante a replicação.
+::: -->
+
+## Um modelo brasileiro, aberto e local
+
+<br/>
+
+- **Brasileiro:** desenvolvido pela Maritaca AI, com pré-treinamento adicional em **português**, a língua (e o vocabulário jurídico-legislativo) das ementas
+- **Vem do Qwen:** parte do **Qwen3.5-4B** (Alibaba) e herda a arquitetura, o tokenizador e boa parte do que "sabe"
+- **Aberto e pequeno:** Apache-2.0, pesos públicos (todos baixam **a mesma versão**), roda numa GPU de notebook
+- **Local:** os dados não saem da máquina, custo zero, e **a versão não muda sem aviso**
+
+::: {.callout-warning}
+"Brasileiro" **não garante validade**: é uma característica do treinamento. A validade se mede na amostra-ouro.
+:::
+
+## Instalando o instrumento
+
+<br/>
+
+```bash
+# 1. instalar o Ollama: https://ollama.com
+ollama pull hf.co/maritaca-ai/S5-nano-GGUF:Q4_K_M                       # ~3,5 GB
+ollama create s5-nano-instruct -f modelos/Modelfile.s5-nano-instruct    # nome local
+ollama list
+```
+
+<br/>
+
+O `Modelfile` também é versionado:
+
+```{python}
+mf = open("modelos/Modelfile.s5-nano-instruct", encoding="utf-8").read().splitlines()
+print("\n".join(mf[0:3] + mf[9:14] + mf[-1:]))
+```
+
+## Quantização: outro instrumento
+
+<br/>
+
+::: {.columns}
+::: {.column width="55%"}
+- Pesos originais: 16 bits por parâmetro (BF16)
+- **Q4_K_M**:
+  - 4 bits por parâmetro → cabe em 6 GB de GPU
+- O modelo quantizado **é outro instrumento**: os resultados publicados pela Maritaca (BF16) não valem automaticamente para ele
+- O que vale é a validação feita **aqui**, com o modelo que de fato usamos
+:::
+::: {.column width="45%"}
+::: {.callout-note title="O que registrar"}
+- nome **e digest** dos pesos
+- versão do **Ollama**
+- prompt (**hash**)
+- temperatura e semente
+- **resposta bruta**
+:::
+:::
+:::
+
+## A chamada: o que vai para o modelo
+
+::: {.menor}
+```{python}
+#| output-location: column
+corpo = dict(
+    model="s5-nano-instruct",
+    stream=False,
+    think=False,          # modo instruct
+    format=ESQUEMA,       # saída estruturada
+    options=dict(temperature=0,
+                 seed=42),  # registrar!
+    messages=[dict(
+        role="user",
+        content="<prompt com a ementa>")])
+print(json.dumps(corpo, indent=2, ensure_ascii=False))
+```
+:::
+
+## `chama_ollama()`
+
+::: {.menor}
+```{python}
+#| echo: false
+#| output: asis
+trecho(chama_ollama)
+```
+:::
+
+<br/>
+
+- `requests.post()` envia o corpo do slide anterior para `http://localhost:11434/api/chat`
+- `timeout=120`: uma ementa que trava não trava a anotação inteira
+- Se vier **raciocínio** (`thinking`), a função **para com erro**: seria outro instrumento
+
+## O prompt é parte do instrumento
+
+<br/>
+
+| Versão | Arquivo | Conteúdo |
+|---|---|---|
+| **v1** | `prompt_v1_simples.txt` | só os nomes das categorias |
+| **v2** | `prompt_v2_codebook.txt` | + definições e regras do livro de códigos |
+| **v3** | `prompt_v3_fewshot.txt` | + 6 exemplos **fictícios** (*few-shot*) |
+
+<br/>
+
+```{python}
+from pathlib import Path
+arq_prompts = sorted(Path("prompts").glob("prompt_v*_*.txt"))
+pd.DataFrame(dict(arquivo=[a.name for a in arq_prompts],
+                  linhas=[len(a.read_text(encoding="utf-8").splitlines()) for a in arq_prompts],
+                  caracteres=[a.stat().st_size for a in arq_prompts]))
+```
+
+## Prompt v1: só as categorias
+
+<br/>
+<br/>
+
+```{python}
+print(open("prompts/prompt_v1_simples.txt", encoding="utf-8").read())
+```
+
+<br/>
+
+::: {.pequeno}
+**Pergunta para a turma:** o que o modelo "entende" sozinho por PUNIR, REGULAR e PROMOVER? `{{ementa}}` é substituído pelo texto de cada ementa.
+:::
+
+## Prompt v2: o livro de códigos no prompt
+
+<br/>
+
+::: {.menor}
+```{python}
+v2 = open("prompts/prompt_v2_codebook.txt", encoding="utf-8").read().splitlines()
+print("\n".join(textwrap.fill(l, 140) for l in v2))
+```
+:::
+
+## Prompt v3: + exemplos fictícios
+
+<br/>
+
+```{python}
+v3 = open("prompts/prompt_v3_fewshot.txt", encoding="utf-8").read().splitlines()
+ini = next(i for i, l in enumerate(v3) if l.startswith("EXEMPLOS"))
+print("\n".join(textwrap.fill(l, 130) for l in v3[ini:]))
+```
+
+## O hash do prompt: uma impressão digital
+
+<br/>
+
+```{python}
+import hashlib
+def hash_prompt(arq):
+    txt = Path(arq).read_text(encoding="utf-8")                  # o mesmo texto que vai para o modelo
+    return hashlib.sha256(txt.encode("utf-8")).hexdigest()[:12]  # = sha() de anotar_llm.py
+hashes = pd.DataFrame(dict(prompt_id=[re.search(r"v\d", a.name).group() for a in arq_prompts],
+                           sha_arquivo=[hash_prompt(a) for a in arq_prompts]))
+llm = carrega_llm(".")
+hashes.merge(llm[["prompt_id", "prompt_sha"]].drop_duplicates()
+                .rename(columns={"prompt_sha": "sha_no_cache"}), on="prompt_id", how="left")
+```
+
+
+<br/>
+
+::: {.pequeno}
+Mudou uma vírgula no prompt → muda o hash → as respostas antigas no cache **não** correspondem ao prompt atual. É assim que se descobre.
+:::
+
+## Extraindo o rótulo da resposta
+
+<br/>
+
+::: {.menor}
+```{python}
+#| echo: false
+#| output: asis
+trecho(extrai_rotulo)
+```
+:::
+
+<br/>
+
+- Procura o **primeiro objeto JSON** na resposta, mesmo com texto em volta
+- Aceita um nome alternativo de campo (`classificacao`)
+- Categoria fora da lista → `None`:
+  - uma **falha de formato**, que será **contada**
+
+## Testando com respostas "sujas"
+
+<br/>
+
+```{python}
+respostas = dict(
+    limpa      = '{"categoria": "PUNIR", "eleitoral": false}',
+    markdown   = '```json\n{"categoria": "REGULAR", "eleitoral": true}\n```',
+    texto      = 'Claro! A classificação é {"categoria": "promover", "eleitoral": false}.',
+    outro_nome = '{"classificacao": "OUTRO", "eleitoral": false}',
+    invalida   = '{"categoria": "PUNIÇÃO", "eleitoral": false}',
+    sem_json   = 'A ementa trata de inteligência artificial.')
+pd.DataFrame([extrai_rotulo(r) for r in respostas.values()],
+             index=pd.Index(respostas, name="caso"), columns=["categoria", "eleitoral"]).reset_index()
+```
+
+## O laço de anotação com cache
+
+<br/>
+<br/>
+
+```{python}
+#| eval: false
+# trecho de anota() em python/anotar_llm.py
+run_id  = f"{modelo_tag}__{prompt_id}__t{temperatura}__s{semente}"
+destino = RAIZ / pasta / f"{run_id}.jsonl"
+feitos  = {json.loads(l)["doc_id"] for l in destino.open()} if destino.exists() else set()
+pendentes = corpus[~corpus.doc_id.isin(feitos)]                 # retomada: só o que falta
+
+with destino.open("a", encoding="utf-8") as f:
+    for row in pendentes.itertuples():
+        prompt = modelo_prompt.replace("{{ementa}}", row.ementa)
+        try:
+            bruto = chama_ollama(modelo, prompt, temperatura, semente)
+        except Exception as e:
+            bruto = f"ERRO: {e}"                                  # registra a falha
+        cat, ele = extrai_rotulo(bruto)
+        registro = {"doc_id": row.doc_id, "modelo_digest": digest, "ollama_versao": versao,
+                    "prompt_id": prompt_id, "prompt_sha": prompt_sha, "temperatura": temperatura,
+                    "semente": semente, "resposta_bruta": bruto, "categoria_llm": cat}  # ...
+        f.write(json.dumps(registro, ensure_ascii=False) + "\n")  # uma linha JSON por ementa
+```
+
+## Demonstração ao vivo: 5 ementas
+
+<br/>
+
+```{python}
+#| eval: false
+corpus = carrega_corpus(".")
+anota(corpus.head(5), modelo="s5-nano-instruct", prompt_id="v2",
+      temperatura=0.0, semente=7)
+```
+
+<br/>
+
+::: {.registrada}
+```{python}
+#| echo: false
+print("[s5-nano-instruct__v2__t0.0__s7] 0 em cache, 5 pendentes")
+print(llm.loc[llm["run_id"] == "s5-nano-instruct__v2__t0.0__s42",
+              ["doc_id", "resposta_bruta", "categoria_llm", "eleitoral_llm", "segundos"]]
+         .head(5).to_string(index=False))
+```
+:::
+
+<br/>
+
+::: {.pequeno}
+A saída acima vem do cache com semente 42 (as mesmas 5 ementas).
+<!-- Ao vivo, com semente 7, o arquivo novo seria `dados/cache_llm/s5-nano-instruct__v2__t0.0__s7.jsonl`. -->
+:::
+
+## Um registro do cache, completo
+
+<br/>
+
+```{python}
+primeiro = open("dados/cache_llm/s5-nano-instruct__v2__t0.0__s42.jsonl", encoding="utf-8").readline()
+print(json.dumps(json.loads(primeiro), indent=2, ensure_ascii=False))
+```
+
+## O cache inteiro
+
+<br/>
+
+```{python}
+print(sorted(p.name for p in Path("dados/cache_llm").glob("*.jsonl")))
+llm.value_counts(["run_id", "prompt_id", "temperatura", "semente"]).sort_index().reset_index(name="n")
+```
+
+<br/>
+
+::: {.pequeno}
+Seis execuções:
+
+  - três prompts a temperatura 0 (semente 42) e o prompt v2 a temperatura 0,8 com três sementes (para o teste-reteste).
+:::
+
+## Quanto custa medir?
+
+<br/>
+
+```{python}
+(llm.groupby(["prompt_id", "temperatura"])
+    .agg(ementas=("segundos", "size"), seg_media=("segundos", "mean"),
+         seg_max=("segundos", "max"), minutos_total=("segundos", lambda s: s.sum() / 60))
+    .round(2).reset_index())
+```
+
+<br/>
+
+::: {.pequeno}
+Numa GPU de notebook (RTX 4050, 6 GB):
+
+  - menos de um segundo por ementa.
+
+O prompt v3 é maior (exemplos), e por isso um pouco mais lento.
+:::
+
+## Falhas de formato
+
+```{python}
+display(llm.groupby("run_id")
+           .agg(n=("doc_id", "size"), falhas=("categoria_llm", lambda s: int(s.isna().sum())),
+                json_puro=("resposta_bruta", lambda s: s.str.fullmatch(r"\{.*\}").mean()))
+           .reset_index())
+llm["resposta_bruta"].value_counts().head(3).reset_index()
+```
+
+::: {.pequeno}
+Com saída estruturada, zero falhas aqui. Com outro prompt, modelo ou versão do Ollama, pode não ser zero, e a taxa de falhas é **uma propriedade do instrumento**.
+:::
+
+## O mesmo modelo, três prompts
+
+<br/>
+
+```{python}
+t0 = llm[llm["temperatura"] == 0]
+dist = pd.crosstab(t0["categoria_llm"], t0["prompt_id"], normalize="columns").reindex(CATEGORIAS)
+dist["referencia"] = ref["categoria"].value_counts(normalize=True).reindex(CATEGORIAS)
+dist.round(3).reset_index()
+```
+
+<br/>
+
+::: {.pequeno}
+Antes de qualquer métrica, a **distribuição** já mostra:
+
+- o prompt muda a medida.
+:::
+
+## E com uma API comercial?
+
+<br/>
+
+```{python}
+#| eval: false
+from openai import OpenAI
+# a chave NUNCA vai no código: use uma variável de ambiente (OPENAI_API_KEY=...)
+cliente = OpenAI()
+prompt = PROMPTS["v2"].read_text(encoding="utf-8").replace("{{ementa}}", corpus["ementa"][0])
+r = cliente.chat.completions.create(
+    model="gpt-4.1-mini", temperature=0, seed=42,
+    response_format={"type": "json_object"},
+    messages=[{"role": "user", "content": prompt}])
+print(r.model, r.choices[0].message.content)    # registre r.model e a data
+```
+
+<br/>
+
+- Mesma lógica: esquema, temperatura, semente, **cache**
+- APIs comerciais **trocam a versão do modelo sem aviso**: registre o identificador exato e a **data**, e guarde as respostas brutas
+
+## Resumo do bloco 4
+
+<br/>
+
+::: {.columns}
+::: {.column width="50%"}
+**Executamos**
+
+- o corpo da chamada e o esquema JSON
+- leitura dos prompts e cálculo dos hashes
+- extração de rótulos em respostas "sujas"
+- leitura e descrição do cache
+:::
+::: {.column width="50%"}
+**Levamos para os próximos blocos**
+
+- `llm`:
+  - `{python} len(llm)` respostas, 6 execuções
+- instrumento = **modelo + prompt + parâmetros + software**
+- o cache **é dado**: auditoria, retomada e replicação sem GPU
+:::
+:::

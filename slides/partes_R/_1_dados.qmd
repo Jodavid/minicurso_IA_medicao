@@ -1,8 +1,8 @@
 # 1 · Dados legislativos {background-color="#1c3f6e"}
 
-::: {style="color:#c9d7ec"}
+<!-- ::: {style="color:#c9d7ec"}
 `R/01_coleta.R` · `R/funcoes_coleta.R`
-:::
+::: -->
 
 ## O que vamos executar neste bloco
 
@@ -10,13 +10,13 @@
 
 1. Entender **uma requisição** às APIs da Câmara e do Senado
 2. Ler as funções de coleta: **retry**, **limite de taxa**, **paginação**, **autor**, **partido na data**
-3. Testar, sem internet, as partes que transformam os dados: **partido no Senado**, **limpeza da ementa**, **campo político**
-4. Abrir o **corpus congelado** e descrevê-lo
+3. As partes que transformam os dados: **partido no Senado**, **limpeza da ementa**, **campo político**
+4. Como gerar **corpus** *congelado*
 5. Comparar duas coletas feitas com um mês de diferença
 
-::: {.callout-tip title="Em sala"}
+<!-- ::: {.callout-tip title="Em sala"}
 A coleta completa leva de 5 a 10 minutos e centenas de chamadas. Fazemos **uma** chamada ao vivo (se houver internet) e usamos o corpus salvo.
-:::
+::: -->
 
 ## Duas APIs abertas, sem chave
 
@@ -63,6 +63,8 @@ https://dadosabertos.camara.leg.br/api/v2/proposicoes?keywords=deepfake&ano=2024
 
 ## Uma chamada, em R
 
+<br/>
+
 ```{r}
 #| eval: false
 library(httr2)
@@ -101,10 +103,14 @@ camara_raw |>
 
 ## Boas práticas com APIs públicas: `req_json()`
 
+<br/>
+
 ```{r}
 #| eval: false
 #| code: !expr trecho("R/funcoes_coleta.R", "req_json")
 ```
+
+<br/>
 
 ::: {.pequeno}
 - **`req_user_agent()`**: identifica quem está chamando · **`req_throttle(rate = 5)`**: no máximo 5 requisições por segundo
@@ -113,6 +119,8 @@ camara_raw |>
 :::
 
 ## Paginação: buscar até acabar
+
+<br/>
 
 ```{r}
 #| eval: false
@@ -124,6 +132,8 @@ camara_raw |>
 :::
 
 ## Quem é o autor?
+
+<br/>
 
 ```{r}
 #| eval: false
@@ -140,8 +150,11 @@ camara_raw |>
 ## O partido de quem? E quando?
 
 <br/>
+<br/>
 
 Queremos o partido do autor **na data de apresentação**, não o partido de hoje.
+
+<br/>
 
 ::: {.incremental}
 - A API da Câmara tem o **histórico** de cada deputado: `/deputados/{id}/historico`
@@ -152,12 +165,16 @@ Queremos o partido do autor **na data de apresentação**, não o partido de hoj
 
 ## `camara_partido_na_data()`
 
+<br/>
+
 ```{r}
 #| eval: false
 #| code: !expr trecho("R/funcoes_coleta.R", "camara_partido_na_data")
 ```
 
-## Testando a regra sem internet
+## Testando a regra
+
+<br/>
 
 Um histórico **fictício**, com o registro problemático da API:
 
@@ -177,6 +194,8 @@ bind_rows(ingenuo = ingenuo, correto = correto, .id = "regra")
 ```
 
 ## Senado: o partido vem no texto
+
+<br/>
 
 No Senado, a autoria já vem com partido e UF **na data**. Basta extrair com uma expressão regular:
 
@@ -198,6 +217,8 @@ Autoria de **comissão** não tem partido: vira `NA` e, mais adiante, "Sem parti
 
 ## Limpeza mínima e transparente da ementa
 
+<br/>
+
 ```{r}
 #| eval: false
 #| code: !expr trecho("R/funcoes_coleta.R", "limpa_ementa")
@@ -212,10 +233,12 @@ strwrap(limpa_ementa(bruta), 100)
 ```
 
 ::: {.pequeno}
-Decisão de medição: ficamos com a ementa **original**, a que o autor apresentou.
+***Decisão de medição:*** ficamos com a ementa **original**, a que o autor apresentou.
 :::
 
 ## Montando o corpus (trecho de `R/01_coleta.R`)
+
+<br/>
 
 ```{r}
 #| eval: false
@@ -238,6 +261,8 @@ write_csv(corpus, "dados/processado/corpus.csv")
 
 ## Campo político: uma medida dentro da medida
 
+<br/>
+
 ```{r}
 ESQUERDA <- c("PSOL", "PT", "PCDOB", "PDT", "PSB", "REDE", "PV")
 CENTRO   <- c("MDB", "PSDB", "CIDADANIA", "PSD", "SOLIDARIEDADE", "AVANTE", "PMB")
@@ -250,17 +275,23 @@ corpus |>
   count(campo2, campo)
 ```
 
-::: {.pequeno}
+<br/>
+
+<!-- ::: {.pequeno}
 Simplificação didática de Bolognesi, Ribeiro & Codato (2023). A classificação é ela própria uma **medida**, com erro.
-:::
+::: -->
 
 ## O corpus
 
+<br/>
+
 ```{r}
-glimpse(corpus, width = 100)
+glimpse(corpus)
 ```
 
 ## Quantos projetos, de onde e quando?
+
+<br/>
 
 ```{r}
 corpus |>
@@ -275,6 +306,8 @@ corpus |>
 
 ## Quem mais apresenta?
 
+<br/>
+
 ```{r}
 corpus |>
   filter(!is.na(partido)) |>
@@ -283,11 +316,15 @@ corpus |>
   head(10)
 ```
 
+<br/>
+
 ::: {.pequeno}
 `r sum(is.na(corpus$partido))` projetos não têm partido (comissões, Executivo, Senado Federal como autor).
 :::
 
 ## A explosão legislativa: o código
+
+<br/>
 
 ```{r}
 #| output-location: slide

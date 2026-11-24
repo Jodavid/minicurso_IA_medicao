@@ -1,8 +1,8 @@
 # 7 · Reprodutibilidade (MLOps) {background-color="#1c3f6e"}
 
-::: {style="color:#c9d7ec"}
+<!-- ::: {style="color:#c9d7ec"}
 `_targets.R` · `CHECKLIST.md` · `dados/repeticao/`
-:::
+::: -->
 
 ## O que vamos executar neste bloco
 
@@ -29,6 +29,9 @@
 
 ## Um pipeline declarativo: `_targets.R`
 
+<br/>
+<br/>
+
 ```{r}
 #| eval: false
 list(
@@ -44,11 +47,16 @@ list(
 )
 ```
 
+<br/>
+
 ::: {.pequeno}
 Cada etapa declara **de que depende**. Coleta e anotação **não** entram como etapas (são caras e externas): entram como **arquivos versionados**.
 :::
 
 ## O grafo, lido pelo `targets`
+
+<br/>
+<br/>
 
 ```{r}
 targets::tar_manifest(fields = c(name, command)) |>
@@ -57,6 +65,8 @@ targets::tar_manifest(fields = c(name, command)) |>
 
 ## Rodando o pipeline
 
+<br/>
+
 ```{r}
 #| eval: false
 targets::tar_make()        # roda só o que está desatualizado
@@ -64,18 +74,7 @@ targets::tar_outdated()    # editei o prompt v2... o que precisa ser refeito?
 targets::tar_visnetwork()  # desenha o grafo (precisa do pacote visNetwork)
 ```
 
-```{mermaid}
-%%| fig-width: 11
-%%| echo: false
-%%{init: {"theme": "base", "themeVariables": {"lineColor": "#8f8d88", "primaryColor": "#eef4fc", "primaryBorderColor": "#7ba4de", "primaryTextColor": "#0b0b0b"}}}%%
-flowchart LR
-  P[prompts/*.txt] --> V[validacao]
-  C[cache_llm/*.jsonl] --> V
-  K[corpus.csv] --> O[amostra_ouro] --> B[baselines] --> V --> I[inferencia] --> S[sessao]
-  R[referencia_completa.csv] --> O
-  classDef mudou fill:#1c3f6e,stroke:#1c3f6e,color:#ffffff
-  class P mudou
-```
+![](partes_R/images/fluxo_inferencia.png){width="70%"}
 
 ::: {.pequeno}
 Editou um prompt? `validacao` e `inferencia` ficam desatualizadas; `amostra_ouro` e `baselines`, não.
@@ -96,6 +95,8 @@ Com `format = "file"` apenas, o `targets` detecta **edições** em arquivos conh
 **Lição:** ferramentas de reprodutibilidade **também precisam ser testadas**.
 
 ## A identidade do instrumento, no cache
+
+<br/>
 
 ```{r}
 llm |>
@@ -118,15 +119,19 @@ range(llm$timestamp)
 
 . . .
 
+<br/>
+
 E um modelo **local**, com os mesmos pesos, o mesmo prompt e temperatura 0... dá sempre a mesma resposta?
 
-Em 12/11/2026 repetimos as três anotações a t = 0, nas mesmas condições:
+<!-- Em 12/11/2026 repetimos as três anotações a t = 0, nas mesmas condições:
 
 ```bash
 python python/anotar_llm.py --todas-t0 --pasta dados/repeticao
-```
+``` -->
 
 ## Repetindo a medição
+
+<br/>
 
 ```{r}
 le_jsonl <- \(a) jsonlite::stream_in(file(a), verbose = FALSE)
@@ -167,6 +172,8 @@ cat(readLines("requirements.txt"), sep = "\n")
 
 ## R e Python: os mesmos números?
 
+<br/>
+
 ```{r}
 comp <- inner_join(
   read_csv("resultados/tabelas/estimativas_punir.csv") |> select(estimador, R = estimativa, R_li = li),
@@ -185,15 +192,21 @@ Mesmas estimativas. Diferenças só no que depende do gerador aleatório (ICs bo
 
 Agentes de programação (Claude Code, Codex e similares) também produzem análises.
 
+<br/>
+
 ::: {.callout-tip title="Regra proposta"}
 **Trate o código gerado por IA como o de um coautor**: revisão, testes, versionamento. Quem publica responde por ele.
 :::
 
-- Este material foi produzido com o auxílio do **Claude Opus 5.5** (Anthropic), declarado no livro
+<br/>
+
+- Este material foi produzido com o auxílio do **Claude Opus 5.5** (Anthropic)
 - A verificação de ponta a ponta encontrou e corrigiu falhas reais: o `tar_cue`, caches de outro modelo sendo lidos junto, o erro 504 sem *retry*
 - Os dois papéis não se confundem: o **S5-nano** é o instrumento estudado; o **Claude** foi o auxiliar na produção
 
 ## Checklist para o seu próximo artigo
+
+<br/>
 
 ```{r}
 #| class-output: menor

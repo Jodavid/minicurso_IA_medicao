@@ -1,0 +1,372 @@
+# 3 · Baselines: quanto se acerta **sem** LLM? {background-color="#1c3f6e"}
+
+<!-- ::: {style="color:#c9d7ec"}
+`python/02_baselines.ipynb` · `python/medicao.py`
+::: -->
+
+## O que vamos executar neste bloco
+
+<br/>
+
+1. Um **dicionário**: expressões regulares que traduzem o livro de códigos em regras
+2. As **métricas** de acerto, implementadas "na mão": acurácia, F1, **kappa**
+3. Um modelo clássico: **TF-IDF + regressão logística**, com **validação cruzada**
+4. A comparação com o **piso**: alocar sempre para a classe mais frequente
+
+<br/>
+<br/>
+
+::: {.callout-note title="Por que baselines"}
+Um LLM só "vale a pena" se superar instrumentos mais baratos e mais transparentes **de forma estatisticamente consistente**. Isso é uma afirmação a testar, não uma impressão.
+:::
+
+## O dicionário: regras explícitas
+
+<br/>
+
+```{python}
+print(list(REGEX))
+print(REGEX["punir"])
+print(textwrap.fill(REGEX["ia"], 100))
+print(textwrap.fill(REGEX["promover"], 100))
+```
+
+## Função para classificar para as regras
+
+<!-- `classifica_dicionario()` -->
+
+<br/>
+
+```{python}
+#| echo: false
+#| output: asis
+trecho(classifica_dicionario)
+```
+
+<br/>
+
+- Os `if` avaliam as regras **em ordem**: a primeira verdadeira vence (`return`)
+- A ordem implementa a **precedência** do livro de códigos (PUNIR > ... )
+- Sem termo de IA → **OUTRO** (falso positivo da busca)
+- Barato, transparente, **100% auditável**
+
+## Testando o dicionário
+
+```{python}
+exemplos = [
+    "Altera o Código Penal para tipificar a criação de deepfake de nudez.",
+    "Dispõe sobre a rotulagem de conteúdo gerado por inteligência artificial.",
+    "Institui programa de formação em inteligência artificial nas escolas.",
+    "Altera a Lei nº 9.503 para dispor sobre a carteira de habilitação.",
+    "Prevê penalidades administrativas para plataformas que não removam deepfakes.",
+    "Cria o crime de fraude eletrônica com uso de algoritmos."]
+pd.DataFrame(dict(ementa=exemplos,
+                  dicionario=[classifica_dicionario(e) for e in exemplos],
+                  eleitoral=[eleitoral_dicionario(e) for e in exemplos]))
+```
+
+<br/>
+
+
+::: {.pequeno}
+A 5ª ementa: "penalidades" sem crime, REGULAR pelo livro de códigos. O dicionário acertou porque `\bpenas?\b` não casa com "penalidades".
+:::
+
+## Aplicando à amostra-ouro
+
+<br/>
+
+
+```{python}
+ouro = (pd.read_csv("dados/anotacoes/amostra_ouro.csv")
+        .merge(corpus[["doc_id", "ementa"]], on="doc_id", how="left"))
+ouro["pred_dic"] = ouro["ementa"].map(classifica_dicionario)
+
+(ouro.assign(ementa=ouro["ementa"].str.slice(0, 70) + "…")
+     .rename(columns={"categoria": "humano", "pred_dic": "dicionario"})
+     [["doc_id", "humano", "dicionario", "ementa"]].head(8))
+```
+
+
+
+## Matriz de confusão — Caso multiclasse
+
+Linhas representam as classes reais e colunas as classes preditas. **Diagonal principal:** classificações corretas.
+
+$$
+\begin{array}{c|ccc|c}
+ & \hat{C}_1 & \hat{C}_2 & \hat{C}_3 & \text{Total}\\
+\hline
+C_1 & n_{11} & n_{12} & n_{13} & n_{1\cdot}\\
+C_2 & n_{21} & n_{22} & n_{23} & n_{2\cdot}\\
+C_3 & n_{31} & n_{32} & n_{33} & n_{3\cdot}\\
+\hline
+\text{Total} & n_{\cdot1} & n_{\cdot2} & n_{\cdot3} & N
+\end{array}
+$$
+
+- $n_{ij}$: exemplos da classe real $C_i$ preditos como $C_j$.
+- $n_{i\cdot}=\sum_j n_{ij}$: total da classe real $C_i$.
+- $n_{\cdot j}=\sum_i n_{ij}$: total predito como $\hat{C}_j$.
+- $N=\sum_i\sum_j n_{ij}$: total de exemplos.
+
+
+
+
+
+## Como medir o desempenho?
+
+Para cada classe $C_c$, considerando as demais como uma única classe:
+
+$$
+TP_c=n_{cc},\quad
+FP_c=n_{\cdot c}-n_{cc},\quad
+FN_c=n_{c\cdot}-n_{cc}
+$$
+
+::: {.columns}
+::: {.column width="50%"}
+
+**Acurácia**
+
+$$
+\text{Acc}=
+\frac{\sum_{c=1}^{C}n_{cc}}{N}
+$$
+
+**Precisão**
+
+$$
+P_c=\frac{TP_c}{TP_c+FP_c}
+$$
+
+:::
+::: {.column width="50%"}
+
+**Revocação (Recall)**
+
+$$
+R_c=\frac{TP_c}{TP_c+FN_c}
+$$
+
+**F1 macro**
+
+$$
+F1_{\text{macro}}=
+\frac{1}{C}\sum_{c=1}^{C}
+\frac{2P_cR_c}{P_c+R_c}
+$$
+
+:::
+:::
+
+**Destaque:** o F1 macro atribui o mesmo peso a todas as classes, inclusive às raras.
+
+
+
+## Concordância além do acaso
+
+O Kappa desconta da concordância observada aquela esperada ao acaso.
+
+$$
+\kappa=\frac{p_o-p_e}{1-p_e}
+$$
+
+**Concordância observada**
+
+$$
+p_o=\frac{\sum_{c=1}^{C}n_{cc}}{N}
+$$
+
+**Concordância esperada ao acaso**
+
+$$
+p_e=\sum_{c=1}^{C}
+\frac{n_{c\cdot}}{N}
+\frac{n_{\cdot c}}{N}
+$$
+
+<!-- **Interpretação (Landis & Koch)**
+
+| $\kappa$ | Concordância |
+|:---:|---|
+| $\leq 0$ | Ausente |
+| 0,01–0,20 | Leve |
+| 0,21–0,40 | Razoável |
+| 0,41–0,60 | Moderada |
+| 0,61–0,80 | Substancial |
+| 0,81–1,00 | Quase perfeita | -->
+
+
+<!--
+## O kappa "na mão"
+
+trecho(kappa_cohen)
+-->
+
+
+## O kappa do dicionário, passo a passo
+
+<br/>
+
+```{python}
+tab = pd.crosstab(pd.Categorical(ouro["categoria"], CATEGORIAS),
+                  pd.Categorical(ouro["pred_dic"], CATEGORIAS),
+                  rownames=["humano"], colnames=["dic"], dropna=False)
+n  = tab.values.sum()
+po = np.trace(tab.values) / n
+pe = (tab.sum(axis=1).values * tab.sum(axis=0).values).sum() / n ** 2
+print(dict(po=round(po, 7), pe=round(pe, 7), kappa=round((po - pe) / (1 - pe), 7)))
+kappa_cohen(ouro["categoria"], ouro["pred_dic"])
+```
+
+## O dicionário na amostra-ouro
+
+<br/>
+
+```{python}
+met_dic = resumo_metricas(ouro["categoria"], ouro["pred_dic"])
+display(pd.DataFrame([met_dic]).round(3))
+tab
+```
+
+::: {.pequeno}
+Linhas: humano. Colunas: dicionário. A diagonal são os acertos.
+:::
+
+## TF-IDF: texto vira número
+
+<br/>
+
+Cada ementa vira um vetor com um peso por palavra (após limpeza):
+
+$$\text{tf-idf}(t, d) = \underbrace{\text{tf}(t, d)}_{\text{frequência na ementa}} \times \underbrace{\left[\log\frac{1 + D}{1 + \text{df}(t)} + 1\right]}_{\text{raridade no corpus}}$$
+
+- Palavras comuns a todas as ementas ("dispõe", "lei") pesam pouco
+- Palavras raras e específicas ("tipifica", "currículo") pesam muito
+- Sobre esses vetores, ajustamos uma **regressão logística multinomial** com penalização *L2*
+<!-- (`scikit-learn`) -->
+
+## Preparando a matriz documento-termo
+
+<br/>
+
+```{python}
+from sklearn.feature_extraction.text import TfidfVectorizer
+vetorizador = lambda: TfidfVectorizer(
+    lowercase=True, stop_words=STOPWORDS_PT,       # minúsculas, sem stopwords
+    token_pattern=r"(?u)\b[^\W\d_]{2,}\b",         # sem pontuação nem números
+    min_df=2)                                      # termos em pelo menos 2 ementas
+vet = vetorizador()
+X = vet.fit_transform(ouro["ementa"]); y = ouro["categoria"]
+print(X.shape)
+peso = pd.Series(np.asarray(X.sum(axis=0)).ravel(), index=vet.get_feature_names_out())
+peso.sort_values(ascending=False).head(12).round(2).to_frame("soma do tf-idf").T
+```
+
+## Validação cruzada com 10 dobras
+
+<br/>
+
+```{python}
+from sklearn.linear_model import LogisticRegressionCV
+from sklearn.model_selection import StratifiedKFold, cross_val_predict
+from sklearn.pipeline import make_pipeline
+modelo = make_pipeline(vetorizador(),     # o vetorizador fica DENTRO: o idf só vê o treino
+                       LogisticRegressionCV(Cs=10, cv=5, max_iter=5000, scoring="accuracy"))
+dobras = StratifiedKFold(n_splits=10, shuffle=True, random_state=2026)
+pred_ml = cross_val_predict(modelo, ouro["ementa"], y, cv=dobras)
+ouro["pred_ml"] = pred_ml
+print("ementas em cada dobra de teste:", [len(teste) for _, teste in dobras.split(ouro["ementa"], y)])
+```
+
+<br/>
+
+::: {.pequeno}
+Cada ementa é classificada por um modelo que **não a viu** no treino. Com $n$ = 120, é a única forma honesta de medir o acerto.
+:::
+
+## TF-IDF na amostra-ouro
+
+<br/>
+
+```{python}
+met_ml = resumo_metricas(ouro["categoria"], pred_ml)
+display(pd.DataFrame([met_ml]).round(3))
+pd.crosstab(pd.Categorical(y, CATEGORIAS), pd.Categorical(pred_ml, CATEGORIAS),
+            rownames=["humano"], colnames=["tfidf"], dropna=False)
+```
+
+## Comparando os baselines
+
+<br/>
+
+```{python}
+maj = ["REGULAR"] * len(ouro)
+baselines = pd.DataFrame([
+    {"metodo": "Dicionário (regex)",           **met_dic},
+    {"metodo": "TF-IDF + logística (CV 10)",   **met_ml},
+    {"metodo": "Classe majoritária (REGULAR)", **resumo_metricas(ouro["categoria"], maj)}])
+baselines.round(3)
+```
+
+<br/>
+
+::: {.callout-note}
+A classe majoritária acerta `{python} pc(baselines["acuracia"][2])`, mas tem **kappa zero**: não acerta nada além do acaso. Com classes desbalanceadas, a acurácia sozinha engana.
+:::
+
+## O dicionário "viu a prova"
+
+<br/>
+
+::: {.callout-warning title="Data leakage"}
+As regras do dicionário foram escritas **depois de ler as ementas do corpus**. Seu kappa (`{python} nf(met_dic["kappa"])`) é **otimista**.
+:::
+
+<br/>
+
+- Num estudo real: regras definidas **antes**, ou validadas em **dados novos** (projetos apresentados depois da coleta)
+- O mesmo vale para o LLM: os exemplos do prompt v3 são **fictícios** por esse motivo
+- E vale para a **escolha do modelo**: se a amostra-ouro foi usada para escolher, o kappa do vencedor também é otimista
+
+## O "mesmo" método, duas implementações
+
+<br/>
+
+```{python}
+base_r = pd.read_csv("resultados/tabelas/baselines.csv")
+(pd.concat([baselines.assign(trilha="Python"), base_r.assign(trilha="R")])
+   [["trilha", "metodo", "acuracia", "f1_macro", "kappa"]]
+   .sort_values(["metodo", "trilha"]).round(3).reset_index(drop=True))
+```
+
+<br/>
+
+::: {.pequeno}
+- R: `glmnet` (elastic-net + *stemming*).
+- Python: `scikit-learn` (L2, sem *stemming*).
+- "TF-IDF + logística" é uma **família** de escolhas, e cada escolha precisa ser relatada.
+:::
+
+## Resumo do bloco 3
+
+<br/>
+
+::: {.columns}
+::: {.column width="50%"}
+**Executamos**
+
+- dicionário em ementas de teste e na amostra-ouro
+- acurácia, F1 macro e kappa "na mão"
+- TF-IDF + logística com validação cruzada
+:::
+::: {.column width="50%"}
+**Levamos para os próximos blocos**
+
+- a régua: kappa do dicionário `{python} nf(met_dic["kappa"])`, do TF-IDF `{python} nf(met_ml["kappa"])`
+- `kappa_cohen()` e `resumo_metricas()`
+- a desconfiança saudável:
+  - **quem viu a prova?**
+:::
+:::

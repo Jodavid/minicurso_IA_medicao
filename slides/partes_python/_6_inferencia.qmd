@@ -1,0 +1,412 @@
+# 6 · Inferência com rótulos imperfeitos {background-color="#1c3f6e"}
+
+<!--
+::: {style="color:#c9d7ec"}
+`python/05_inferencia.ipynb` · `python/medicao.py`
+:::
+-->
+
+## O que vamos executar neste bloco
+
+<br/>
+
+1. Montar, para cada ementa, o rótulo do **LLM** ($f$) e o **humano** ($y$, só na amostra-ouro)
+2. Quatro estimadores da proporção PUNIR: **só humanos**, **ingênuo**, **PPI** e **PPI++**
+3. Conferir quem acerta o valor da referência completa
+4. Uma **simulação**: 1.000 amostras-ouro para cada tamanho, e a **cobertura** dos ICs
+5. A mesma pergunta **por campo político**
+
+## O problema
+
+<br/>
+
+Queremos $\theta$ = proporção de projetos **PUNIR**. Temos:
+
+- a **amostra-ouro**: $n$ = `{python} len(ouro)` ementas com rótulo humano $Y_j$ **e** do LLM $f(X_j)$
+- as outras $N$ = `{python} len(corpus) - len(ouro)` ementas, só com o rótulo do LLM $f(X_i)$
+
+::: {.pequeno}
+"Humano" = o rótulo de referência. Neste material ele ainda é preliminar e veio de outra IA; o método é o mesmo quando a referência for revisada por humanos.
+:::
+
+::: {.columns}
+::: {.column width="50%"}
+**Só humanos**
+$$\hat\theta_H = \bar Y_n$$
+sem viés, mas **impreciso**
+:::
+::: {.column width="50%"}
+**Ingênuo**
+$$\hat\theta_{LLM} = \bar f_{N+n}$$
+preciso, mas **enviesado** pelo erro do LLM
+:::
+:::
+
+## Montando $y$ e $f$
+
+```{python}
+PROMPT = re.search(r"v\d", melhor).group()
+t0 = llm[(llm["prompt_id"] == PROMPT) & (llm["temperatura"] == 0) & (llm["semente"] == 42)]
+dados = (corpus[["doc_id", "ano", "campo", "casa"]]
+         .merge(t0[["doc_id", "categoria_llm"]], on="doc_id", how="left")
+         .merge(ref[["doc_id", "categoria"]].rename(columns={"categoria": "categoria_ref"}),
+                on="doc_id", how="left"))
+dados["na_ouro"] = dados["doc_id"].isin(ouro["doc_id"])
+dados["f"] = (dados["categoria_llm"] == "PUNIR").astype(int)                       # LLM: 0/1
+dados["y"] = (dados["categoria_ref"] == "PUNIR").astype("Int64").where(dados["na_ouro"])  # humano: 0/1 ou NA
+display(dados[["doc_id", "campo", "categoria_llm", "na_ouro", "f", "y"]].head(6))
+lab, unl = dados[dados["na_ouro"]], dados[~dados["na_ouro"]]
+print(dict(n=len(lab), N=len(unl)))
+```
+
+## O "valor verdadeiro" (só porque é didático)
+
+<br/>
+<br/>
+
+```{python}
+verdade = (ref["categoria"] == "PUNIR").mean()
+print(verdade)
+```
+
+<br/>
+
+::: {.callout-note}
+Este corpus tem referência para **todas** as `{python} len(corpus)` ementas, então conhecemos $\theta$ = `{python} pc(verdade, 1)`. Numa pesquisa real, **não** conhecemos: por isso precisamos de estimadores com IC honesto. Aqui, podemos **conferir** quem acerta.
+:::
+
+## (a) Só humanos
+
+<br/>
+<br/>
+
+
+```{python}
+#| echo: false
+#| output: asis
+trecho(est_humano)
+```
+
+<br/>
+<br/>
+
+```{python}
+pd.DataFrame([est_humano(lab["y"])])
+```
+
+<br/>
+<br/>
+
+::: {.pequeno}
+Média da amostra-ouro, com erro-padrão $\sqrt{\hat p(1 - \hat p)/n}$. Desperdiça a informação das outras `{python} len(unl)` ementas.
+:::
+
+## (b) Ingênuo: o LLM como verdade
+
+<br/>
+
+```{python}
+pd.DataFrame([est_ingenuo(np.concatenate([lab["f"], unl["f"]]))])
+```
+
+Por que ele erra? Na amostra-ouro, temos **os dois** rótulos:
+
+```{python}
+display(pd.DataFrame([dict(LLM=lab["f"].mean(), humano=lab["y"].mean(),
+                            vies_estimado=lab["f"].mean() - lab["y"].mean())]))
+pd.crosstab(lab["y"], lab["f"], rownames=["humano"], colnames=["llm"])
+```
+
+::: {.pequeno}
+O LLM marca PUNIR em ementas que o humano não marca: os **falsos positivos** inflam a proporção. E o IC do ingênuo **ignora** esse erro.
+:::
+
+## (c) *Prediction-Powered Inference*
+
+<br/>
+
+Use a amostra-ouro para **medir o viés do LLM** e subtraia (Angelopoulos et al., *Science*, 2023):
+
+$$
+\hat\theta_{PP} = \underbrace{\frac{1}{N}\sum_{i=1}^{N} f(X_i)}_{\text{LLM no não rotulado}} \; - \; \underbrace{\frac{1}{n}\sum_{j=1}^{n}\big(f(X_j) - Y_j\big)}_{\text{viés do LLM medido na amostra-ouro (retificador)}}
+$$
+
+$$
+\widehat{\text{Var}}(\hat\theta_{PP}) = \frac{\hat\sigma^2_{f}}{N} + \frac{\hat\sigma^2_{f-Y}}{n}
+$$
+
+<br/>
+
+- **Nenhuma hipótese** sobre a qualidade do LLM: um LLM ruim gera retificador com variância alta → **IC largo**, não **IC errado**
+
+## PPI em cinco linhas
+
+<br/>
+<br/>
+
+```{python}
+#| echo: false
+#| output: asis
+trecho(est_ppi)
+```
+
+<br/>
+
+```{python}
+pd.DataFrame([est_ppi(lab["y"], lab["f"], unl["f"])])
+```
+
+## PPI passo a passo
+
+<br/>
+<br/>
+
+```{python}
+retificador = lab["f"] - lab["y"]
+pd.DataFrame([dict(media_f_N  = unl["f"].mean(),
+                   vies       = retificador.mean(),
+                   estimativa = unl["f"].mean() - retificador.mean(),
+                   ep         = np.sqrt(unl["f"].var() / len(unl) + retificador.var() / len(lab)))])
+```
+
+<br/>
+
+::: {.pequeno}
+O viés estimado é subtraído; o erro-padrão soma a incerteza do LLM no não rotulado e a do retificador na amostra-ouro.
+:::
+
+## (d) PPI++: quanto confiar no LLM?
+
+<br/>
+<br/>
+
+PPI++ (Angelopoulos, Duchi & Zrnic, 2023) pondera o LLM por $\lambda \in [0, 1]$, escolhido para **minimizar a variância**:
+
+$$
+\hat\theta_{PP}^{\lambda} = \bar Y_n + \lambda\big(\bar f_N - \bar f_n\big), \qquad
+\hat\lambda = \frac{\widehat{\text{Cov}}(Y, f)}{(1 + n/N)\,\widehat{\text{Var}}(f)}
+$$
+
+<br/>
+
+
+- LLM inútil → $\hat\lambda \to 0$: volta a ser o "só humanos"
+- LLM muito bom → $\hat\lambda \to 1$: aproxima-se do PPI
+
+## PPI++ em Python
+
+<br/>
+<br/>
+
+```{python}
+#| echo: false
+#| output: asis
+trecho(est_ppi_plus)
+```
+
+```{python}
+pd.DataFrame([est_ppi_plus(lab["y"], lab["f"], unl["f"])])
+```
+
+## Os quatro estimadores
+
+<br/>
+<br/>
+
+```{python}
+est = compara_estimadores(lab["y"], lab["f"], unl["f"])
+est = est.assign(largura=est["ls"] - est["li"],
+                 cobre_verdade=(est["li"] <= verdade) & (verdade <= est["ls"]))
+est.set_index("estimador").round(3)
+```
+
+```{python}
+#| echo: false
+pipe = pd.read_csv("resultados/python/tabelas/estimativas_punir.csv")
+confere = ("estimativas idênticas às de resultados/python/tabelas/estimativas_punir.csv"
+           if np.allclose(est["estimativa"], pipe["estimativa"]) else
+           "atenção: diferem de resultados/python/tabelas/")
+```
+
+<br/>
+
+::: {.pequeno}
+Valor na referência completa: **`{python} pc(verdade, 1)`**. Conferência com o pipeline: `{python} confere`.
+:::
+
+## A figura
+
+```{python}
+#| output-location: slide
+e = est.iloc[::-1]
+cores = e["estimador"].map(COR_EST)
+fig, ax = plt.subplots(figsize=(10, 4.2))
+ax.axvline(verdade, color=CINZA_ESCURO, lw=1.2, ls="--")
+ax.hlines(e["estimador"], e["li"], e["ls"], color=cores, lw=3)
+ax.scatter(e["estimativa"], e["estimador"], color=cores, s=60, zorder=3)
+ax.xaxis.set_major_formatter(pct)
+fig.suptitle("Que proporção dos projetos sobre IA quer PUNIR?", x=.01, ha="left", fontweight="bold")
+ax.set_title("IC 95% · linha tracejada: valor na referência completa",
+             fontsize=10, fontweight="normal", color=TINTA2)
+plt.show()
+```
+
+## Um resultado pode ser sorte
+
+<br/>
+
+Um único sorteio da amostra-ouro não diz se o método é bom. Então:
+
+1. Sorteie uma amostra-ouro de tamanho $n$ (30, 60 ou 120)
+2. Calcule os quatro estimadores e seus ICs
+3. Verifique se cada IC **contém** o valor verdadeiro
+4. Repita **1.000 vezes**
+
+**Cobertura** = proporção de repetições em que o IC contém a verdade. Um bom IC de 95% acerta em ~95%.
+
+## A simulação em Python
+
+<br/>
+
+```{python}
+import time
+def simula(n_ouro, B=1000, semente=1):
+    rng = np.random.default_rng(semente)
+    y_todos = (dados["categoria_ref"] == "PUNIR").astype(int).values
+    f_todos = dados["f"].values
+    res = []
+    for _ in range(B):
+        idx = rng.choice(len(dados), n_ouro, replace=False)             # nova amostra-ouro
+        resto = np.setdiff1d(np.arange(len(dados)), idx)
+        res.append(compara_estimadores(y_todos[idx], f_todos[idx], f_todos[resto]))
+    r = pd.concat(res)
+    r = r.assign(cobre=(r["li"] <= verdade) & (verdade <= r["ls"]), largura=r["ls"] - r["li"])
+    return (r.groupby("estimador", sort=False)
+             .agg(cobertura=("cobre", "mean"), largura_media=("largura", "mean"),
+                  vies=("estimativa", lambda x: x.mean() - verdade))
+             .reset_index().assign(n_ouro=n_ouro))
+inicio = time.time()
+sim = pd.concat([simula(n) for n in (30, 60, 120)], ignore_index=True)
+tempo = time.time() - inicio
+print(round(tempo, 1))
+```
+
+## Cobertura e largura
+
+<br/>
+
+```{python}
+(sim[["n_ouro", "estimador", "cobertura", "largura_media", "vies"]]
+ .sort_values("n_ouro", kind="stable").set_index(["n_ouro", "estimador"]).round(3))
+```
+
+## O IC ingênuo engana
+
+```{python}
+#| output-location: slide
+fig, ax = plt.subplots(figsize=(10, 4.6))
+ax.axhline(.95, color=TINTA2, ls="--")
+for nome, dd in sim.groupby("estimador", sort=False):
+    ax.plot(dd["n_ouro"].astype(str), dd["cobertura"], "o-", color=COR_EST[nome], lw=2, label=nome)
+ax.set_ylim(0, 1.02); ax.yaxis.set_major_formatter(pct)
+ax.set_xlabel("Tamanho da amostra-ouro"); ax.set_ylabel("Cobertura")
+ax.set_title("Com que frequência o IC de 95% contém a verdade?")
+ax.legend(frameon=False, loc="center right")
+plt.show()
+```
+
+## O preço da honestidade
+
+```{python}
+#| output-location: slide
+fig, ax = plt.subplots(figsize=(10, 4.6))
+for nome, dd in sim.groupby("estimador", sort=False):
+    ax.plot(dd["n_ouro"].astype(str), dd["largura_media"], "o-", color=COR_EST[nome], lw=2, label=nome)
+ax.yaxis.set_major_formatter(pct)
+ax.set_xlabel("Tamanho da amostra-ouro"); ax.set_ylabel("Largura média")
+fig.suptitle("Largura média do IC de 95%", x=.01, ha="left", fontweight="bold")
+ax.set_title("O ingênuo é estreito porque ignora o erro do LLM",
+             fontsize=10, fontweight="normal", color=TINTA2)
+ax.legend(frameon=False, loc="upper right")
+plt.show()
+```
+
+## E entre campos políticos?
+
+```{python}
+linhas = []
+for campo, d in dados[dados["campo"].isin(["Esquerda", "Centro", "Direita"])].groupby("campo"):
+    l, u = d[d["na_ouro"]], d[~d["na_ouro"]]
+    linhas.append(compara_estimadores(l["y"], l["f"], u["f"])
+                  .assign(campo=campo, n_ouro=len(l), verdade=(d["categoria_ref"] == "PUNIR").mean()))
+por_campo = pd.concat(linhas, ignore_index=True)
+por_campo.set_index(["campo", "estimador"])[["n_ouro", "estimativa", "li", "ls", "verdade"]].round(3)
+```
+
+## Por campo: a figura
+
+```{python}
+#| output-location: slide
+ests = ["Só humanos (amostra-ouro)", "Ingênuo (LLM = verdade)", "PPI"]
+fig, axs = plt.subplots(3, 1, figsize=(10, 4.6), sharex=True)
+for ax, campo in zip(axs, ["Centro", "Direita", "Esquerda"]):
+    dd = por_campo[por_campo["campo"] == campo].set_index("estimador").loc[ests[::-1]]
+    cores = [COR_EST[i] for i in dd.index]
+    ax.axvline(dd["verdade"].iloc[0], color=CINZA_ESCURO, lw=1, ls="--")
+    ax.hlines(dd.index, dd["li"].clip(0), dd["ls"], color=cores, lw=3)
+    ax.scatter(dd["estimativa"], dd.index, color=cores, s=50, zorder=3)
+    ax.set_title(campo, fontsize=11)
+axs[-1].xaxis.set_major_formatter(pct)
+fig.tight_layout(); plt.show()
+```
+
+## O que os números dizem
+
+```{python}
+#| echo: false
+s120 = sim[sim["n_ouro"] == 120].set_index("estimador")
+```
+
+<br/>
+
+::: {.incremental}
+- **O ingênuo superestima** a proporção punitiva (`{python} pc(est["estimativa"].iloc[1], 1)` × `{python} pc(verdade, 1)`) e seu IC cobriu a verdade em **`{python} pc(s120.loc["Ingênuo (LLM = verdade)", "cobertura"])`** das simulações
+- **PPI e PPI++ corrigem o viés**: cobertura de `{python} pc(s120.loc["PPI", "cobertura"], 1)` e `{python} pc(s120.loc["PPI++", "cobertura"], 1)` com $n$ = 120
+- **PPI++ é mais estreito** que o "só humanos": `{python} pc(1 - s120.loc["PPI++", "largura_media"] / s120.loc["Só humanos (amostra-ouro)", "largura_media"])` a menos de largura, em média
+- Com $n$ = 30, todos ficam abaixo de 95%: amostras-ouro muito pequenas comprometem a aproximação normal
+- **Por campo**, `{python} int(por_campo["n_ouro"].min())` a `{python} int(por_campo["n_ouro"].max())` ementas na ouro: intervalos largos e sobrepostos. **Não há evidência** de diferença entre campos
+:::
+
+## A resposta substantiva
+
+<br/>
+
+::: {.callout-important title="Ilustrativa, enquanto a referência for preliminar"}
+Pelo **PPI++**, cerca de **`{python} pc(est["estimativa"].iloc[3])`** dos projetos sobre IA no Congresso querem **punir** (IC 95% de `{python} pc(est["li"].iloc[3])` a `{python} pc(est["ls"].iloc[3])`). Cerca de metade **regula** (`{python} pc((ref["categoria"] == "REGULAR").mean())` na referência).
+:::
+
+<br/>
+
+E a resposta metodológica: **o LLM ajudou**, mas só porque medimos seu erro e o levamos para dentro do intervalo de confiança.
+
+## Resumo do bloco 6
+
+<br/>
+
+::: {.columns}
+::: {.column width="50%"}
+**Executamos**
+
+- os quatro estimadores, passo a passo
+- conferência com a referência completa
+- simulação de cobertura (`{python} round(tempo)` s)
+- estimativas por campo político
+:::
+::: {.column width="50%"}
+**A lição**
+
+- rótulo de LLM **não é** dado observado
+- a amostra-ouro tem **dois papéis**: validar e **corrigir**
+- relatar $n$ da amostra-ouro **em cada grupo**
+:::
+:::

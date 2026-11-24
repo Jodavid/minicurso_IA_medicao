@@ -1,23 +1,28 @@
 # 3 · Baselines: quanto se acerta **sem** LLM? {background-color="#1c3f6e"}
 
-::: {style="color:#c9d7ec"}
+<!-- ::: {style="color:#c9d7ec"}
 `R/03_baselines.R` · `R/funcoes_medicao.R`
-:::
+::: -->
 
 ## O que vamos executar neste bloco
 
 <br/>
 
 1. Um **dicionário**: expressões regulares que traduzem o livro de códigos em regras
-2. As **métricas** de acerto, implementadas "na mão": acurácia, F1 macro, **kappa**
+2. As **métricas** de acerto, implementadas "na mão": acurácia, F1, **kappa**
 3. Um modelo clássico: **TF-IDF + regressão logística**, com **validação cruzada**
-4. A comparação com o **piso**: chutar sempre a classe mais frequente
+4. A comparação com o **piso**: alocar sempre para a classe mais frequente
+
+<br/>
+<br/>
 
 ::: {.callout-note title="Por que baselines"}
 Um LLM só "vale a pena" se superar instrumentos mais baratos e mais transparentes **de forma estatisticamente consistente**. Isso é uma afirmação a testar, não uma impressão.
 :::
 
 ## O dicionário: regras explícitas
+
+<br/>
 
 ```{r}
 names(REGEX)
@@ -26,7 +31,11 @@ strwrap(REGEX$ia, 100)
 strwrap(REGEX$promover, 100)
 ```
 
-## `classifica_dicionario()`
+## Função para classificar para as regras 
+
+<!-- `classifica_dicionario()` -->
+
+<br/>
 
 ```{r}
 #| eval: false
@@ -54,11 +63,17 @@ tibble(ementa = exemplos, dicionario = classifica_dicionario(exemplos),
        eleitoral = eleitoral_dicionario(exemplos))
 ```
 
+<br/>
+
+
 ::: {.pequeno}
 A 5ª ementa: "penalidades" sem crime, REGULAR pelo livro de códigos. O dicionário acertou porque `\bpenas?\b` não casa com "penalidades".
 :::
 
 ## Aplicando à amostra-ouro
+
+<br/>
+
 
 ```{r}
 ouro <- carrega_ouro() |>
@@ -69,36 +84,130 @@ ouro |> transmute(doc_id, humano = categoria, dicionario = pred_dic,
                   ementa = str_trunc(ementa, 70)) |> head(8)
 ```
 
-## Como medir o acerto?
 
-<br/>
+
+## Matriz de confusão — Caso multiclasse
+
+Linhas representam as classes reais e colunas as classes preditas. **Diagonal principal:** classificações corretas.
+
+$$
+\begin{array}{c|ccc|c}
+ & \hat{C}_1 & \hat{C}_2 & \hat{C}_3 & \text{Total}\\
+\hline
+C_1 & n_{11} & n_{12} & n_{13} & n_{1\cdot}\\
+C_2 & n_{21} & n_{22} & n_{23} & n_{2\cdot}\\
+C_3 & n_{31} & n_{32} & n_{33} & n_{3\cdot}\\
+\hline
+\text{Total} & n_{\cdot1} & n_{\cdot2} & n_{\cdot3} & N
+\end{array}
+$$
+
+- $n_{ij}$: exemplos da classe real $C_i$ preditos como $C_j$.
+- $n_{i\cdot}=\sum_j n_{ij}$: total da classe real $C_i$.
+- $n_{\cdot j}=\sum_i n_{ij}$: total predito como $\hat{C}_j$.
+- $N=\sum_i\sum_j n_{ij}$: total de exemplos.
+
+
+
+
+
+## Como medir o desempenho?
+
+Para cada classe $C_c$, considerando as demais como uma única classe:
+
+$$
+TP_c=n_{cc},\quad
+FP_c=n_{\cdot c}-n_{cc},\quad
+FN_c=n_{c\cdot}-n_{cc}
+$$
 
 ::: {.columns}
 ::: {.column width="50%"}
-**Acurácia**: proporção de acertos
 
-**F1 macro**: média do F1 de cada categoria
-$$F1_c = \frac{2\,TP_c}{2\,TP_c + FP_c + FN_c}$$
-dá o mesmo peso às categorias raras
+**Acurácia**
+
+$$
+\text{Acc}=
+\frac{\sum_{c=1}^{C}n_{cc}}{N}
+$$
+
+**Precisão**
+
+$$
+P_c=\frac{TP_c}{TP_c+FP_c}
+$$
+
 :::
 ::: {.column width="50%"}
-**Kappa de Cohen**: acerto **além do acaso**
-$$\kappa = \frac{p_o - p_e}{1 - p_e}$$
 
-- $p_o$: concordância observada
-- $p_e$: concordância esperada se os dois rotulassem ao acaso, mantendo suas proporções
-- 0,4 moderada · 0,6 substancial · 0,8 quase perfeita (Landis & Koch)
+**Revocação (Recall)**
+
+$$
+R_c=\frac{TP_c}{TP_c+FN_c}
+$$
+
+**F1 macro**
+
+$$
+F1_{\text{macro}}=
+\frac{1}{C}\sum_{c=1}^{C}
+\frac{2P_cR_c}{P_c+R_c}
+$$
+
 :::
 :::
 
+**Destaque:** o F1 macro atribui o mesmo peso a todas as classes, inclusive às raras.
+
+
+
+## Concordância além do acaso
+
+O Kappa desconta da concordância observada aquela esperada ao acaso.
+
+$$
+\kappa=\frac{p_o-p_e}{1-p_e}
+$$
+
+**Concordância observada**
+
+$$
+p_o=\frac{\sum_{c=1}^{C}n_{cc}}{N}
+$$
+
+**Concordância esperada ao acaso**
+
+$$
+p_e=\sum_{c=1}^{C}
+\frac{n_{c\cdot}}{N}
+\frac{n_{\cdot c}}{N}
+$$
+
+<!-- **Interpretação (Landis & Koch)**
+
+| $\kappa$ | Concordância |
+|:---:|---|
+| $\leq 0$ | Ausente |
+| 0,01–0,20 | Leve |
+| 0,21–0,40 | Razoável |
+| 0,41–0,60 | Moderada |
+| 0,61–0,80 | Substancial |
+| 0,81–1,00 | Quase perfeita | -->
+
+
+<!--
 ## O kappa "na mão"
 
 ```{r}
 #| eval: false
 #| code: !expr trecho("R/funcoes_medicao.R", "kappa_cohen")
 ```
+-->
+
 
 ## O kappa do dicionário, passo a passo
+
+<br/>
 
 ```{r}
 tab <- table(humano = factor(ouro$categoria, levels = CATEGORIAS),
@@ -111,6 +220,8 @@ kappa_cohen(ouro$categoria, ouro$pred_dic)
 ```
 
 ## O dicionário na amostra-ouro
+
+<br/>
 
 ```{r}
 met_dic <- resumo_metricas(ouro$categoria, ouro$pred_dic)
@@ -126,15 +237,18 @@ Linhas: humano. Colunas: dicionário. A diagonal são os acertos.
 
 <br/>
 
-Cada ementa vira um vetor com um peso por palavra (após limpeza e *stemming*):
+Cada ementa vira um vetor com um peso por palavra (após limpeza):
 
 $$\text{tf-idf}(t, d) = \underbrace{\text{tf}(t, d)}_{\text{frequência na ementa}} \times \underbrace{\log\frac{D}{\text{df}(t)}}_{\text{raridade no corpus}}$$
 
 - Palavras comuns a todas as ementas ("dispõe", "lei") pesam pouco
 - Palavras raras e específicas ("tipifica", "currículo") pesam muito
-- Sobre esses vetores, ajustamos uma **regressão logística multinomial** com penalização *elastic-net* (`glmnet`)
+- Sobre esses vetores, ajustamos uma **regressão logística multinomial** com penalização *elastic-net*
+<!-- (`glmnet`) -->
 
 ## Preparando a matriz documento-termo
+
+<br/>
 
 ```{r}
 library(tm)
@@ -155,6 +269,8 @@ sort(colSums(X), decreasing = TRUE)[1:12] |> round(2)
 
 ## Validação cruzada com 10 dobras
 
+<br/>
+
 ```{r}
 #| cache: true
 library(glmnet)
@@ -170,11 +286,15 @@ for (k in 1:10) {
 table(dobras)
 ```
 
+<br/>
+
 ::: {.pequeno}
 Cada ementa é classificada por um modelo que **não a viu** no treino. Com $n$ = 120, é a única forma honesta de medir o acerto.
 :::
 
 ## TF-IDF na amostra-ouro
+
+<br/>
 
 ```{r}
 met_ml <- resumo_metricas(ouro$categoria, pred_ml)
@@ -183,6 +303,8 @@ table(humano = y, tfidf = pred_ml)
 ```
 
 ## Comparando os baselines
+
+<br/>
 
 ```{r}
 maj <- factor(rep("REGULAR", nrow(ouro)), levels = CATEGORIAS)
@@ -193,6 +315,8 @@ baselines <- bind_rows(
   .id = "metodo")
 baselines
 ```
+
+<br/>
 
 ::: {.callout-note}
 A classe majoritária acerta `r pc(baselines$acuracia[3])`, mas tem **kappa zero**: não acerta nada além do acaso. Com classes desbalanceadas, a acurácia sozinha engana.
@@ -214,6 +338,8 @@ As regras do dicionário foram escritas **depois de ler as ementas do corpus**. 
 
 ## O "mesmo" método, duas implementações
 
+<br/>
+
 ```{r}
 base_py <- read_csv("resultados/python/tabelas/baselines.csv")
 bind_rows(R = baselines, Python = base_py, .id = "trilha") |>
@@ -221,8 +347,12 @@ bind_rows(R = baselines, Python = base_py, .id = "trilha") |>
   arrange(metodo, trilha)
 ```
 
+<br/>
+
 ::: {.pequeno}
-R: `glmnet` (elastic-net + *stemming*). Python: `scikit-learn` (L2, sem *stemming*). "TF-IDF + logística" é uma **família** de escolhas, e cada escolha precisa ser relatada.
+- R: `glmnet` (elastic-net + *stemming*).
+- Python: `scikit-learn` (L2, sem *stemming*).
+- "TF-IDF + logística" é uma **família** de escolhas, e cada escolha precisa ser relatada.
 :::
 
 ## Resumo do bloco 3
@@ -242,6 +372,7 @@ R: `glmnet` (elastic-net + *stemming*). Python: `scikit-learn` (L2, sem *stemmin
 
 - a régua: kappa do dicionário `r nf(met_dic$kappa)`, do TF-IDF `r nf(met_ml$kappa)`
 - `kappa_cohen()` e `resumo_metricas()`
-- a desconfiança saudável: **quem viu a prova?**
+- a desconfiança saudável:
+  - **quem viu a prova?**
 :::
 :::

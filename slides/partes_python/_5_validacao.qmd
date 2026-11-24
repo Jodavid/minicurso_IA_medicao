@@ -1,0 +1,547 @@
+# 5 · Validação: o instrumento mede o que diz medir? {background-color="#1c3f6e"}
+
+<!-- ::: {style="color:#c9d7ec"}
+`python/04_validacao.ipynb` · `python/medicao.py`
+::: -->
+
+## O que vamos executar neste bloco
+
+<br/>
+
+1. **Validade:** comparar cada instrumento com a amostra-ouro, com **IC bootstrap**
+2. **Onde erra:** matriz de confusão e as ementas que o LLM erra
+3. **Viés diferencial:** o erro é igual entre campos políticos?
+4. **Confiabilidade:** alfa de Krippendorff entre **sementes** e entre **prompts**
+5. A variável **eleitoral** e a concordância **humano × humano**
+
+## Quatro perguntas
+
+<br/>
+
+| Pergunta | Propriedade | Ferramenta |
+|---|---|---|
+| Ele acerta? | validade | acurácia, F1, kappa + IC 95% |
+| Onde erra? | estrutura do erro | matriz de confusão |
+| Erra igual para todos? | viés diferencial | acurácia e viés em PUNIR por campo |
+| Mede sempre igual? | confiabilidade | alfa de Krippendorff |
+
+<br/>
+
+::: {.pequeno}
+As duas primeiras precisam de rótulo humano.
+
+A última, **não**:
+
+  - estabilidade se mede comparando o instrumento com ele mesmo.
+:::
+
+## Juntando LLM e amostra-ouro
+
+<br/>
+
+```{python}
+def rotulo_run(run_id):
+    p, t, s = re.search(r"__(v\d)__t([0-9.]+)__s(\d+)", run_id).groups()
+    return f"LLM {p} (t=0)" if (t == "0.0" and s == "42") else f"LLM {p} (t={t}, s={s})"
+
+llm["instrumento"] = llm["run_id"].map(rotulo_run)
+aval = llm.merge(ouro[["doc_id", "categoria"]], on="doc_id")
+
+aval.groupby("instrumento").size().rename("n").to_frame()
+```
+
+## Métricas pontuais de cada instrumento
+
+<br/>
+
+```{python}
+pontual = pd.DataFrame([{"instrumento": nome, **resumo_metricas(d["categoria"], d["categoria_llm"])}
+                        for nome, d in aval.groupby("instrumento")])
+pontual.set_index("instrumento").sort_values("kappa", ascending=False).round(3)
+```
+
+<br/>
+
+::: {.pequeno}
+Com $n$ = 120, qual diferença entre essas linhas é **real**? Precisamos de intervalos.
+:::
+
+## Bootstrap: a incerteza de uma métrica
+
+<br/>
+
+```{python}
+#| echo: false
+#| output: asis
+trecho(boot_ic)
+```
+
+<br/>
+
+1. Sorteie 120 ementas **com reposição**
+2. Calcule o kappa nessa amostra
+3. Repita 2.000 vezes
+4. O IC 95% vai do percentil 2,5 ao 97,5
+
+## O bootstrap do LLM v2, por dentro
+
+<br/>
+
+```{python}
+#| output-location: column
+d = aval[aval["instrumento"] == "LLM v2 (t=0)"]
+v, p = d["categoria"].values, d["categoria_llm"].values
+rng = np.random.default_rng(2026)
+boot = []
+for _ in range(2000):
+    i = rng.integers(0, len(d), len(d))
+    boot.append(kappa_cohen(v[i], p[i]))
+ic = np.quantile(boot, [.025, .975])
+fig, ax = plt.subplots(figsize=(5.5, 4.6))
+ax.hist(boot, bins=40, color=AZUIS[1])
+for x in ic:
+    ax.axvline(x, color=TINTA, ls="--")
+ax.set_title(f"IC 95%: {ic[0]:.2f} a {ic[1]:.2f}")
+plt.show()
+```
+
+## A tabela de validade
+
+<br/>
+
+```{python}
+linhas = []
+for nome, d in aval.groupby("instrumento"):
+    li, ls = boot_ic(d["categoria"], d["categoria_llm"])
+    linhas.append({"instrumento": nome, **resumo_metricas(d["categoria"], d["categoria_llm"]),
+                   "kappa_li": li, "kappa_ls": ls})
+metricas_llm = pd.DataFrame(linhas)
+linhas = []
+for nome, pred in [("Dicionário (regex)", ouro["pred_dic"]),
+                   ("TF-IDF + logística (CV 10)", ouro["pred_ml"])]:
+    li, ls = boot_ic(ouro["categoria"], pred)
+    linhas.append({"instrumento": nome, **resumo_metricas(ouro["categoria"], pred),
+                   "kappa_li": li, "kappa_ls": ls})
+metricas_base = pd.DataFrame(linhas)
+metricas = (pd.concat([metricas_base, metricas_llm], ignore_index=True)
+            .sort_values("kappa", ascending=False, kind="stable").reset_index(drop=True))
+```
+
+## A tabela de validade: o resultado
+
+<br/>
+<br/>
+
+```{python}
+metricas.drop(columns="n").set_index("instrumento").round(2)
+```
+
+## Confere com o pipeline?
+
+<br/>
+
+```{python}
+oficial = pd.read_csv("resultados/python/tabelas/validade_instrumentos.csv")
+(metricas[["instrumento", "kappa", "kappa_li", "kappa_ls"]]
+ .merge(oficial[["instrumento", "kappa", "kappa_li"]]
+        .rename(columns={"kappa": "kappa_pipeline", "kappa_li": "li_pipeline"}), on="instrumento")
+ .set_index("instrumento").round(3))
+```
+
+<br/>
+
+::: {.pequeno}
+Mesmas sementes, mesmos números.
+ <!-- o slide refez o que `python/04_validacao.ipynb` grava em `resultados/python/tabelas/`. -->
+:::
+
+## Validade: a figura
+
+<br/>
+<br/>
+
+```{python}
+#| output-location: slide
+llm_t0 = metricas_llm[metricas_llm["instrumento"].str.contains(r"t=0\)")]
+melhor = llm_t0.loc[llm_t0["kappa"].idxmax(), "instrumento"]
+
+m = metricas.sort_values("kappa", kind="stable")
+cores = [AZUIS[2] if i.startswith("LLM") else CINZA for i in m["instrumento"]]
+fig, ax = plt.subplots(figsize=(10, 4.6))
+for x in (.4, .6, .8):
+    ax.axvline(x, color=GRADE, ls="--", lw=1)
+ax.hlines(m["instrumento"], m["kappa_li"], m["kappa_ls"], colors=cores, lw=3)
+ax.scatter(m["kappa"], m["instrumento"], color=cores, s=60, zorder=3)
+ax.scatter([], [], color=CINZA, label="Baseline clássico")
+ax.scatter([], [], color=AZUIS[2], label="LLM (S5-nano instruct, local)")
+ax.set_xlim(0, 1); ax.set_xlabel("Kappa de Cohen"); ax.legend(frameon=False, loc="upper left")
+fig.suptitle("Validade: concordância de cada instrumento com a amostra-ouro",
+             x=.01, ha="left", fontweight="bold")
+ax.set_title("Kappa de Cohen com IC 95% bootstrap (n = 120 ementas)",
+             fontsize=10, fontweight="normal", color=TINTA2)
+plt.show()
+```
+
+## Três leituras da tabela
+
+```{python}
+#| echo: false
+k = metricas.set_index("instrumento")["kappa"]
+```
+
+<br/>
+<br/>
+
+::: {.incremental}
+1. **O prompt importa:** o melhor LLM (`{python} melhor`, kappa `{python} nf(k[melhor])`) supera a versão sem definições (v1, kappa `{python} nf(k["LLM v1 (t=0)"])`)
+
+<br/>
+
+2. **LLM × dicionário:** kappa `{python} nf(k[melhor])` × `{python} nf(k["Dicionário (regex)"])`, com **intervalos sobrepostos**: com 120 ementas, não há evidência de diferença. E o dicionário viu a prova
+
+<br/>
+
+3. **LLM × TF-IDF:** o modelo clássico (`{python} nf(k["TF-IDF + logística (CV 10)"])`) precisaria de muito mais exemplos rotulados
+:::
+
+## Onde o instrumento erra
+
+::: {.columns}
+::: {.column width="55%"}
+```{python}
+erro = aval[aval["instrumento"] == melhor]
+pd.crosstab(pd.Categorical(erro["categoria"], CATEGORIAS),
+            pd.Categorical(erro["categoria_llm"], CATEGORIAS),
+            rownames=["humano"], colnames=["llm"], dropna=False)
+```
+:::
+::: {.column width="45%"}
+```{python}
+(erro.groupby(["categoria", "categoria_llm"]).size()
+   .rename("n").reset_index()
+   .rename(columns={"categoria": "humano",
+                    "categoria_llm": "llm"})
+   .query("humano != llm")
+   .sort_values("n", ascending=False)
+   .set_index("humano"))
+```
+:::
+:::
+
+::: {.pequeno}
+Erros não são iguais: confundir REGULAR com PUNIR **infla** a proporção punitiva que vamos estimar; confundir REGULAR com PROMOVER não a afeta.
+:::
+
+## Matriz de confusão: a figura
+
+<br/>
+<br/>
+
+```{python}
+#| output-location: slide
+conf = pd.crosstab(pd.Categorical(erro["categoria"], CATEGORIAS),
+                   pd.Categorical(erro["categoria_llm"], CATEGORIAS), dropna=False)
+prop = conf.div(conf.sum(axis=1), axis=0)
+azul = plt.matplotlib.colors.LinearSegmentedColormap.from_list("azul", ["#eef4fc", AZUIS[2]])
+fig, ax = plt.subplots(figsize=(8, 4.4))
+im = ax.imshow(prop.values, cmap=azul, vmin=0, vmax=1)
+for i in range(4):
+    for j in range(4):
+        ax.text(j, i, conf.values[i, j], ha="center", va="center", fontsize=13,
+                color="white" if prop.values[i, j] > .5 else TINTA)
+ax.set_xticks(range(4), CATEGORIAS); ax.set_yticks(range(4), CATEGORIAS); ax.grid(False)
+ax.set_xlabel("Rótulo do LLM"); ax.set_ylabel("Rótulo humano")
+fig.colorbar(im, ax=ax, format=pct, label="% da linha")
+fig.suptitle(f"Onde o instrumento erra: {melhor}", x=.01, ha="left", fontweight="bold")
+ax.set_title("Linhas: codificação humana · Colunas: LLM · Cor: % da linha",
+             fontsize=10, fontweight="normal", color=TINTA2)
+plt.show()
+```
+
+## As ementas que o LLM errou
+
+```{python}
+(erro[erro["categoria"] != erro["categoria_llm"]]
+ .merge(corpus[["doc_id", "ementa"]], on="doc_id")
+ .assign(ementa=lambda x: x["ementa"].map(lambda s: textwrap.shorten(s, 95, placeholder="...")))
+ .rename(columns={"categoria": "humano", "categoria_llm": "llm"})
+ .set_index("doc_id")[["humano", "llm", "ementa"]]
+ .head(8))
+```
+
+::: {.pequeno}
+**Pergunta para a turma:** em quais destes o LLM tem razão e a referência deveria ser revista?
+:::
+
+## Viés diferencial: a ideia
+
+<br/>
+<br/>
+
+Acurácia alta **na média** não garante comparações válidas **entre grupos**.
+
+<br/>
+
+::: {.incremental}
+- Se o LLM erra mais nas ementas de um campo político, qualquer comparação **entre campos** feita com seus rótulos estará enviesada
+- Isso é relevante porque o **viés político** de LLMs está documentado (Motoki et al., 2024; Rozado, 2024)
+- O que medir por grupo: **acurácia** e, principalmente, o **viés na quantidade que vamos estimar** (proporção PUNIR do LLM − do humano)
+:::
+
+## Viés por campo político
+
+<br/>
+
+```{python}
+dif = erro.merge(corpus[["doc_id", "campo", "casa"]], on="doc_id")
+dif = dif.assign(punir_h=dif["categoria"] == "PUNIR", punir_l=dif["categoria_llm"] == "PUNIR",
+                 acerto=dif["categoria"] == dif["categoria_llm"])
+vies_campo = (dif[dif["campo"] != "Sem partido/Outro"]
+              .groupby("campo")
+              .agg(n=("acerto", "size"), acuracia=("acerto", "mean"),
+                   prop_punir_humano=("punir_h", "mean"), prop_punir_llm=("punir_l", "mean")))
+vies_campo["vies_punir"] = vies_campo["prop_punir_llm"] - vies_campo["prop_punir_humano"]
+vies_campo["ep"] = np.sqrt(vies_campo["acuracia"] * (1 - vies_campo["acuracia"]) / vies_campo["n"])
+vies_campo["li"] = vies_campo["acuracia"] - 1.96 * vies_campo["ep"]
+vies_campo["ls"] = vies_campo["acuracia"] + 1.96 * vies_campo["ep"]
+vies_campo.round(3)
+```
+
+## Viés diferencial: a figura
+
+```{python}
+#| output-location: slide
+v = vies_campo.sort_values("acuracia")
+fig, ax = plt.subplots(figsize=(10, 4.2))
+ax.hlines(v.index, v["li"].clip(0), v["ls"].clip(upper=1), color=AZUIS[2], lw=3)
+ax.scatter(v["acuracia"], v.index, color=AZUIS[2], s=60, zorder=3)
+for campo, r in v.iterrows():
+    ax.annotate(f"n = {int(r.n)}", (r.acuracia, campo), xytext=(0, 10),
+                textcoords="offset points", ha="center", color=TINTA2, fontsize=10)
+ax.set_xlim(0, 1); ax.xaxis.set_major_formatter(pct); ax.set_xlabel("Acurácia")
+ax.set_title("O acerto do LLM varia por campo político do autor?")
+plt.show()
+```
+
+## Um teste formal
+
+<br/>
+
+```{python}
+from scipy.stats import chi2_contingency
+d3 = dif[dif["campo"] != "Sem partido/Outro"]
+tab = pd.crosstab(d3["campo"], d3["acerto"])
+teste = chi2_contingency(tab, lambda_="log-likelihood")   # razão de verossimilhança
+display(tab)
+print(f"Desvio (G²) = {teste.statistic:.3f}  gl = {teste.dof}  p = {teste.pvalue:.3f}")
+```
+
+::: {.callout-note}
+Não rejeitar não é o mesmo que **descartar** o viés: com `{python} int(vies_campo["n"].min())` a `{python} int(vies_campo["n"].max())` ementas por campo, o teste tem pouco poder. A lição: **com esta amostra-ouro, não é possível descartar viés diferencial**.
+:::
+
+## Confiabilidade: o instrumento é estável?
+
+<br/>
+
+Duas fontes de instabilidade, **sem precisar de rótulo humano**:
+
+- **Teste-reteste:** mesmo prompt (v2), mesma ementa, temperatura 0,8, **três sementes**
+- **Sensibilidade ao prompt:** mesmo modelo, temperatura 0, **três redações** (v1, v2, v3)
+
+**Alfa de Krippendorff** (nominal): generaliza o kappa para $k$ codificadores e aceita faltantes
+
+$$\alpha = 1 - \frac{D_o}{D_e} \qquad D_o: \text{discordância observada} \quad D_e: \text{esperada ao acaso}$$
+
+<!--
+
+## O alfa "na mão"
+
+::: {.menor}
+```{python}
+#| echo: false
+#| output: asis
+trecho(alfa_krippendorff)
+```
+:::
+-->
+
+
+
+## O alfa num exemplo pequeno
+
+<br/>
+
+Três codificadores fictícios, seis ementas:
+
+```{python}
+m = pd.DataFrame([["PUNIR",    "PUNIR",   "PUNIR"],
+                  ["REGULAR",  "REGULAR", "PROMOVER"],
+                  ["REGULAR",  "REGULAR", "REGULAR"],
+                  ["OUTRO",    "OUTRO",   None],
+                  ["PROMOVER", "REGULAR", "PROMOVER"],
+                  ["REGULAR",  "REGULAR", "REGULAR"]])
+print(alfa_krippendorff(m))
+print(alfa_krippendorff(m.iloc[:, :2]))
+```
+
+::: {.pequeno}
+`m` é a matriz de rótulos (ementas × codificadores). Dentro de `alfa_krippendorff()`, ela vira a matriz de **coincidências**, que conta pares de rótulos dentro de cada ementa; a diagonal são concordâncias. Sem o terceiro codificador, a concordância muda.
+:::
+
+## Teste-reteste: trocar a semente
+
+<br/>
+
+```{python}
+largo_seed = (llm[(llm["prompt_id"] == "v2") & (llm["temperatura"] > 0)]
+              .pivot(index="doc_id", columns="semente", values="categoria_llm")
+              .add_prefix("s"))
+display(largo_seed.head(4))
+alfa_reteste = alfa_krippendorff(largo_seed)
+muda_seed = (largo_seed.nunique(axis=1) > 1).mean()
+pd.DataFrame([dict(alfa=alfa_reteste, prop_que_muda=muda_seed)])
+```
+
+## Sensibilidade ao prompt: trocar a redação
+
+
+<br/>
+
+```{python}
+largo_prompt = (llm[(llm["temperatura"] == 0) & (llm["semente"] == 42)]
+                .pivot(index="doc_id", columns="prompt_id", values="categoria_llm"))
+alfa_prompt = alfa_krippendorff(largo_prompt)
+muda_prompt = (largo_prompt.nunique(axis=1) > 1).mean()
+pd.DataFrame(dict(comparacao=["Teste-reteste (v2, t=0,8, 3 sementes)",
+                              "Sensibilidade ao prompt (v1, v2, v3; t=0)"],
+                  alfa=[alfa_reteste, alfa_prompt],
+                  prop_ementas_que_mudam=[muda_seed, muda_prompt])).set_index("comparacao")
+```
+
+<br/>
+
+::: {.callout-important}
+**O prompt importa muito mais que o acaso:** trocar a semente muda `{python} pc(muda_seed)` das ementas; trocar o prompt muda `{python} pc(muda_prompt)`.
+:::
+
+## Ementas que mudam com o prompt
+
+<br/>
+
+```{python}
+lp = largo_prompt.reset_index()
+(lp[(lp["v1"] != lp["v2"]) | (lp["v2"] != lp["v3"])]
+ .merge(corpus[["doc_id", "ementa"]], on="doc_id")
+ .merge(ref[["doc_id", "categoria"]].rename(columns={"categoria": "ref"}), on="doc_id")
+ .assign(ementa=lambda x: x["ementa"].map(lambda s: textwrap.shorten(s, 70, placeholder="...")))
+ .set_index("doc_id")[["v1", "v2", "v3", "ref", "ementa"]]
+ .head(8))
+```
+
+## A medida agregada também muda
+
+<br/>
+
+```{python}
+#| output-location: slide
+dist_all = (llm[(llm["temperatura"] == 0) & (llm["semente"] == 42)]
+            .groupby("prompt_id")["categoria_llm"].value_counts(normalize=True)
+            .unstack(fill_value=0))
+dist_all.loc["Referência\nhumana"] = ref["categoria"].value_counts(normalize=True)
+dist_all = dist_all.fillna(0)[CATEGORIAS]
+
+cores = [AZUIS[0], AZUIS[1], AZUIS[2], CINZA]          # v1, v2, v3, referência
+fig, axs = plt.subplots(1, 4, figsize=(10, 4.5), sharey=True, sharex=True)
+for ax, c in zip(axs, CATEGORIAS):
+    ax.barh(dist_all.index[::-1], dist_all[c].values[::-1], color=cores[::-1], height=.7)
+    ax.set_title(c, fontsize=11)
+    ax.set_xticks([0, .3, .6]); ax.set_xlim(0, .7); ax.xaxis.set_major_formatter(pct)
+    ax.grid(axis="y", visible=False)
+fig.suptitle("Mesmo modelo, mesmos textos, prompts diferentes: medidas diferentes",
+             x=.01, ha="left", fontweight="bold")
+fig.tight_layout(); plt.show()
+```
+
+## A variável eleitoral
+
+<br/>
+
+```{python}
+ele = (llm[(llm["temperatura"] == 0) & (llm["semente"] == 42)]
+       .merge(ouro[["doc_id", "eleitoral"]], on="doc_id"))
+ele["eleitoral_llm"] = ele["eleitoral_llm"].astype("boolean")
+pd.DataFrame([dict(prompt_id=p,
+                   eleitorais_humano=int(g["eleitoral"].sum()),
+                   eleitorais_llm=int(g["eleitoral_llm"].sum()),
+                   sensibilidade=g.loc[g["eleitoral"] == 1, "eleitoral_llm"].mean(),
+                   especificidade=(~g.loc[g["eleitoral"] == 0, "eleitoral_llm"]).mean())
+              for p, g in ele.groupby("prompt_id")]).set_index("prompt_id")
+```
+
+::: {.pequeno}
+Variável **rara**: acurácia não informa quase nada.
+
+**Sensibilidade** (dos eleitorais, quantos o LLM achou?) e
+
+**especificidade** (dos não eleitorais, quantos descartou?).
+
+Com tão poucos casos eleitorais, a sensibilidade é muito imprecisa.
+:::
+
+## Humano × humano: a comparação que falta
+
+
+<br/>
+
+Quando a referência for revisada por **dois codificadores humanos**, este trecho calcula o alfa entre eles:
+
+```{python}
+#| eval: false
+from pathlib import Path
+arqs = sorted(Path("material_apoio/respostas").glob("*.csv"))
+resp = pd.concat([pd.read_csv(a).assign(codificador=a.stem) for a in arqs])
+resp["categoria"] = resp["categoria"].str.strip().str.upper()
+m = resp.pivot(index="doc_id", columns="codificador", values="categoria")
+alfa_krippendorff(m)     # alfa entre os codificadores
+```
+
+<br/>
+
+::: {.columns}
+::: {.column width="50%"}
+::: {.callout-tip title="A comparação mais honesta"}
+O LLM concorda com a referência **tanto quanto os humanos concordam entre si**? Neste material a referência é de outra IA, então essa resposta ainda **não existe**.
+:::
+:::
+::: {.column width="50%"}
+::: {.callout-note title="Pergunta para a turma"}
+O kappa do S5-nano contra a referência é alto ou baixo? **Comparado a quê?**
+:::
+:::
+:::
+
+## Síntese da validação
+
+<br/>
+
+::: {.columns}
+::: {.column width="50%"}
+**Executamos**
+
+- métricas e IC bootstrap de 8 instrumentos
+- matriz de confusão e erros
+- viés por campo e teste de razão de verossimilhança
+- alfa entre sementes e entre prompts
+:::
+::: {.column width="50%"}
+**O que sabemos do instrumento**
+
+- concordância **substancial** com a referência
+- **estável** entre sementes
+- **sensível ao prompt**
+- viés diferencial **não descartado**
+
+→ bom, mas **imperfeito**. Como usá-lo sem esconder isso?
+:::
+:::

@@ -18,7 +18,11 @@ tibble::tribble(
 
 ## Um pipeline declarativo com `targets`
 
-O pacote `targets` [@landau2021] descreve a análise como um **grafo de dependências**: cada etapa declara de quais arquivos depende e quais arquivos produz. Ao rodar `targets::tar_make()`, só é refeito o que ficou desatualizado. Se você editar o prompt v2, o `targets` sabe que a validação e a inferência precisam ser refeitas, mas a amostra-ouro e os baselines não.
+O pacote `targets` [@landau2021] descreve a análise como um **grafo de dependências**: cada etapa declara de quais arquivos depende e quais arquivos produz. Ao rodar `targets::tar_make()`, só é refeito o que ficou desatualizado. Se você editar o prompt v2, o `targets` sabe que a validação e a inferência precisam ser refeitas, mas a amostra-ouro e os baselines não (Figura \@ref(fig:fig-pipeline)).
+
+```{r fig-pipeline, fig.cap="Grafo de dependências do pipeline do material, declarado com o pacote targets. Em destaque, os prompts: editar um deles deixa desatualizadas a validação, a inferência e o registro da sessão, mas não a amostra-ouro nem os baselines, que dependem só do corpus e da referência."}
+knitr::include_graphics("imagens/fluxo_inferencia.png", error = FALSE)
+```
 
 ```r
 targets::tar_make()        # roda só o que mudou

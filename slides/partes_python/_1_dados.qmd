@@ -1,0 +1,412 @@
+# 1 · Dados legislativos {background-color="#1c3f6e"}
+
+<!-- ::: {style="color:#c9d7ec"}
+`python/01_coleta.ipynb` · `python/medicao.py`
+::: -->
+
+## O que vamos executar neste bloco
+
+<br/>
+
+1. Entender **uma requisição** às APIs da Câmara e do Senado
+2. Ler as funções de coleta: **retry**, **limite de taxa**, **paginação**, **autor**, **partido na data**
+3. As partes que transformam os dados: **partido no Senado**, **limpeza da ementa**, **campo político**
+4. Como gerar **corpus** *congelado*
+5. Comparar duas coletas feitas com um mês de diferença
+
+<!-- ::: {.callout-tip title="Em sala"}
+A coleta completa leva de 5 a 10 minutos e centenas de chamadas. Fazemos **uma** chamada ao vivo (se houver internet) e usamos o corpus salvo.
+::: -->
+
+## Duas APIs abertas, sem chave
+
+<br/>
+
+::: {.columns}
+::: {.column width="50%"}
+### Câmara dos Deputados
+`dadosabertos.camara.leg.br/api/v2`
+
+- `/proposicoes`: busca por palavra-chave, ano, tipo
+- `/proposicoes/{id}/autores`
+- `/proposicoes/{id}` (situação)
+- `/deputados/{id}/historico`
+:::
+::: {.column width="50%"}
+### Senado Federal
+`legis.senado.leg.br/dadosabertos`
+
+- `/processo`: busca por termo, sigla e datas
+- a **autoria já vem com partido e UF** na data: "Senador Fulano (PSD/MG)"
+:::
+:::
+
+<br/>
+
+**Termos:** *inteligência artificial*, *deepfake*, *deep fake*, *conteúdo sintético* · **Tipo:** PL · **Anos:** 2019–2026
+
+## Anatomia de uma requisição
+
+<br/>
+
+```text
+https://dadosabertos.camara.leg.br/api/v2/proposicoes?keywords=deepfake&ano=2024&siglaTipo=PL&itens=100&pagina=1
+└──────────────── URL base ──────────────┘└ endpoint ┘└──────────────── parâmetros (query) ─────────────────┘
+```
+
+| Parâmetro | Papel | Decisão de medição |
+|---|---|---|
+| `keywords` | termo de busca | o **indexador** da Câmara decide o que "contém" o termo |
+| `ano` | ano de apresentação | o filtro por **data** aceita no máximo 3 meses |
+| `siglaTipo` | PL, PEC, PLP... | só **projetos de lei** |
+| `itens`, `pagina` | paginação | no máximo 100 por página |
+
+## Uma chamada, em Python
+
+<br/>
+
+```{python}
+#| eval: false
+import requests
+resp = requests.get("https://dadosabertos.camara.leg.br/api/v2/proposicoes",
+                    params=dict(keywords="inteligência artificial", ano=2026,
+                                siglaTipo="PL", itens=100),
+                    headers={"Accept": "application/json"}, timeout=60)
+dados = resp.json()["dados"]
+
+len(dados)                # quantas proposições vieram nesta página
+dados[0]["ementa"]        # a ementa da primeira
+```
+
+<br/>
+
+- `requests.get()` monta a URL com os parâmetros de `params` e faz a chamada
+- `resp.json()` transforma o JSON num **dicionário** do Python
+- Cada elemento de `dados` é uma proposição: `id`, `siglaTipo`, `numero`, `ano`, `ementa`, `dataApresentacao`
+
+## O que ficou guardado da resposta
+
+A coleta gravou as respostas, já em formato de tabela, em `dados/bruto/`:
+
+```{python}
+camara_raw = pd.read_csv("dados/bruto/camara_raw.csv")
+print(camara_raw.shape)
+camara_raw[["id", "sigla", "numero", "ano", "data_apresentacao", "autor", "partido", "uf"]].head(6)
+```
+
+::: {.pequeno}
+`id` é o identificador interno da Câmara; é com ele que pedimos autores e situação.
+:::
+
+## Boas práticas com APIs públicas: `req_json()`
+
+<br/>
+
+```{python}
+#| echo: false
+#| output: asis
+trecho(req_json)
+```
+
+<br/>
+
+::: {.pequeno}
+- **`SESSAO`** (em `medicao.py`) envia um `User-Agent` que identifica quem está chamando · **`time.sleep(0.2)`**: no máximo 5 requisições por segundo
+- **`for t in range(tentativas)`**: tenta de novo, com espera crescente (2, 4, 8 s...)
+- **`raise_for_status()`** transforma erros **5xx** em exceção, que também é repetida. Na recoleta de 06/11, a Câmara respondeu **504** no meio da coleta
+:::
+
+## Paginação: buscar até acabar
+
+<br/>
+
+```{python}
+#| echo: false
+#| output: asis
+trecho(camara_proposicoes)
+```
+
+::: {.pequeno}
+`while True` pede a página 1, 2, 3... até vir uma página com **menos de 100** itens. No fim, `pd.DataFrame()` transforma a lista de proposições numa tabela, uma linha por proposição.
+:::
+
+## Quem é o autor?
+
+<br/>
+
+```{python}
+#| echo: false
+#| output: asis
+trecho(camara_autor)
+```
+
+<br/>
+
+- Um PL pode ter **vários autores**: escolhemos o primeiro signatário (`ordemAssinatura`)
+- `x.get("ordemAssinatura") or 99`: quando o campo vem vazio (`None`), o autor vai para o fim da fila
+- Guardamos a **URI** do autor: é por ela que buscamos o partido
+- `n_autores` fica registrado: projetos coletivos podem ser analisados à parte
+
+## O partido de quem? E quando?
+
+<br/>
+<br/>
+
+Queremos o partido do autor **na data de apresentação**, não o partido de hoje.
+
+<br/>
+
+::: {.incremental}
+- A API da Câmara tem o **histórico** de cada deputado: `/deputados/{id}/historico`
+- Armadilha: o histórico traz registros "partido no início da legislatura" **datados de 2023-02-01 para legislaturas antigas**, com `situacao` vazia
+- Sem filtrar esses registros, um deputado do **PL em 2023** aparecia como **PMDB** ou **PFL** num projeto de 2023
+- A solução é uma linha de código, mas só aparece para quem **olha os dados**
+:::
+
+## `camara_partido_na_data()`
+
+<br/>
+
+```{python}
+#| echo: false
+#| output: asis
+trecho(camara_partido_na_data)
+```
+
+## Testando a regra
+
+<br/>
+
+Um histórico **fictício**, com o registro problemático da API:
+
+```{python}
+h = pd.DataFrame([
+    ("2007-02-01", "PFL",  "SP", None),          # "início da legislatura" com data errada
+    ("2023-02-01", "PMDB", "SP", None),          # idem: é isto que a API devolve
+    ("2019-02-01", "PSL",  "SP", "Exercício"),
+    ("2022-03-30", "PL",   "SP", "Exercício"),
+], columns=["dia", "partido", "uf", "situacao"])
+data_ref = "2023-05-10"
+
+ingenuo = h[h["dia"] <= data_ref].sort_values("dia").tail(1)
+correto = h[h["situacao"].notna() & (h["dia"] <= data_ref)].sort_values("dia").tail(1)
+pd.concat([ingenuo, correto], keys=["ingenuo", "correto"], names=["regra"]).reset_index(level=0)
+```
+
+## Senado: o partido vem no texto
+
+<br/>
+
+No Senado, a autoria já vem com partido e UF **na data**. Basta extrair com uma expressão regular:
+
+```{python}
+#| echo: false
+#| output: asis
+trecho(extrai_partido_senado)
+```
+
+```{python}
+autorias = ["Senador Styvenson Valentim (PODEMOS/RN)",
+            "Senadora Daniella Ribeiro (PSD/PB)",
+            "Comissão de Comunicação e Direito Digital"]
+[extrai_partido_senado(a) for a in autorias]
+```
+
+::: {.pequeno}
+Autoria de **comissão** não tem partido: vira `None` e, mais adiante, "Sem partido/Outro".
+:::
+
+## Limpeza mínima e transparente da ementa
+
+<br/>
+
+```{python}
+#| echo: false
+#| output: asis
+trecho(limpa_ementa)
+```
+
+Um caso real da Câmara, em que a ementa foi **reescrita** durante a tramitação:
+
+```{python}
+bruta = camara_raw.loc[camara_raw["id"] == 2236340, "ementa"].iloc[0]
+print(textwrap.fill(bruta, 100), "\n")
+print(textwrap.fill(limpa_ementa(bruta), 100))
+```
+
+::: {.pequeno}
+***Decisão de medição:*** ficamos com a ementa **original**, a que o autor apresentou.
+:::
+
+## Montando o corpus (trecho de `python/01_coleta.ipynb`)
+
+<br/>
+
+```{python}
+#| eval: false
+corpus = (pd.concat([senado_pad, camara_pad], ignore_index=True)
+          .drop_duplicates("identificacao")            # PL do Senado remetido à Câmara: fica o da origem
+          .assign(ementa=lambda d: d["ementa"].map(limpa_ementa),
+                  partido=lambda d: d["partido"].str.strip().str.upper()))
+corpus = corpus[corpus["ano"].isin(ANOS) & (corpus["ementa"].str.len() > 20)]
+corpus = corpus.sort_values("data_apresentacao", kind="stable")   # ordem estável: doc_id não muda numa recoleta
+corpus.insert(0, "doc_id", [f"doc{i:04d}" for i in range(1, len(corpus) + 1)])
+
+corpus.to_csv("dados/processado/corpus.csv", index=False)
+```
+
+<br/>
+
+- `drop_duplicates("identificacao")` remove a **duplicata** entre casas
+- `sort_values("data_apresentacao")` + `doc_id`: o identificador de cada projeto fica **estável** entre coletas
+- O corpus é salvo **com a data da coleta** (`data_coleta`)
+
+## Campo político: uma medida dentro da medida
+
+<br/>
+
+```{python}
+ESQUERDA = {"PSOL", "PT", "PCDOB", "PDT", "PSB", "REDE", "PV"}
+CENTRO   = {"MDB", "PSDB", "CIDADANIA", "PSD", "SOLIDARIEDADE", "AVANTE", "PMB"}
+DIREITA  = {"PL", "PP", "UNIÃO", "REPUBLICANOS", "NOVO", "PSC", "PTB", "PODE", "PODEMOS",
+            "PATRIOTA", "PRD", "DEM", "PSL", "PROS", "PRTB", "AGIR", "DC", "PMN", "MOBILIZA"}
+corpus = pd.read_csv("dados/processado/corpus.csv")
+campo2 = corpus["partido"].map(lambda p: "Esquerda" if p in ESQUERDA else "Centro" if p in CENTRO
+                               else "Direita" if p in DIREITA else "Sem partido/Outro")
+corpus.assign(campo2=campo2).value_counts(["campo2", "campo"]).sort_index().reset_index(name="n")
+```
+
+<br/>
+
+<!-- ::: {.pequeno}
+Simplificação didática de Bolognesi, Ribeiro & Codato (2023). A classificação é ela própria uma **medida**, com erro.
+::: -->
+
+## O corpus
+
+<br/>
+
+```{python}
+print(corpus.shape)
+pd.DataFrame({"tipo": corpus.dtypes.astype(str),
+              "exemplo": corpus.iloc[0].astype(str).str.slice(0, 70)})
+```
+
+## Quantos projetos, de onde e quando?
+
+<br/>
+
+```{python}
+display(pd.crosstab(corpus["casa"], corpus["ano"]))
+
+tab = pd.crosstab(corpus["campo"], corpus["casa"])
+tab.assign(Total=tab["Câmara"] + tab["Senado"])
+```
+
+## Quem mais apresenta?
+
+<br/>
+
+```{python}
+(corpus.dropna(subset=["partido"])
+   .value_counts(["partido", "campo"]).reset_index(name="n")
+   .assign(prop=lambda d: (d["n"] / d["n"].sum()).round(3))
+   .head(10))
+```
+
+<br/>
+
+::: {.pequeno}
+`{python} int(corpus["partido"].isna().sum())` projetos não têm partido (comissões, Executivo, Senado Federal como autor).
+:::
+
+## A explosão legislativa: o código
+
+<br/>
+
+```{python}
+#| output-location: slide
+#| fig-width: 10
+#| fig-height: 4.6
+ref = pd.read_csv("dados/anotacoes/referencia_completa.csv")
+
+cont = (corpus.merge(ref[["doc_id", "categoria"]], on="doc_id", how="left")
+        .pipe(lambda d: pd.crosstab(d["ano"], d["categoria"]))[CATEGORIAS])
+fig, eixos = plt.subplots(1, 4, figsize=(10, 4.6), sharey=True)
+for ax, cat in zip(eixos, CATEGORIAS):
+    ax.bar(cont.index.astype(str), cont[cat], width=.7,
+           color=AZUIS[2] if cat == "PUNIR" else CINZA_CLARO)
+    ax.set_title(cat, fontsize=10, loc="center"); ax.tick_params(axis="x", rotation=90)
+    ax.grid(axis="x", visible=False)
+eixos[0].set_ylabel("Projetos")
+fig.suptitle("Projetos de lei sobre IA no Congresso, por ano e categoria (referência)",
+             x=0.01, ha="left", fontweight="bold")
+plt.tight_layout(); plt.show()
+```
+
+## Duplicatas: o mesmo PL nas duas casas
+
+```{python}
+senado_raw = pd.read_csv("dados/bruto/senado_raw.csv")
+display(senado_raw.loc[senado_raw["identificacao"] == "PL 2338/2023",
+                       ["identificacao", "data_apresentacao", "autoria", "situacao"]])
+display(camara_raw.loc[(camara_raw["numero"] == 2338) & (camara_raw["ano"] == 2023),
+                       ["sigla", "numero", "ano", "data_apresentacao", "autor"]])
+corpus.loc[corpus["identificacao"] == "PL 2338/2023", ["doc_id", "casa", "identificacao", "partido", "campo"]]
+```
+
+::: {.pequeno}
+O Marco Legal da IA aparece nas duas casas. Mantemos o registro do **Senado** (casa de origem), que traz o partido do autor na data.
+:::
+
+## A mesma coleta, um mês depois
+
+```{python}
+antigo = pd.read_csv("dados/processado/historico/corpus_2026-10-08.csv")
+novos  = corpus[~corpus["identificacao"].isin(antigo["identificacao"])]
+sairam = antigo[~antigo["identificacao"].isin(corpus["identificacao"])]
+comum  = antigo.merge(corpus, on="identificacao", suffixes=("_out", "_nov"))
+muda_sit = int((comum["situacao_out"].fillna("") != comum["situacao_nov"].fillna("")).sum())
+
+display(pd.DataFrame([dict(coleta_08_10=len(antigo), coleta_06_11=len(corpus), novos=len(novos),
+                           sairam=len(sairam),
+                           ementa_mudou=int((comum["ementa_out"] != comum["ementa_nov"]).sum()),
+                           situacao_mudou=muda_sit)]))
+novos[["doc_id", "casa", "identificacao", "data_apresentacao"]]
+```
+
+## A coleta também é medição
+
+<br/>
+
+::: {.incremental}
+- **Limite de 3 meses** no filtro de data → filtrar por `ano`
+- **Partido "na data"**: registros de 2023 para legislaturas antigas → filtrar `situacao`
+- **Busca por palavra-chave** depende de um indexador: falsos positivos (Lei Geral das Atividades Nucleares?) e possíveis omissões → categoria **OUTRO**
+- **Duplicatas** entre casas → `drop_duplicates("identificacao")`
+- **Erros 5xx** no meio da coleta → `req_json()` repete, com espera crescente
+- **APIs mudam**: em um mês, `{python} len(novos)` projetos novos e `{python} muda_sit` situações de tramitação diferentes → **congelar com data**
+:::
+
+## Resumo do bloco 1
+
+<br/>
+
+::: {.columns}
+::: {.column width="50%"}
+**Executamos**
+
+- leitura dos dados brutos e do corpus
+- regras de partido (Câmara e Senado)
+- limpeza da ementa e campo político
+- descrição do corpus e comparação entre coletas
+:::
+::: {.column width="50%"}
+**Levamos para os próximos blocos**
+
+- `corpus`: `{python} len(corpus)` ementas, uma por projeto
+- `doc_id` estável
+- `campo` do autor (para o viés diferencial)
+- a lição: **cada passo da coleta é uma decisão de medição**
+:::
+:::

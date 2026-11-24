@@ -4,17 +4,17 @@ Validar um instrumento é responder a quatro perguntas: **ele acerta?** (validad
 
 ## Validade: concordância com a amostra-ouro
 
-Comparamos o rótulo de cada instrumento com a referência humana nas `r nrow(ouro)` ementas da amostra-ouro, usando três métricas:
+Comparamos o rótulo de cada instrumento com a referência humana nas `r nrow(ouro)` ementas da amostra-ouro, usando as três métricas definidas, com a notação da matriz de confusão, na Seção \@ref(metricas):
 
 - **Acurácia**: proporção de acertos. Fácil de interpretar, mas enganosa com classes desbalanceadas.
-- **F1 macro**: média do F1 de cada categoria, que dá o mesmo peso às categorias raras.
+- **F1 macro**: média do F1 de cada categoria (a média harmônica entre precisão e revocação), que dá o mesmo peso às categorias raras.
 - **Kappa de Cohen** [@cohen1960]: acerto **além do acaso**,
 
 $$
 \kappa = \frac{p_o - p_e}{1 - p_e},
 $$
 
-em que $p_o$ é a proporção de concordância observada e $p_e$ a proporção esperada se os dois codificadores rotulassem ao acaso, mantendo suas distribuições marginais. Pela convenção de @landis1977, valores acima de 0,4, 0,6 e 0,8 indicam concordância moderada, substancial e quase perfeita.
+em que $p_o$ é a proporção de concordância observada e $p_e$ a proporção esperada se os dois codificadores rotulassem ao acaso, mantendo suas distribuições marginais ($p_e = \sum_c \frac{n_{c\cdot}}{N} \frac{n_{\cdot c}}{N}$). Pela convenção de @landis1977, valores acima de 0,4, 0,6 e 0,8 indicam concordância moderada, substancial e quase perfeita.
 
 O kappa é implementado "na mão", em poucas linhas, para mostrar que não há mágica nas métricas:
 

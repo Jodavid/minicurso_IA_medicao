@@ -51,7 +51,8 @@ As opções do PDF (xelatex, natbib, sumário) estão em livro/_output.yml.
 #   slides/parte1_conceitos.qmd  formato A, Parte 1: conceitos, sem resultados (~55 slides, 2h)
 #   slides/completo_R.qmd        formato B: minicurso inteiro com código R e saídas (~170 slides, 4h)
 #                                (inclui os blocos de slides/partes_R/; o código roda a partir da raiz)
-#   slides/completo_python.qmd   formato B com código Python (~180 slides; usa o kernel python3)
+#   slides/completo_python.qmd   formato B com código Python, espelho do completo_R slide a slide
+#                                (inclui os blocos de slides/partes_python/; usa o kernel python3)
 for (d in c("parte1_conceitos", "completo_R", "completo_python"))
   system(paste0("quarto render slides/", d, ".qmd"))
 # Para o PDF de cada deck, troque "parte1_conceitos" pelo nome do deck no bloco abaixo.
