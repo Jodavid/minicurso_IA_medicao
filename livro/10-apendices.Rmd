@@ -56,7 +56,6 @@ source("build.R")                      # compila o livro em ../docs/
 quarto render slides/parte1_conceitos.qmd   # Parte 1: conceitos (formato A, 2 h)
 quarto render slides/completo_R.qmd         # minicurso completo com código R (formato B, 4 h)
 quarto render slides/completo_python.qmd    # minicurso completo com código Python (formato B, 4 h)
-quarto render slides/slides.qmd             # versão resumida, com resultados
 ```
 
 ## Estrutura do material

@@ -364,7 +364,7 @@ div.csl-indent {
 <li class="toc-sub">Texto: <a href="https://creativecommons.org/licenses/by/4.0/deed.pt-br" target="_blank">CC BY 4.0</a> · Código: <a href="https://opensource.org/license/mit" target="_blank">MIT</a></li>
 <li class="toc-links"><a href="ia-instrumento-medicao.pdf" target="_blank">PDF</a><a href="material/minicurso_IA_medicao.zip">Material .zip</a></li>
 <li class="toc-sub"><strong>Slides</strong></li>
-<li class="toc-links"><a href="slides/parte1_conceitos.html" target="_blank">Parte 1: conceitos</a><a href="slides/slides.html" target="_blank">Versão resumida</a></li>
+<li class="toc-links"><a href="slides/parte1_conceitos.html" target="_blank">Parte 1: conceitos</a></li>
 <li class="toc-links"><a href="slides/completo_R.html" target="_blank">Completos · R</a><a href="slides/completo_python.html" target="_blank">Completos · Python</a></li>
 
 </ul>
@@ -782,8 +782,8 @@ Name: count, dtype: int64</code></pre>
        0.9199021 ]), &lt;BarContainer object of 40 artists&gt;)</code></pre>
 <div class="sourceCode" id="cb189"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb189-1"><a href="validacao.html#cb189-1" tabindex="-1"></a><span class="cf">for</span> q <span class="kw">in</span> np.quantile(kappas, [<span class="fl">0.025</span>, <span class="fl">0.975</span>]):</span>
 <span id="cb189-2"><a href="validacao.html#cb189-2" tabindex="-1"></a>    ax.axvline(q, color<span class="op">=</span><span class="st">&quot;black&quot;</span>, ls<span class="op">=</span><span class="st">&quot;--&quot;</span>, lw<span class="op">=</span><span class="dv">1</span>)</span></code></pre></div>
-<pre><code>&lt;matplotlib.lines.Line2D object at 0x75958a3e9ad0&gt;
-&lt;matplotlib.lines.Line2D object at 0x75958a22c7d0&gt;</code></pre>
+<pre><code>&lt;matplotlib.lines.Line2D object at 0x73fbf3ec2890&gt;
+&lt;matplotlib.lines.Line2D object at 0x73fbf4669c90&gt;</code></pre>
 <div class="sourceCode" id="cb191"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb191-1"><a href="validacao.html#cb191-1" tabindex="-1"></a>ax.set_xlabel(<span class="st">&quot;Kappa nas 2.000 amostras bootstrap&quot;</span>)</span></code></pre></div>
 <pre><code>Text(0.5, 0, &#39;Kappa nas 2.000 amostras bootstrap&#39;)</code></pre>
 <div class="sourceCode" id="cb193"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb193-1"><a href="validacao.html#cb193-1" tabindex="-1"></a>plt.show()</span></code></pre></div>

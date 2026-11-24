@@ -36,7 +36,7 @@ produzem intervalos de confiança **estreitos e errados**.
 | Arquivo | Para que serve |
 |---|---|
 | `ROTEIRO.md` | Cronograma das 4h (tempo, bloco, material de cada parte) |
-| `slides/slides.qmd` | Slides (Quarto/reveal.js); números lidos das tabelas |
+| `slides/*.qmd` | Slides (Quarto/reveal.js): `parte1_conceitos`, `completo_R`, `completo_python` |
 | `livro/` → `docs/` | Livro completo; é o seu "texto de apoio" para estudar |
 | `CODEBOOK.md` | Livro de códigos (PUNIR/REGULAR/PROMOVER/OUTRO + eleitoral) |
 | `R/01…06_*.R` | Trilha R, um script por bloco |
@@ -92,7 +92,9 @@ ollama list                                        # deve listar s5-nano-instruc
 
 ```bash
 # Livro e slides (Quarto + TinyTeX + Chrome)
-quarto render slides/slides.qmd
+quarto render slides/parte1_conceitos.qmd
+quarto render slides/completo_R.qmd
+quarto render slides/completo_python.qmd
 cd livro && Rscript -e 'source("build.R")'                                   # HTML + slides + .zip em docs/
 Rscript -e 'bookdown::render_book("index.Rmd", output_format = "bookdown::pdf_book")'   # PDF
 ```
@@ -356,13 +358,14 @@ targets::tar_outdated()     # agora validacao e inferencia aparecem
 
 ## 5. Ensaio geral (dia 5)
 
-1. Abra `slides/slides.html` no navegador da máquina da apresentação, tecla **F** (tela cheia),
+1. Abra o deck do formato escolhido (`slides/parte1_conceitos.html`, `slides/completo_R.html`
+   ou `slides/completo_python.html`) no navegador da máquina da apresentação, tecla **F** (tela cheia),
    **S** (notas do apresentador), **O** (visão geral).
 2. Cronometre bloco a bloco com o `ROTEIRO.md` (soma exata: 240 min, com intervalo de 15).
 3. Faça as 2 demos: anotação de 5 ementas (bloco 4) e `tar_visnetwork()` / `tar_outdated()`
    (bloco 7).
 4. **Plano B sem internet:** tudo roda de `dados/` e `dados/cache_llm/`. Leve o projeto num
-   pendrive e o `slides.pdf` (`docs/slides/slides.pdf`).
+   pendrive e o PDF do deck (em `docs/slides/`).
 5. **Plano B sem Ollama:** mostre uma linha do cache (`head -n 1 dados/cache_llm/s5-nano-instruct__v2__t0.0__s42.jsonl`)
    no lugar da demo ao vivo.
 

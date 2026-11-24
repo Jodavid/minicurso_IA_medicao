@@ -79,7 +79,7 @@ tibble::tribble(
   "Notebooks Python 01 a 05 executados do início ao fim", "Nenhum erro; 9 de 10 tabelas idênticas às do material",
   "Tabela de validade em Python", "Linha extra esperada: a demonstração ao vivo do notebook 03 (semente 7) aparece como instrumento à parte",
   "Detecção de arquivos novos pelo `targets`", "Falhava; corrigida com `tar_cue(mode = \"always\")`",
-  "Slides (`quarto render slides/slides.qmd`)", "Renderizados sem erro",
+  "Slides (`quarto render` dos decks em `slides/`)", "Renderizados sem erro",
   "Aviso de referência preliminar", "Emitido corretamente pelos scripts",
   "**06/11/2026:** nova coleta (Capítulo \\@ref(dados)) e novo sorteio da amostra-ouro; pipeline R e notebooks 01 a 05 refeitos", "Sem erros; R e Python coincidem, exceto no TF-IDF (já discutido) e nos números que dependem do gerador aleatório (ICs bootstrap e simulação, diferenças de até 0,01)",
   "**11/11/2026:** anotação do corpus com o `s5-nano-instruct` no Ollama 0.40.15 (6 execuções)", "1.824 respostas, nenhuma falha de formato (Capítulo \\@ref(llm))",

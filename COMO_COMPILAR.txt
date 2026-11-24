@@ -46,28 +46,22 @@ As opções do PDF (xelatex, natbib, sumário) estão em livro/_output.yml.
 2) SLIDES (pasta slides/)
 ----------------------------------------------------------------------
 
-# --- Slides em HTML (reveal.js) -> slides/slides.html ---
-system("quarto render slides/slides.qmd")
-
-# (alternativa, com o pacote quarto do R:)
-# install.packages("quarto")
-# quarto::quarto_render("slides/slides.qmd")
-
-# --- Os outros decks (mesmo comando, um por arquivo) ---
+# --- Slides em HTML (reveal.js) -> slides/<deck>.html ---
+# (alternativa, com o pacote quarto do R: quarto::quarto_render("slides/<deck>.qmd"))
 #   slides/parte1_conceitos.qmd  formato A, Parte 1: conceitos, sem resultados (~55 slides, 2h)
 #   slides/completo_R.qmd        formato B: minicurso inteiro com código R e saídas (~170 slides, 4h)
 #                                (inclui os blocos de slides/partes_R/; o código roda a partir da raiz)
 #   slides/completo_python.qmd   formato B com código Python (~180 slides; usa o kernel python3)
-for (d in c("slides", "parte1_conceitos", "completo_R", "completo_python"))
+for (d in c("parte1_conceitos", "completo_R", "completo_python"))
   system(paste0("quarto render slides/", d, ".qmd"))
-# Para o PDF de cada deck, troque "slides" pelo nome do deck no bloco abaixo.
+# Para o PDF de cada deck, troque "parte1_conceitos" pelo nome do deck no bloco abaixo.
 # O build.R do livro copia para docs/slides/ todos os decks compilados (HTML e PDF).
 
-# --- Slides em PDF -> slides/slides.pdf ---
+# --- Slides em PDF -> slides/<deck>.pdf ---
 # Imprime o HTML pelo Chrome em modo "print-pdf" do reveal.js
 # (compile o HTML antes; troque "google-chrome" por "chromium" se for o caso).
-html <- normalizePath("slides/slides.html")
-pdf  <- file.path(dirname(html), "slides.pdf")
+html <- normalizePath("slides/parte1_conceitos.html")
+pdf  <- sub("\\.html$", ".pdf", html)
 system2("google-chrome", c(
   "--headless=new", "--disable-gpu", "--no-pdf-header-footer",
   "--virtual-time-budget=20000",
@@ -80,4 +74,4 @@ system2("google-chrome", c(
 # pagedown::chrome_print(paste0("file://", html, "?print-pdf"), output = pdf)
 
 # Copiar o PDF dos slides para o site (opcional):
-file.copy("slides/slides.pdf", "docs/slides/slides.pdf", overwrite = TRUE)
+file.copy(pdf, file.path("docs/slides", basename(pdf)), overwrite = TRUE)

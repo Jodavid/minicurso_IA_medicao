@@ -9,7 +9,6 @@ II DataPOL · 24 a 26/11/2026 · Auditório do CCEN/UFPE · Prof. Dr. Jodavid Fe
 |---|---|---|
 | **A · Conceitos + prática** | 2h só com slides (ideias, desenho, fórmulas; **sem resultados**) e 2h executando os scripts/notebooks com a turma | `slides/parte1_conceitos.qmd` (Parte 1) + `R/0X_*.R` ou `python/0X_*.ipynb` (Parte 2) |
 | **B · Tudo por slides** | 4h seguindo só os slides, que trazem o código, o que está sendo executado e as saídas reais | `slides/completo_R.qmd` **ou** `slides/completo_python.qmd` |
-| Versão resumida | ~45 slides com os resultados principais (a versão original) | `slides/slides.qmd` |
 
 Os blocos e os horários abaixo valem para os dois formatos. No formato A, a Parte 1 percorre todos os blocos em cerca de 2h e a Parte 2 refaz os blocos 1 a 7 no código. Os slides não trazem horários: o ritmo fica a critério do ministrante.
 

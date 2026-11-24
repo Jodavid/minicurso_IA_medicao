@@ -52,7 +52,6 @@ minicurso_IA_medicao/
 │   └── repeticao/             ← repetição das execuções a t = 0 (teste de reprodutibilidade)
 ├── resultados/{figuras,tabelas}
 ├── slides/                    ← slides em Quarto (revealjs)
-│   ├── slides.qmd             ← versão resumida, com resultados (~45 slides)
 │   ├── parte1_conceitos.qmd   ← formato A, Parte 1: conceitos, sem resultados (2h)
 │   ├── completo_R.qmd         ← formato B: minicurso inteiro com código R e saídas (4h)
 │   ├── completo_python.qmd    ← formato B: o mesmo, com código Python

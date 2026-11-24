@@ -6,9 +6,9 @@ bookdown::render_book("index.Rmd", quiet = TRUE)
 docs <- normalizePath("../docs")
 file.create(file.path(docs, ".nojekyll"))
 dir.create(file.path(docs, "slides"), showWarnings = FALSE)
-# Todos os decks: versão resumida, Parte 1 (conceitos) e minicurso completo em R e em Python.
+# Todos os decks: Parte 1 (conceitos) e minicurso completo em R e em Python.
 # Compile-os antes (quarto render slides/<deck>.qmd); os PDFs, se existirem, também são copiados.
-decks <- c("slides", "parte1_conceitos", "completo_R", "completo_python")
+decks <- c("parte1_conceitos", "completo_R", "completo_python")
 for (d in decks) for (ext in c(".html", ".pdf")) {
   orig <- file.path("../slides", paste0(d, ext))
   if (file.exists(orig)) file.copy(orig, file.path(docs, "slides", paste0(d, ext)), overwrite = TRUE)

@@ -36,10 +36,9 @@ cat('
 <a href="material/minicurso_IA_medicao.zip">Material completo (.zip)</a>
 </div>
 <div class="botoes">
-<a href="slides/parte1_conceitos.html" target="_blank" rel="noopener">Slides · Parte 1: conceitos</a>
+<a href="slides/parte1_conceitos.html" target="_blank" rel="noopener">Slides · Conceitos</a>
 <a href="slides/completo_R.html" target="_blank" rel="noopener">Slides completos · R</a>
 <a href="slides/completo_python.html" target="_blank" rel="noopener">Slides completos · Python</a>
-<a href="slides/slides.html" target="_blank" rel="noopener">Slides · versão resumida</a>
 </div>
 </div>
 </div>
@@ -94,8 +93,6 @@ O mesmo conteúdo pode ser apresentado de duas formas, com slides próprios para
 
 - **Formato A: 2 horas de conceitos + 2 horas de prática.** Na primeira parte, os [slides da Parte 1](slides/parte1_conceitos.html) apresentam as ideias e o que será feito em cada bloco, sem mostrar resultados. Na segunda, a turma executa os scripts de `R/` ou os notebooks de `python/`, bloco a bloco, acompanhando as seções "Mão na massa" deste livro.
 - **Formato B: 4 horas só com slides.** O minicurso inteiro é conduzido pelos slides completos, que trazem o código, o que está sendo executado e as saídas, em duas versões: [em R](slides/completo_R.html) e [em Python](slides/completo_python.html).
-
-Há ainda uma [versão resumida dos slides](slides/slides.html), com os resultados principais e sem código, útil para uma apresentação curta.
 
 ### Material {-}
 
